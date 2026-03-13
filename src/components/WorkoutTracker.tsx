@@ -242,10 +242,10 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
           {currentIndex > 0 && (
             <button 
               onClick={handlePrevious}
-              className="glass-panel border-border-subtle flex items-center justify-center gap-2 px-6 py-4 rounded-full hover:border-accent-primary/50 transition-all"
+              className="bg-bg-tertiary border border-border-subtle text-text-primary rounded-full px-6 py-4 font-semibold text-lg font-outfit flex items-center justify-center gap-2 transition-all hover:bg-bg-secondary active:scale-95"
             >
               <ChevronLeft size={24} />
-              <span className="font-semibold">Anterior</span>
+              <span>Anterior</span>
             </button>
           )}
           <button 
