@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, X, Timer as TimerIcon, Play, Pause, ChevronLeft } from "lucide-react";
 import { finishWorkoutLog, saveWorkoutSet } from "@/app/actions";
 import CachedVideo from "./CachedVideo";
+import { useBeep } from "@/lib/useBeep";
 
 interface ExerciseRow {
   block: string;
@@ -50,6 +51,11 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
   const [timeElapsed, setTimeElapsed] = useState(0); // for stopwatch
   const [timeLeft, setTimeLeft] = useState(0);       // for countdown
   const [isActive, setIsActive] = useState(false);
+  const [countdown, setCountdown] = useState(5);     // countdown before exercise starts
+  const [isCountingDown, setIsCountingDown] = useState(true);
+  const [hasPlayedWarning, setHasPlayedWarning] = useState(false);
+  
+  const { playCountdownBeep, playWarningBeep, playFinalBeep } = useBeep();
   
   // To track total session time
   const startTime = useRef<number>(Date.now());
@@ -63,20 +69,50 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
   useEffect(() => {
     if (isFinished) return;
     
-    // Reset timers when exercise changes
+    // Reset timers and start countdown when exercise changes
     setTimeElapsed(0);
     setTimeLeft(targetTime);
-    setIsActive(true);
+    setIsActive(false);
+    setCountdown(5);
+    setIsCountingDown(true);
+    setHasPlayedWarning(false);
   }, [currentIndex, isFinished, targetTime]);
+
+  // Countdown before exercise starts
+  useEffect(() => {
+    if (!isCountingDown || isFinished) return;
+
+    if (countdown > 0) {
+      playCountdownBeep();
+      const timer = setTimeout(() => {
+        setCountdown(prev => prev - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else {
+      // Countdown finished, start exercise
+      playFinalBeep();
+      setIsCountingDown(false);
+      setIsActive(true);
+    }
+  }, [countdown, isCountingDown, isFinished, playCountdownBeep, playFinalBeep]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
     
-    if (isActive && !isFinished) {
+    if (isActive && !isFinished && !isCountingDown) {
       interval = setInterval(() => {
         if (hasTimer) {
           setTimeLeft((prev) => {
+            // Play warning beeps when 5 seconds or less remain
+            if (prev <= 5 && prev > 0 && !hasPlayedWarning) {
+              playWarningBeep();
+              if (prev === 1) {
+                setHasPlayedWarning(true);
+              }
+            }
+            
             if (prev <= 1) {
+              playFinalBeep();
               handleNext(true); // auto-advance when timer rings
               return 0;
             }
@@ -91,7 +127,7 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isActive, isFinished, hasTimer, currentEx]); // Added currentEx to deps
+  }, [isActive, isFinished, isCountingDown, hasTimer, currentEx, hasPlayedWarning, playWarningBeep, playFinalBeep]);
 
   // Need a ref for handleNext so it can be called from setInterval without staleness issues
   const currentExRef = useRef(currentEx);
@@ -128,9 +164,70 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
   const handlePrevious = () => {
     if (currentIndex > 0) {
       setIsActive(false);
+      setIsCountingDown(true);
+      setCountdown(5);
       setCurrentIndex(prev => prev - 1);
     }
   };
+
+  // Show countdown screen
+  if (isCountingDown && !isFinished) {
+    return (
+      <div className="min-h-screen flex flex-col bg-bg-primary font-sans animate-fade-in">
+        {/* Top Header/Progress */}
+        <div className="flex items-center justify-between p-4 bg-bg-secondary border-b border-border-subtle shrink-0">
+          <button onClick={() => router.push(`/session/${sessionId}`)} className="p-2 -ml-2 text-text-secondary hover:text-white transition">
+            <X size={24} />
+          </button>
+          <div className="text-sm font-semibold tracking-wider uppercase text-text-secondary">
+            {currentIndex + 1} / {exercises.length}
+          </div>
+          <div className="w-10" /> {/* Spacer */}
+        </div>
+
+        {/* Countdown Display */}
+        <div className="flex-1 flex flex-col items-center justify-center p-6">
+          <div className="mb-8 text-center">
+            <div className="flex items-center gap-2 mb-4 justify-center">
+              <span className="bg-accent-primary/20 text-accent-primary text-xs font-bold px-2 py-1 rounded">
+                Bloque {currentEx.block}
+              </span>
+              <span className="text-xs text-text-secondary font-medium">Set {currentEx.set_number}</span>
+            </div>
+            <h2 className="heading-display text-2xl mb-2 leading-tight">{currentEx.name}</h2>
+            <p className="text-text-secondary text-sm">Prepárate...</p>
+          </div>
+
+          <div className="relative flex items-center justify-center mb-8">
+            <svg className="w-64 h-64 transform -rotate-90">
+              <circle cx="128" cy="128" r="120" strokeWidth="8" stroke="currentColor" fill="transparent" className="text-border-subtle" />
+              <circle cx="128" cy="128" r="120" strokeWidth="8" stroke="currentColor" fill="transparent" 
+                className="text-accent-primary transition-all duration-1000 ease-linear"
+                strokeDasharray={2 * Math.PI * 120}
+                strokeDashoffset={(2 * Math.PI * 120) * (countdown / 5)}
+              />
+            </svg>
+            <div className="absolute flex flex-col items-center">
+              <span className="heading-display text-8xl tabular-nums tracking-tighter text-accent-primary animate-pulse">
+                {countdown}
+              </span>
+            </div>
+          </div>
+
+          <button 
+            onClick={() => {
+              setCountdown(0);
+              setIsCountingDown(false);
+              setIsActive(true);
+            }}
+            className="px-8 py-3 rounded-full border border-border-subtle bg-bg-secondary text-text-secondary hover:text-white flex items-center gap-2 transition"
+          >
+            <span className="text-sm font-medium">Saltar cuenta atrás</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (isFinished) {
     return (
