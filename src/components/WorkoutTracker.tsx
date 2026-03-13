@@ -53,12 +53,50 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
   const [isActive, setIsActive] = useState(false);
   const [countdown, setCountdown] = useState(5);     // countdown before exercise starts
   const [isCountingDown, setIsCountingDown] = useState(true);
-  const [hasPlayedWarning, setHasPlayedWarning] = useState(false);
   
   const { playCountdownBeep, playWarningBeep, playFinalBeep } = useBeep();
   
   // To track total session time
   const startTime = useRef<number>(Date.now());
+  
+  // Wake Lock to prevent screen from sleeping
+  const wakeLockRef = useRef<any>(null);
+
+  // Request wake lock when component mounts
+  useEffect(() => {
+    const requestWakeLock = async () => {
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
+          console.log('Wake Lock activated');
+        }
+      } catch (err) {
+        console.error('Wake Lock error:', err);
+      }
+    };
+
+    requestWakeLock();
+
+    // Re-request wake lock when page becomes visible again
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && wakeLockRef.current === null) {
+        requestWakeLock();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Release wake lock when component unmounts
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (wakeLockRef.current !== null) {
+        wakeLockRef.current.release().then(() => {
+          console.log('Wake Lock released');
+          wakeLockRef.current = null;
+        });
+      }
+    };
+  }, []);
   
   const currentEx = exercises[currentIndex];
   const isFinished = currentIndex >= exercises.length;
@@ -75,7 +113,6 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
     setIsActive(false);
     setCountdown(5);
     setIsCountingDown(true);
-    setHasPlayedWarning(false);
   }, [currentIndex, isFinished, targetTime]);
 
   // Countdown before exercise starts
@@ -104,11 +141,8 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
         if (hasTimer) {
           setTimeLeft((prev) => {
             // Play warning beeps when 5 seconds or less remain
-            if (prev <= 5 && prev > 0 && !hasPlayedWarning) {
+            if (prev <= 5 && prev > 1) {
               playWarningBeep();
-              if (prev === 1) {
-                setHasPlayedWarning(true);
-              }
             }
             
             if (prev <= 1) {
@@ -127,7 +161,7 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isActive, isFinished, isCountingDown, hasTimer, currentEx, hasPlayedWarning, playWarningBeep, playFinalBeep]);
+  }, [isActive, isFinished, isCountingDown, hasTimer, currentEx, playWarningBeep, playFinalBeep]);
 
   // Need a ref for handleNext so it can be called from setInterval without staleness issues
   const currentExRef = useRef(currentEx);
