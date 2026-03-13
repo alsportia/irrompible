@@ -242,7 +242,7 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
           {currentIndex > 0 && (
             <button 
               onClick={handlePrevious}
-              className="bg-bg-tertiary border border-border-subtle text-text-primary rounded-full px-6 py-4 font-semibold text-lg font-outfit flex items-center justify-center gap-2 transition-all hover:bg-bg-secondary active:scale-95"
+              className="btn-primary glow flex items-center justify-center gap-2 px-6 py-4"
             >
               <ChevronLeft size={24} />
               <span>Anterior</span>
@@ -250,7 +250,7 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
           )}
           <button 
             onClick={() => handleNext(false)}
-            className="btn-primary glow flex-1 flex items-center justify-center gap-2 py-4 shadow-lg shadow-accent-primary/20 hover:scale-[1.02]"
+            className="btn-primary glow flex-1 flex items-center justify-center gap-2 py-4"
           >
             <Check size={24} />
             <span>Completar y Siguiente</span>
