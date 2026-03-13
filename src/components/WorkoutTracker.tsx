@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Check, X, Timer as TimerIcon, Play, Pause } from "lucide-react";
+import { Check, X, Timer as TimerIcon, Play, Pause, ChevronLeft } from "lucide-react";
 import { finishWorkoutLog, saveWorkoutSet } from "@/app/actions";
 import CachedVideo from "./CachedVideo";
 
@@ -125,6 +125,13 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
     }
   };
 
+  const handlePrevious = () => {
+    if (currentIndex > 0) {
+      setIsActive(false);
+      setCurrentIndex(prev => prev - 1);
+    }
+  };
+
   if (isFinished) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center animate-fade-in relative overflow-hidden">
@@ -231,13 +238,24 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
 
       {/* Bottom Sticky Action */}
       <div className="p-4 bg-bg-primary border-t border-border-subtle shrink-0 pb-10">
-        <button 
-          onClick={() => handleNext(false)}
-          className="btn-primary glow w-full flex items-center justify-center gap-2 py-4 shadow-lg shadow-accent-primary/20 hover:scale-[1.02]"
-        >
-          <Check size={24} />
-          <span>Completar y Siguiente</span>
-        </button>
+        <div className="flex gap-3">
+          {currentIndex > 0 && (
+            <button 
+              onClick={handlePrevious}
+              className="glass-panel border-border-subtle flex items-center justify-center gap-2 px-6 py-4 rounded-full hover:border-accent-primary/50 transition-all"
+            >
+              <ChevronLeft size={24} />
+              <span className="font-semibold">Anterior</span>
+            </button>
+          )}
+          <button 
+            onClick={() => handleNext(false)}
+            className="btn-primary glow flex-1 flex items-center justify-center gap-2 py-4 shadow-lg shadow-accent-primary/20 hover:scale-[1.02]"
+          >
+            <Check size={24} />
+            <span>Completar y Siguiente</span>
+          </button>
+        </div>
       </div>
     </div>
   );
