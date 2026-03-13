@@ -10,6 +10,8 @@ const withPWA = require('next-pwa')({
 const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
+  // Añadir configuración vacía de turbopack para silenciar el warning
+  turbopack: {},
 };
 
 export default withPWA(nextConfig);
