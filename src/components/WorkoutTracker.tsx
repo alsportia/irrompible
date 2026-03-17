@@ -255,7 +255,7 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
       <div style={S.scrollArea}>
         {/* Video */}
         <div style={S.videoBox}>
-          <CachedVideo videoUrl={currentEx?.video_url} />
+          <CachedVideo videoUrl={currentEx?.video_url} exerciseName={currentEx?.name} />
         </div>
 
         {/* Info */}
