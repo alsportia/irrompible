@@ -26,6 +26,7 @@ interface ExerciseRow {
 interface BlockGroup {
   block: string;
   block_type: string | null;
+  totalSets: number;
   exercises: ExerciseRow[];
 }
 
@@ -53,19 +54,12 @@ export default async function SessionPage({ params }: { params: Promise<{ id: st
   // Group by block securely, ensuring we preserve the sequence.
   const blocksMap = new Map<string, BlockGroup>();
   for (const ex of exercisesRaw) {
-    // If block is undefined/null, we assign it to a default "Main" block.
     const bName = ex.block || "Rutina Principal";
     if (!blocksMap.has(bName)) {
-      blocksMap.set(bName, {
-        block: bName,
-        block_type: ex.block_type,
-        exercises: []
-      });
+      blocksMap.set(bName, { block: bName, block_type: ex.block_type, totalSets: 0, exercises: [] });
     }
-    // Only push if it's the first set (for preview purposes, we just list the exercises to do)
-    // Actually, maybe we want to show all exercises or just unique ones per block?
-    // Let's just group unique exercises per block for the overview
     const blockGroup = blocksMap.get(bName)!;
+    if (ex.set_number > blockGroup.totalSets) blockGroup.totalSets = ex.set_number;
     if (!blockGroup.exercises.find(e => e.ex_id === ex.ex_id)) {
       blockGroup.exercises.push(ex);
     }
@@ -105,8 +99,11 @@ export default async function SessionPage({ params }: { params: Promise<{ id: st
                 <span style={{ width: '1.75rem', height: '1.75rem', borderRadius: '6px', background: 'rgba(59,130,246,0.2)', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.875rem', flexShrink: 0 }}>
                   {b.block}
                 </span>
-                <span style={{ fontWeight: 600, fontSize: '0.875rem', textTransform: 'capitalize' }}>
+                <span style={{ fontWeight: 600, fontSize: '0.875rem', textTransform: 'capitalize', flex: 1 }}>
                   {(b.block_type || 'Bloque').replace(/_/g, ' ')}
+                </span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', background: 'var(--bg-primary)', padding: '0.2rem 0.6rem', borderRadius: '999px' }}>
+                  {b.totalSets} {b.totalSets === 1 ? 'set' : 'sets'}
                 </span>
               </div>
 

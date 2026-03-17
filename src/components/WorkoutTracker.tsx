@@ -195,7 +195,7 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
           <div style={{ textAlign: 'center' }}>
             <div style={S.badge}>
               <span style={S.blockBadge}>Bloque {currentEx.block}</span>
-              <span style={S.setBadge}>Set {currentEx.set_number}</span>
+              <span style={S.setBadge}>Set {currentEx.set_number} de {Math.max(...exercises.filter(e => e.block === currentEx.block).map(e => e.set_number))}</span>
             </div>
             <h2 style={S.exName}>{currentEx.name}</h2>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.5rem' }}>Prepárate...</p>
@@ -263,7 +263,7 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
           <div>
             <div style={S.badge}>
               <span style={S.blockBadge}>Bloque {currentEx.block}</span>
-              <span style={S.setBadge}>Set {currentEx.set_number}</span>
+              <span style={S.setBadge}>Set {currentEx.set_number} de {Math.max(...exercises.filter(e => e.block === currentEx.block).map(e => e.set_number))}</span>
             </div>
             <h2 style={S.exName}>{currentEx.name}</h2>
 
