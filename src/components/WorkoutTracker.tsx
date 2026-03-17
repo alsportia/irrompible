@@ -40,25 +40,24 @@ function parseTimeToSeconds(timeStr: string | null): number {
 }
 
 const S = {
-  screen: { minHeight: '100vh', display: 'flex', flexDirection: 'column' as const, background: 'var(--bg-primary)', fontFamily: 'var(--font-geist-sans)' },
-  header: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0 },
+  screen: { height: '100dvh', display: 'flex', flexDirection: 'column' as const, background: 'var(--bg-primary)', fontFamily: 'var(--font-geist-sans)', overflow: 'hidden' },
+  header: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0 },
   headerBtn: { padding: '0.5rem', marginLeft: '-0.5rem', color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex' },
   headerCount: { fontSize: '0.875rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: 'var(--text-secondary)' },
-  scrollArea: { flex: 1, overflowY: 'auto' as const, display: 'flex', flexDirection: 'column' as const },
-  videoBox: { width: '100%', aspectRatio: '16/9', background: '#000', flexShrink: 0 },
-  infoArea: { padding: '1.5rem', flex: 1, display: 'flex', flexDirection: 'column' as const, gap: '1rem' },
-  badge: { display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' },
+  scrollArea: { flex: 1, display: 'flex', flexDirection: 'column' as const, overflow: 'hidden' },
+  videoBox: { width: '100%', maxHeight: '30vh', aspectRatio: '16/9', background: '#000', flexShrink: 0 },
+  infoArea: { padding: '0.875rem 1rem', flex: 1, display: 'flex', flexDirection: 'column' as const, gap: '0.5rem', overflow: 'hidden' },
+  badge: { display: 'inline-flex', alignItems: 'center', gap: '0.5rem' },
   blockBadge: { background: 'rgba(59,130,246,0.2)', color: 'var(--accent-primary)', fontSize: '0.75rem', fontWeight: 700, padding: '0.2rem 0.5rem', borderRadius: '4px' },
   setBadge: { fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 500 },
-  exName: { fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '1.75rem', lineHeight: 1.2, letterSpacing: '-0.02em' },
-  statsRow: { display: 'flex', gap: '1rem', marginTop: '0.5rem' },
-  statCard: { flex: 1, background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-md)', padding: '1rem', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', backdropFilter: 'blur(12px)' },
-  statLabel: { fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' },
-  statValue: { fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '1.75rem' },
-  timerArea: { display: 'flex', flexDirection: 'column' as const, alignItems: 'center', padding: '1.5rem 0' },
-  timerTime: { fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '3rem', letterSpacing: '-0.04em', tabularNums: true },
-  pauseBtn: { marginTop: '1rem', padding: '0.5rem 1.5rem', borderRadius: '9999px', border: '1px solid var(--border-subtle)', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', fontWeight: 500 },
-  bottomBar: { padding: '1rem', background: 'var(--bg-primary)', borderTop: '1px solid var(--border-subtle)', flexShrink: 0, paddingBottom: '2.5rem' },
+  exName: { fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '1.5rem', lineHeight: 1.2, letterSpacing: '-0.02em' },
+  statsRow: { display: 'flex', gap: '0.75rem' },
+  statCard: { flex: 1, background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-md)', padding: '0.625rem', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', backdropFilter: 'blur(12px)' },
+  statLabel: { fontSize: '0.7rem', color: 'var(--text-secondary)', marginBottom: '0.15rem' },
+  statValue: { fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '1.5rem' },
+  timerArea: { display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', flex: 1 },
+  pauseBtn: { marginTop: '0.5rem', padding: '0.4rem 1.25rem', borderRadius: '9999px', border: '1px solid var(--border-subtle)', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 500 },
+  bottomBar: { padding: '0.75rem 1rem', background: 'var(--bg-primary)', borderTop: '1px solid var(--border-subtle)', flexShrink: 0, paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' },
   btnRow: { display: 'flex', gap: '0.75rem' },
 };
 
@@ -176,7 +175,7 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
-  const circumference = 2 * Math.PI * 88;
+  const circumference = 2 * Math.PI * 62;
 
   // Pre-calcular URLs únicas de video para pre-renderizar iframes
   const uniqueVideoUrls = Array.from(
@@ -281,9 +280,13 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
               <span style={S.setBadge}>Set {currentEx.set_number} de {Math.max(...exercises.filter(e => e.block === currentEx.block).map(e => e.set_number))}</span>
             </div>
             <h2 style={S.exName}>{currentEx.name}</h2>
+          </div>
 
+          {/* Stats + Timer en la misma fila */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}>
+            {/* Stats a la izquierda */}
             {(currentEx.reps || currentEx.tiempo_ej) && (
-              <div style={S.statsRow}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
                 {currentEx.reps && (
                   <div style={S.statCard}>
                     <span style={S.statLabel}>Repeticiones</span>
@@ -298,33 +301,32 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
                 )}
               </div>
             )}
-          </div>
 
-          {/* Timer */}
-          <div style={S.timerArea}>
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg width="192" height="192" style={{ transform: 'rotate(-90deg)' }}>
-                <circle cx="96" cy="96" r="88" strokeWidth="8" stroke="var(--border-subtle)" fill="transparent" />
-                {hasTimer && (
-                  <circle cx="96" cy="96" r="88" strokeWidth="8" stroke="var(--accent-primary)" fill="transparent"
-                    strokeDasharray={circumference}
-                    strokeDashoffset={circumference * (1 - timeLeft / targetTime)}
-                    style={{ transition: 'stroke-dashoffset 1s linear' }}
-                  />
-                )}
-              </svg>
-              <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <TimerIcon size={20} color={hasTimer ? 'var(--accent-primary)' : 'var(--text-secondary)'} style={{ marginBottom: '0.25rem' }} />
-                <span style={{ fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '2.75rem', letterSpacing: '-0.04em' }}>
-                  {formatTime(hasTimer ? timeLeft : timeElapsed)}
-                </span>
+            {/* Timer a la derecha */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <svg width="140" height="140" style={{ transform: 'rotate(-90deg)' }}>
+                  <circle cx="70" cy="70" r="62" strokeWidth="6" stroke="var(--border-subtle)" fill="transparent" />
+                  {hasTimer && (
+                    <circle cx="70" cy="70" r="62" strokeWidth="6" stroke="var(--accent-primary)" fill="transparent"
+                      strokeDasharray={2 * Math.PI * 62}
+                      strokeDashoffset={(2 * Math.PI * 62) * (1 - timeLeft / targetTime)}
+                      style={{ transition: 'stroke-dashoffset 1s linear' }}
+                    />
+                  )}
+                </svg>
+                <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <TimerIcon size={14} color={hasTimer ? 'var(--accent-primary)' : 'var(--text-secondary)'} style={{ marginBottom: '0.1rem' }} />
+                  <span style={{ fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '1.75rem', letterSpacing: '-0.04em' }}>
+                    {formatTime(hasTimer ? timeLeft : timeElapsed)}
+                  </span>
+                </div>
               </div>
+              <button style={S.pauseBtn} onClick={() => setIsActive(!isActive)}>
+                {isActive ? <Pause size={14} /> : <Play size={14} />}
+                <span>{isActive ? 'Pausar' : 'Reanudar'}</span>
+              </button>
             </div>
-
-            <button style={S.pauseBtn} onClick={() => setIsActive(!isActive)}>
-              {isActive ? <Pause size={16} /> : <Play size={16} />}
-              <span>{isActive ? 'Pausar' : 'Reanudar'}</span>
-            </button>
           </div>
         </div>
       </div>
