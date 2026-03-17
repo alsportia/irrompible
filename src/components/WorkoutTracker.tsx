@@ -41,13 +41,13 @@ function parseTimeToSeconds(timeStr: string | null): number {
 
 const S = {
   screen:      { height: '100dvh', display: 'flex', flexDirection: 'column' as const, background: 'var(--bg-primary)', fontFamily: 'var(--font-geist-sans)', overflow: 'hidden' },
-  header:      { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0 },
+  header:      { display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0 },
   headerBtn:   { padding: '0.5rem', marginLeft: '-0.5rem', color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex' },
   headerCount: { fontSize: '0.875rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: 'var(--text-secondary)' },
   scrollArea:  { flex: 1, display: 'flex', flexDirection: 'column' as const, overflow: 'hidden' },
   videoBox:    { flex: 1, background: '#000', overflow: 'hidden', minHeight: 0 },
   infoArea:    { padding: '0.75rem 1rem', display: 'flex', flexDirection: 'column' as const, gap: '0.5rem', flexShrink: 0 },
-  badge:       { display: 'inline-flex', alignItems: 'center', gap: '0.5rem' },
+  badge:       { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
   blockBadge:  { background: 'rgba(59,130,246,0.2)', color: 'var(--accent-primary)', fontSize: '0.75rem', fontWeight: 700, padding: '0.2rem 0.5rem', borderRadius: '4px' },
   setBadge:    { fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 500 },
   exName:      { fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '1.5rem', lineHeight: 1.2, letterSpacing: '-0.02em' },
@@ -58,6 +58,40 @@ const S = {
   bottomBar:   { padding: '0.75rem 1rem', background: 'var(--bg-primary)', borderTop: '1px solid var(--border-subtle)', flexShrink: 0, paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' },
   btnRow:      { display: 'flex', gap: '0.75rem' },
 };
+
+// ─── Progress dots ────────────────────────────────────────────────────────────
+
+function ProgressDots({ total, current }: { total: number; current: number }) {
+  // Cap at 30 dots max to avoid overflow; use a thin bar instead if too many
+  if (total > 20) {
+    return (
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '3px' }}>
+        <div style={{ height: '4px', borderRadius: '2px', background: 'var(--border-subtle)', overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${((current) / total) * 100}%`, background: 'var(--accent-primary)', borderRadius: '2px', transition: 'width 0.4s ease' }} />
+        </div>
+        <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textAlign: 'right' }}>{current} / {total}</span>
+      </div>
+    );
+  }
+  return (
+    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '3px', overflow: 'hidden' }}>
+      {Array.from({ length: total }).map((_, i) => (
+        <div
+          key={i}
+          style={{
+            flex: 1,
+            height: '4px',
+            borderRadius: '2px',
+            background: i < current ? 'var(--accent-primary)' : 'var(--border-subtle)',
+            transition: 'background 0.3s ease',
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutTrackerProps) {
   const router = useRouter();
@@ -112,9 +146,13 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
       const timer = setTimeout(() => setCountdown(prev => prev - 1), 1000);
       return () => clearTimeout(timer);
     } else {
+      // countdown === 0: play beep, wait for circle animation to complete, then start
       playFinalBeep();
-      setIsCountingDown(false);
-      setIsActive(true);
+      const timer = setTimeout(() => {
+        setIsCountingDown(false);
+        setIsActive(true);
+      }, 1100);
+      return () => clearTimeout(timer);
     }
   }, [countdown, isCountingDown, isFinished]);
 
@@ -188,8 +226,8 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
           <button style={S.headerBtn} onClick={() => router.push(`/session/${sessionId}`)}>
             <X size={24} />
           </button>
-          <span style={S.headerCount}>{currentIndex + 1} / {exercises.length}</span>
-          <div style={{ width: '2.5rem' }} />
+          <ProgressDots total={exercises.length} current={currentIndex} />
+          <div style={{ width: '2rem' }} />
         </div>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', gap: '2rem' }}>
           <div style={{ textAlign: 'center' }}>
@@ -244,8 +282,8 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
         <button style={S.headerBtn} onClick={() => router.push(`/session/${sessionId}`)}>
           <X size={24} />
         </button>
-        <span style={S.headerCount}>{currentIndex + 1} / {exercises.length}</span>
-        <div style={{ width: '2.5rem' }} />
+        <ProgressDots total={exercises.length} current={currentIndex} />
+        <div style={{ width: '2rem' }} />
       </div>
 
       <div style={S.scrollArea}>
