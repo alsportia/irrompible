@@ -52,7 +52,7 @@ const S = {
   setBadge: { fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 500 },
   exName: { fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '1.5rem', lineHeight: 1.2, letterSpacing: '-0.02em' },
   statsRow: { display: 'flex', gap: '0.75rem' },
-  statCard: { flex: 1, background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-md)', padding: '0.5rem 0.625rem', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(12px)' },
+  statCard: { flex: 1, background: 'var(--bg-tertiary)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 'var(--radius-md)', padding: '0.5rem 0.625rem', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(12px)' },
   statLabel: { fontSize: '0.65rem', color: 'var(--text-secondary)', marginBottom: '0.1rem' },
   statValue: { fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '1.5rem' },
   timerArea: { display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center' },
