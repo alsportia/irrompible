@@ -20,17 +20,6 @@ interface ExerciseRow {
 function applyEnergy(exercises: ExerciseRow[], pct: number): ExerciseRow[] {
   if (pct >= 1) return exercises;
 
-  const blockExMap = new Map<string, ExerciseRow[]>();
-  exercises.forEach(e => {
-    if (!blockExMap.has(e.block)) blockExMap.set(e.block, []);
-    blockExMap.get(e.block)!.push(e);
-  });
-
-  const timedBlocks = new Set<string>();
-  blockExMap.forEach((exs, block) => {
-    if (exs.every(e => e.tiempo_ej && (!e.reps || e.reps === '0'))) timedBlocks.add(block);
-  });
-
   const maxSetPerBlock = new Map<string, number>();
   exercises.forEach(e => {
     maxSetPerBlock.set(e.block, Math.max(maxSetPerBlock.get(e.block) ?? 0, e.set_number));
@@ -38,16 +27,15 @@ function applyEnergy(exercises: ExerciseRow[], pct: number): ExerciseRow[] {
 
   return exercises
     .map(ex => {
-      if (timedBlocks.has(ex.block)) return ex;
       if (ex.reps && ex.reps !== '0') {
         const n = parseInt(ex.reps);
-        if (!isNaN(n)) return { ...ex, reps: String(Math.max(1, Math.round(n * pct))) };
+        if (!isNaN(n) && n > 1) return { ...ex, reps: String(Math.max(1, Math.round(n * pct))) };
       }
       return ex;
     })
     .filter(ex => {
-      if (!timedBlocks.has(ex.block)) return true;
       const maxSet = maxSetPerBlock.get(ex.block) ?? 1;
+      if (maxSet <= 1) return true;
       return ex.set_number <= Math.max(1, Math.round(maxSet * pct));
     });
 }
