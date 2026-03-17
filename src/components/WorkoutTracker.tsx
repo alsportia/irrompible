@@ -284,47 +284,47 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
 
           {/* Stats + Timer + Pausa en la misma fila */}
           <div style={{ display: 'flex', alignItems: 'stretch', gap: '0.75rem', flex: 1 }}>
-            {/* Stats a la izquierda */}
-            {(currentEx.reps || currentEx.tiempo_ej) && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
-                {currentEx.reps && (
-                  <div style={S.statCard}>
-                    <span style={S.statLabel}>Repeticiones</span>
-                    <span style={S.statValue}>{currentEx.reps}</span>
-                  </div>
-                )}
-                {currentEx.tiempo_ej && (
-                  <div style={{ ...S.statCard, borderColor: 'rgba(245,158,11,0.3)' }}>
-                    <span style={S.statLabel}>Objetivo</span>
-                    <span style={{ ...S.statValue, fontSize: '1.5rem' }}>{currentEx.tiempo_ej}</span>
-                  </div>
-                )}
+            {/* Repeticiones */}
+            {currentEx.reps && (
+              <div style={{ ...S.statCard, flex: 1 }}>
+                <span style={S.statLabel}>Reps</span>
+                <span style={S.statValue}>{currentEx.reps}</span>
               </div>
             )}
 
-            {/* Timer cuadrado + botón pausa */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <div style={{ ...S.statCard, flex: 1, minWidth: '110px', position: 'relative', overflow: 'hidden' }}>
-                {/* Barra de progreso de fondo si hay timer */}
-                {hasTimer && (
-                  <div style={{
-                    position: 'absolute', bottom: 0, left: 0,
-                    height: `${(timeLeft / targetTime) * 100}%`,
-                    width: '100%',
-                    background: 'rgba(59,130,246,0.1)',
-                    transition: 'height 1s linear'
-                  }} />
-                )}
-                <TimerIcon size={14} color={hasTimer ? 'var(--accent-primary)' : 'var(--text-secondary)'} style={{ marginBottom: '0.25rem', position: 'relative' }} />
-                <span style={{ fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '1.75rem', letterSpacing: '-0.04em', position: 'relative' }}>
+            {/* Objetivo */}
+            {currentEx.tiempo_ej && (
+              <div style={{ ...S.statCard, flex: 1, borderColor: 'rgba(245,158,11,0.3)' }}>
+                <span style={S.statLabel}>Objetivo</span>
+                <span style={{ ...S.statValue, fontSize: '1.5rem' }}>{currentEx.tiempo_ej}</span>
+              </div>
+            )}
+
+            {/* Timer cuadrado */}
+            <div style={{ ...S.statCard, flex: 1, position: 'relative', overflow: 'hidden', justifyContent: 'flex-end', padding: '0.625rem' }}>
+              {hasTimer && (
+                <div style={{
+                  position: 'absolute', bottom: 0, left: 0,
+                  height: `${(timeLeft / targetTime) * 100}%`,
+                  width: '100%',
+                  background: 'rgba(59,130,246,0.35)',
+                  transition: 'height 1s linear',
+                  borderRadius: 'var(--radius-md)',
+                }} />
+              )}
+              <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem' }}>
+                <TimerIcon size={14} color={hasTimer ? 'var(--accent-primary)' : 'var(--text-secondary)'} />
+                <span style={{ fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '1.5rem', letterSpacing: '-0.04em' }}>
                   {formatTime(hasTimer ? timeLeft : timeElapsed)}
                 </span>
               </div>
-              <button style={{ ...S.statCard, cursor: 'pointer', flexDirection: 'row', gap: '0.4rem', padding: '0.5rem 0.75rem' }} onClick={() => setIsActive(!isActive)}>
-                {isActive ? <Pause size={14} /> : <Play size={14} />}
-                <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>{isActive ? 'Pausar' : 'Reanudar'}</span>
-              </button>
             </div>
+
+            {/* Pausa */}
+            <button style={{ ...S.statCard, flex: 1, cursor: 'pointer', gap: '0.4rem' }} onClick={() => setIsActive(!isActive)}>
+              {isActive ? <Pause size={18} /> : <Play size={18} />}
+              <span style={{ fontSize: '0.75rem', fontWeight: 500 }}>{isActive ? 'Pausar' : 'Reanudar'}</span>
+            </button>
           </div>
         </div>
       </div>
