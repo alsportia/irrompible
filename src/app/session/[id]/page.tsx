@@ -20,6 +20,13 @@ interface ExerciseRow {
   reps: string | null;
   name: string;
   video_url: string | null;
+  description: string | null;
+  muscles: string | null;
+  joints: string | null;
+  easier_id: string | null;
+  easier_name: string | null;
+  harder_id: string | null;
+  harder_name: string | null;
 }
 
 export default async function SessionPage({ params }: { params: Promise<{ id: string }> }) {
@@ -35,9 +42,14 @@ export default async function SessionPage({ params }: { params: Promise<{ id: st
   }
 
   const exercisesRaw = await DB.query<ExerciseRow>(`
-    SELECT se.block, se.block_type, se.set_number, se.ex_id, se.ex_order, se.tiempo_ej, se.reps, e.name, e.video_url
+    SELECT se.block, se.block_type, se.set_number, se.ex_id, se.ex_order, se.tiempo_ej, se.reps,
+           e.name, e.video_url, e.description, e.muscles, e.joints,
+           e.easier_id, easy.name as easier_name,
+           e.harder_id, hard.name as harder_name
     FROM session_exercises se
     JOIN exercises e ON se.ex_id = e.ex_id
+    LEFT JOIN exercises easy ON e.easier_id = easy.ex_id
+    LEFT JOIN exercises hard ON e.harder_id = hard.ex_id
     WHERE se.session_id = ?
     ORDER BY se.block, se.ex_order, se.set_number
   `, [id]);

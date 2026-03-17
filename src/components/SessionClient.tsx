@@ -16,6 +16,13 @@ interface ExerciseRow {
   reps: string | null;
   name: string;
   video_url: string | null;
+  description: string | null;
+  muscles: string | null;
+  joints: string | null;
+  easier_id: string | null;
+  easier_name: string | null;
+  harder_id: string | null;
+  harder_name: string | null;
 }
 
 interface BlockGroup {
@@ -111,7 +118,7 @@ export default function SessionClient({ sessionId, sessionName, sessionDescripti
   const { user } = useUser();
   const [step, setStep] = useState<'energy' | 'summary'>('energy');
   const [selectedEnergy, setSelectedEnergy] = useState<EnergyLevel>(ENERGY_LEVELS[0]);
-  const [previewEx, setPreviewEx] = useState<{ name: string; videoUrl: string } | null>(null);
+  const [previewEx, setPreviewEx] = useState<ExerciseRow | null>(null);
 
   const adjustedExercises = applyEnergy(exercisesRaw, selectedEnergy.pct);
   const blocks = buildBlocks(adjustedExercises);
@@ -215,8 +222,8 @@ export default function SessionClient({ sessionId, sessionName, sessionDescripti
                         <div key={ex.ex_id + j} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', padding: '0.5rem', border: '1px solid var(--border-subtle)' }}>
                           {/* Thumbnail — clickable if video exists */}
                           <button
-                            onClick={() => embedUrl && setPreviewEx({ name: ex.name, videoUrl: embedUrl })}
-                            style={{ width: '3.25rem', height: '3.25rem', borderRadius: '6px', overflow: 'hidden', flexShrink: 0, background: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, border: 'none', cursor: embedUrl ? 'pointer' : 'default', position: 'relative' }}
+                            onClick={() => setPreviewEx(ex)}
+                            style={{ width: '3.25rem', height: '3.25rem', borderRadius: '6px', overflow: 'hidden', flexShrink: 0, background: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, border: 'none', cursor: 'pointer', position: 'relative' }}
                           >
                             {thumb
                               ? <img src={thumb} alt={ex.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -266,22 +273,100 @@ export default function SessionClient({ sessionId, sessionName, sessionDescripti
           onClick={() => setPreviewEx(null)}
           style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(0,0,0,0.85)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '1.25rem' }}
         >
-          <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: '28rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: '28rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--border-subtle)', maxHeight: '90dvh', display: 'flex', flexDirection: 'column' }}>
             {/* Modal header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.875rem 1rem', borderBottom: '1px solid var(--border-subtle)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.875rem 1rem', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0 }}>
               <span style={{ fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '1rem' }}>{previewEx.name}</span>
               <button onClick={() => setPreviewEx(null)} style={{ color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', padding: '0.25rem' }}>
                 <X size={20} />
               </button>
             </div>
-            {/* Video — aspect ratio 9:16 for Shorts */}
-            <div style={{ position: 'relative', width: '100%', paddingBottom: '177.78%' }}>
-              <iframe
-                src={previewEx.videoUrl}
-                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
-                allow="autoplay; encrypted-media"
-                allowFullScreen
-              />
+
+            {/* Scrollable content */}
+            <div style={{ overflowY: 'auto', flex: 1 }}>
+              {/* Video — aspect ratio 9:16 for Shorts */}
+              {getYtEmbed(previewEx.video_url) && (
+                <div style={{ position: 'relative', width: '100%', paddingBottom: '177.78%' }}>
+                  <iframe
+                    src={getYtEmbed(previewEx.video_url)!}
+                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
+                    allow="autoplay; encrypted-media"
+                    allowFullScreen
+                  />
+                </div>
+              )}
+
+              {/* Extra info */}
+              <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+
+                {/* Description */}
+                {previewEx.description && (
+                  <div>
+                    <p style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--accent-primary)', marginBottom: '0.375rem' }}>Descripción</p>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                      {previewEx.description.replace(/\*\*/g, '')}
+                    </p>
+                  </div>
+                )}
+
+                {/* Muscles & Joints */}
+                {(previewEx.muscles || previewEx.joints) && (
+                  <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    {previewEx.muscles && (() => {
+                      try {
+                        const list: string[] = JSON.parse(previewEx.muscles);
+                        return (
+                          <div style={{ flex: 1 }}>
+                            <p style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--accent-primary)', marginBottom: '0.375rem' }}>Músculos</p>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+                              {list.map((m, i) => (
+                                <span key={i} style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-subtle)', borderRadius: '999px', padding: '0.15rem 0.5rem', color: 'var(--text-secondary)' }}>{m}</span>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      } catch { return null; }
+                    })()}
+                    {previewEx.joints && (() => {
+                      try {
+                        const list: string[] = JSON.parse(previewEx.joints);
+                        return (
+                          <div style={{ flex: 1 }}>
+                            <p style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--accent-primary)', marginBottom: '0.375rem' }}>Articulaciones</p>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+                              {list.map((j, i) => (
+                                <span key={i} style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-subtle)', borderRadius: '999px', padding: '0.15rem 0.5rem', color: 'var(--text-secondary)' }}>{j}</span>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      } catch { return null; }
+                    })()}
+                  </div>
+                )}
+
+                {/* Easier / Harder */}
+                {(previewEx.easier_id || previewEx.harder_id) && (
+                  <div>
+                    <p style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--accent-primary)', marginBottom: '0.375rem' }}>Progresión</p>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      {previewEx.easier_id && previewEx.easier_name && (
+                        <div style={{ flex: 1, background: 'var(--bg-tertiary)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', padding: '0.5rem 0.625rem' }}>
+                          <p style={{ fontSize: '0.6rem', color: '#10b981', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.2rem' }}>↓ Más fácil</p>
+                          <p style={{ fontSize: '0.75rem', color: 'var(--text-primary)', fontWeight: 600 }}>{previewEx.easier_name}</p>
+                        </div>
+                      )}
+                      {previewEx.harder_id && previewEx.harder_name && (
+                        <div style={{ flex: 1, background: 'var(--bg-tertiary)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', padding: '0.5rem 0.625rem' }}>
+                          <p style={{ fontSize: '0.6rem', color: '#f59e0b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.2rem' }}>↑ Más difícil</p>
+                          <p style={{ fontSize: '0.75rem', color: 'var(--text-primary)', fontWeight: 600 }}>{previewEx.harder_name}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+              </div>
             </div>
           </div>
         </div>
