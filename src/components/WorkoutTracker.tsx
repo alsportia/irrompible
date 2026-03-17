@@ -178,6 +178,11 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
 
   const circumference = 2 * Math.PI * 88;
 
+  // Pre-calcular URLs únicas de video para pre-renderizar iframes
+  const uniqueVideoUrls = Array.from(
+    new Map(exercises.filter(e => e.video_url).map(e => [e.video_url, { url: e.video_url, name: e.name }])).values()
+  );
+
   // Countdown screen
   if (isCountingDown && !isFinished) {
     const cdCircumference = 2 * Math.PI * 120;
@@ -253,9 +258,19 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
 
       {/* Scrollable content */}
       <div style={S.scrollArea}>
-        {/* Video */}
+        {/* Videos - todos pre-renderizados, solo se muestra el activo */}
         <div style={S.videoBox}>
-          <CachedVideo videoUrl={currentEx?.video_url} exerciseName={currentEx?.name} />
+          {uniqueVideoUrls.map(({ url, name }) => (
+            <div key={url ?? name} style={{ width: '100%', height: '100%', display: currentEx?.video_url === url && !isCountingDown ? 'block' : 'none' }}>
+              <CachedVideo videoUrl={url} exerciseName={name} />
+            </div>
+          ))}
+          {/* Placeholder durante cuenta atrás o si no hay video */}
+          {(isCountingDown || !currentEx?.video_url) && (
+            <div style={{ width: '100%', height: '100%', display: isCountingDown || !currentEx?.video_url ? 'block' : 'none' }}>
+              <CachedVideo videoUrl={null} exerciseName={currentEx?.name} />
+            </div>
+          )}
         </div>
 
         {/* Info */}
