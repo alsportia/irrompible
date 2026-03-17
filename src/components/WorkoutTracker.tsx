@@ -45,17 +45,17 @@ const S = {
   headerBtn: { padding: '0.5rem', marginLeft: '-0.5rem', color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex' },
   headerCount: { fontSize: '0.875rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: 'var(--text-secondary)' },
   scrollArea: { flex: 1, display: 'flex', flexDirection: 'column' as const, overflow: 'hidden' },
-  videoBox: { width: '100%', maxHeight: '30vh', aspectRatio: '16/9', background: '#000', flexShrink: 0 },
-  infoArea: { padding: '0.875rem 1rem', flex: 1, display: 'flex', flexDirection: 'column' as const, gap: '0.5rem', overflow: 'hidden' },
+  videoBox: { flex: 1, background: '#000', overflow: 'hidden', minHeight: 0 },
+  infoArea: { padding: '0.75rem 1rem', display: 'flex', flexDirection: 'column' as const, gap: '0.5rem', flexShrink: 0 },
   badge: { display: 'inline-flex', alignItems: 'center', gap: '0.5rem' },
   blockBadge: { background: 'rgba(59,130,246,0.2)', color: 'var(--accent-primary)', fontSize: '0.75rem', fontWeight: 700, padding: '0.2rem 0.5rem', borderRadius: '4px' },
   setBadge: { fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 500 },
   exName: { fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '1.5rem', lineHeight: 1.2, letterSpacing: '-0.02em' },
   statsRow: { display: 'flex', gap: '0.75rem' },
-  statCard: { flex: 1, background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-md)', padding: '0.625rem', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(12px)' },
-  statLabel: { fontSize: '0.7rem', color: 'var(--text-secondary)', marginBottom: '0.15rem' },
+  statCard: { flex: 1, background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-md)', padding: '0.5rem 0.625rem', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(12px)' },
+  statLabel: { fontSize: '0.65rem', color: 'var(--text-secondary)', marginBottom: '0.1rem' },
   statValue: { fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '1.5rem' },
-  timerArea: { display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', flex: 1 },
+  timerArea: { display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center' },
   pauseBtn: { marginTop: '0.5rem', padding: '0.4rem 1.25rem', borderRadius: '9999px', border: '1px solid var(--border-subtle)', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 500 },
   bottomBar: { padding: '0.75rem 1rem', background: 'var(--bg-primary)', borderTop: '1px solid var(--border-subtle)', flexShrink: 0, paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' },
   btnRow: { display: 'flex', gap: '0.75rem' },
@@ -264,7 +264,6 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
               <CachedVideo videoUrl={url} exerciseName={name} />
             </div>
           ))}
-          {/* Placeholder durante cuenta atrás o si no hay video */}
           {(isCountingDown || !currentEx?.video_url) && (
             <div style={{ width: '100%', height: '100%', display: isCountingDown || !currentEx?.video_url ? 'block' : 'none' }}>
               <CachedVideo videoUrl={null} exerciseName={currentEx?.name} />
@@ -283,7 +282,7 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
           </div>
 
           {/* Stats + Timer + Pausa en la misma fila */}
-          <div style={{ display: 'flex', alignItems: 'stretch', gap: '0.75rem', flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'stretch', gap: '0.75rem' }}>
             {/* Repeticiones */}
             {currentEx.reps && (
               <div style={{ ...S.statCard, flex: 1 }}>

@@ -78,7 +78,7 @@ export default function CachedVideo({ videoUrl, exerciseName }: CachedVideoProps
 
   if (!videoUrl || !embedUrl || failed) {
     return (
-      <div style={placeholder.wrapper}>
+      <div style={{ ...placeholder.wrapper, height: '100%' }}>
         <div style={placeholder.iconBox}>
           <Dumbbell size={28} color="var(--accent-primary)" />
         </div>
