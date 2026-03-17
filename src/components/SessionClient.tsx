@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Play, Check } from "lucide-react";
+import { ChevronLeft, Play, Check, X } from "lucide-react";
 
 interface ExerciseRow {
   block: string;
@@ -42,25 +42,42 @@ const ENERGY_LEVELS = [
 
 type EnergyLevel = typeof ENERGY_LEVELS[number];
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function getYtId(url: string | null): string | null {
+  if (!url) return null;
+  const shorts = url.match(/youtube\.com\/shorts\/([a-zA-Z0-9_-]+)/);
+  if (shorts) return shorts[1];
+  const watch = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
+  if (watch) return watch[1];
+  return null;
+}
+
+function getYtThumbnail(url: string | null): string | null {
+  const id = getYtId(url);
+  return id ? `https://img.youtube.com/vi/${id}/mqdefault.jpg` : null;
+}
+
+function getYtEmbed(url: string | null): string | null {
+  const id = getYtId(url);
+  return id ? `https://www.youtube.com/embed/${id}?autoplay=1&rel=0` : null;
+}
+
 function applyEnergy(exercises: ExerciseRow[], pct: number): ExerciseRow[] {
   if (pct === 1) return exercises;
-
   const blockExMap = new Map<string, ExerciseRow[]>();
   exercises.forEach(e => {
     if (!blockExMap.has(e.block)) blockExMap.set(e.block, []);
     blockExMap.get(e.block)!.push(e);
   });
-
   const timedBlocks = new Set<string>();
   blockExMap.forEach((exs, block) => {
     if (exs.every(e => e.tiempo_ej && (!e.reps || e.reps === '0'))) timedBlocks.add(block);
   });
-
   const maxSetPerBlock = new Map<string, number>();
   exercises.forEach(e => {
     maxSetPerBlock.set(e.block, Math.max(maxSetPerBlock.get(e.block) ?? 0, e.set_number));
   });
-
   return exercises
     .map(ex => {
       if (timedBlocks.has(ex.block)) return ex;
@@ -75,16 +92,6 @@ function applyEnergy(exercises: ExerciseRow[], pct: number): ExerciseRow[] {
       const maxSet = maxSetPerBlock.get(ex.block) ?? 1;
       return ex.set_number <= Math.max(1, Math.round(maxSet * pct));
     });
-}
-
-// Extract YouTube video ID from shorts or regular URLs
-function getYtThumbnail(url: string | null): string | null {
-  if (!url) return null;
-  const shortsMatch = url.match(/youtube\.com\/shorts\/([a-zA-Z0-9_-]+)/);
-  if (shortsMatch) return `https://img.youtube.com/vi/${shortsMatch[1]}/mqdefault.jpg`;
-  const watchMatch = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
-  if (watchMatch) return `https://img.youtube.com/vi/${watchMatch[1]}/mqdefault.jpg`;
-  return null;
 }
 
 function buildBlocks(exercises: ExerciseRow[]): BlockGroup[] {
@@ -107,6 +114,7 @@ export default function SessionClient({ sessionId, sessionName, sessionDescripti
   const router = useRouter();
   const [step, setStep] = useState<'energy' | 'summary'>('energy');
   const [selectedEnergy, setSelectedEnergy] = useState<EnergyLevel>(ENERGY_LEVELS[0]);
+  const [previewEx, setPreviewEx] = useState<{ name: string; videoUrl: string } | null>(null);
 
   const adjustedExercises = applyEnergy(exercisesRaw, selectedEnergy.pct);
   const blocks = buildBlocks(adjustedExercises);
@@ -115,12 +123,8 @@ export default function SessionClient({ sessionId, sessionName, sessionDescripti
   if (step === 'energy') {
     return (
       <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg-primary)', overflow: 'hidden' }} className="animate-fade-in">
-        {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem 1rem', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0 }}>
-          <button
-            onClick={() => router.push('/')}
-            style={{ padding: '0.5rem', color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', marginLeft: '-0.25rem' }}
-          >
+          <button onClick={() => router.push('/')} style={{ padding: '0.5rem', color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', marginLeft: '-0.25rem' }}>
             <ChevronLeft size={24} />
           </button>
           <div>
@@ -129,45 +133,22 @@ export default function SessionClient({ sessionId, sessionName, sessionDescripti
           </div>
         </div>
 
-        {/* Levels */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '1.25rem', gap: '0.875rem', overflowY: 'auto' }}>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', textAlign: 'center', marginBottom: '0.25rem' }}>
             Selecciona tu nivel de energía para adaptar el entrenamiento
           </p>
-
           {ENERGY_LEVELS.map(level => {
             const isSelected = selectedEnergy.label === level.label;
             return (
-              <button
-                key={level.label}
-                onClick={() => setSelectedEnergy(level)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '1rem',
-                  padding: '1rem 1.25rem',
-                  borderRadius: 'var(--radius-md)',
-                  border: `2px solid ${isSelected ? level.color : 'var(--border-subtle)'}`,
-                  background: isSelected ? `${level.color}18` : 'var(--bg-secondary)',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  textAlign: 'left' as const,
-                  width: '100%',
-                }}
-              >
+              <button key={level.label} onClick={() => setSelectedEnergy(level)} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem 1.25rem', borderRadius: 'var(--radius-md)', border: `2px solid ${isSelected ? level.color : 'var(--border-subtle)'}`, background: isSelected ? `${level.color}18` : 'var(--bg-secondary)', cursor: 'pointer', transition: 'all 0.15s ease', textAlign: 'left' as const, width: '100%' }}>
                 <span style={{ fontSize: '1.75rem', lineHeight: 1 }}>{level.emoji}</span>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '1.1rem', color: isSelected ? level.color : 'var(--text-primary)' }}>
-                    {level.label}
-                  </div>
+                  <div style={{ fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '1.1rem', color: isSelected ? level.color : 'var(--text-primary)' }}>{level.label}</div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.1rem' }}>
                     {level.pct === 1 ? 'Entrenamiento completo' : `${Math.round(level.pct * 100)}% de repeticiones / sets`}
                   </div>
                 </div>
-                <div style={{
-                  width: '1.5rem', height: '1.5rem', borderRadius: '50%',
-                  border: `2px solid ${isSelected ? level.color : 'var(--border-subtle)'}`,
-                  background: isSelected ? level.color : 'transparent',
-                  flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
+                <div style={{ width: '1.5rem', height: '1.5rem', borderRadius: '50%', border: `2px solid ${isSelected ? level.color : 'var(--border-subtle)'}`, background: isSelected ? level.color : 'transparent', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {isSelected && <Check size={12} color="#fff" strokeWidth={3} />}
                 </div>
               </button>
@@ -175,13 +156,8 @@ export default function SessionClient({ sessionId, sessionName, sessionDescripti
           })}
         </div>
 
-        {/* CTA */}
         <div style={{ padding: '1rem 1.25rem', background: 'var(--bg-primary)', borderTop: '1px solid var(--border-subtle)', paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
-          <button
-            className="btn-primary glow"
-            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '1rem' }}
-            onClick={() => setStep('summary')}
-          >
+          <button className="btn-primary glow" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '1rem' }} onClick={() => setStep('summary')}>
             <span>Ver resumen del entrenamiento</span>
           </button>
         </div>
@@ -195,10 +171,7 @@ export default function SessionClient({ sessionId, sessionName, sessionDescripti
       <main style={{ minHeight: '100dvh', padding: '0 0 8rem', maxWidth: '28rem', margin: '0 auto', position: 'relative' }} className="animate-fade-in">
         {/* Header */}
         <header style={{ padding: '1.25rem 1.25rem 1rem', display: 'flex', alignItems: 'center', gap: '1rem', position: 'sticky', top: 0, zIndex: 20, background: 'var(--bg-primary)', borderBottom: '1px solid var(--border-subtle)' }}>
-          <button
-            onClick={() => setStep('energy')}
-            style={{ width: '2.25rem', height: '2.25rem', borderRadius: '50%', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
-          >
+          <button onClick={() => setStep('energy')} style={{ width: '2.25rem', height: '2.25rem', borderRadius: '50%', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
             <ChevronLeft size={20} />
           </button>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -226,15 +199,11 @@ export default function SessionClient({ sessionId, sessionName, sessionDescripti
               const blockLabel = (b.block_type || 'Bloque').replace(/_/g, ' ');
               return (
                 <div key={i}>
-                  {/* Block header */}
+                  {/* Block divider */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '0.5rem' }}>
                     <div style={{ height: '1px', flex: 1, background: 'var(--border-subtle)' }} />
-                    <span style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--accent-primary)' }}>
-                      {blockLabel}
-                    </span>
-                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-subtle)', borderRadius: '999px', padding: '0.1rem 0.5rem' }}>
-                      ×{b.totalSets}
-                    </span>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--accent-primary)' }}>{blockLabel}</span>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-subtle)', borderRadius: '999px', padding: '0.1rem 0.5rem' }}>×{b.totalSets}</span>
                     <div style={{ height: '1px', flex: 1, background: 'var(--border-subtle)' }} />
                   </div>
 
@@ -242,17 +211,29 @@ export default function SessionClient({ sessionId, sessionName, sessionDescripti
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     {b.exercises.map((ex, j) => {
                       const thumb = getYtThumbnail(ex.video_url);
+                      const embedUrl = getYtEmbed(ex.video_url);
                       const hasReps = ex.reps && ex.reps !== '0';
                       const hasTiempo = ex.tiempo_ej && ex.tiempo_ej !== '0';
                       return (
                         <div key={ex.ex_id + j} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', padding: '0.5rem', border: '1px solid var(--border-subtle)' }}>
-                          {/* Thumbnail */}
-                          <div style={{ width: '3.25rem', height: '3.25rem', borderRadius: '6px', overflow: 'hidden', flexShrink: 0, background: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {/* Thumbnail — clickable if video exists */}
+                          <button
+                            onClick={() => embedUrl && setPreviewEx({ name: ex.name, videoUrl: embedUrl })}
+                            style={{ width: '3.25rem', height: '3.25rem', borderRadius: '6px', overflow: 'hidden', flexShrink: 0, background: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, border: 'none', cursor: embedUrl ? 'pointer' : 'default', position: 'relative' }}
+                          >
                             {thumb
                               ? <img src={thumb} alt={ex.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                               : <span style={{ fontSize: '1.25rem' }}>💪</span>
                             }
-                          </div>
+                            {/* Play overlay */}
+                            {embedUrl && (
+                              <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <div style={{ width: '1.25rem', height: '1.25rem', borderRadius: '50%', background: 'rgba(255,255,255,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <Play size={8} fill="#000" color="#000" style={{ marginLeft: '1px' }} />
+                                </div>
+                              </div>
+                            )}
+                          </button>
                           {/* Info */}
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontSize: '0.875rem', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ex.name}</div>
@@ -276,15 +257,38 @@ export default function SessionClient({ sessionId, sessionName, sessionDescripti
 
       {/* Fixed start button */}
       <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, padding: '1.5rem', maxWidth: '28rem', margin: '0 auto', zIndex: 9999, background: 'linear-gradient(to top, #0a0a0c 70%, transparent)', paddingTop: '3rem' }}>
-        <Link
-          href={`/workflow/${sessionId}?energy=${selectedEnergy.pct}`}
-          className="btn-primary glow"
-          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '1rem' }}
-        >
+        <Link href={`/workflow/${sessionId}?energy=${selectedEnergy.pct}`} className="btn-primary glow" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '1rem' }}>
           <Play fill="currentColor" size={20} />
           <span>Iniciar Entrenamiento</span>
         </Link>
       </div>
+
+      {/* Video preview modal */}
+      {previewEx && (
+        <div
+          onClick={() => setPreviewEx(null)}
+          style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(0,0,0,0.85)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '1.25rem' }}
+        >
+          <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: '28rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
+            {/* Modal header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.875rem 1rem', borderBottom: '1px solid var(--border-subtle)' }}>
+              <span style={{ fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '1rem' }}>{previewEx.name}</span>
+              <button onClick={() => setPreviewEx(null)} style={{ color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', padding: '0.25rem' }}>
+                <X size={20} />
+              </button>
+            </div>
+            {/* Video — aspect ratio 9:16 for Shorts */}
+            <div style={{ position: 'relative', width: '100%', paddingBottom: '177.78%' }}>
+              <iframe
+                src={previewEx.videoUrl}
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
+                allow="autoplay; encrypted-media"
+                allowFullScreen
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
