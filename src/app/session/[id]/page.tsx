@@ -99,30 +99,32 @@ export default async function SessionPage({ params }: { params: Promise<{ id: st
 
         <section className="relative z-10 flex flex-col gap-4">
           {blocks.map((b, i) => (
-            <div key={i} className="bg-bg-secondary rounded-xl overflow-hidden">
+            <div key={i} style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
               {/* Block header */}
-              <div className="flex items-center gap-3 px-4 py-3 bg-bg-tertiary">
-                <span className="w-7 h-7 rounded-md bg-accent-primary/20 text-accent-primary flex items-center justify-center font-bold text-sm shrink-0">
+              <div style={{ background: 'var(--bg-tertiary)', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <span style={{ width: '1.75rem', height: '1.75rem', borderRadius: '6px', background: 'rgba(59,130,246,0.2)', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.875rem', flexShrink: 0 }}>
                   {b.block}
                 </span>
-                <span className="font-semibold text-sm">{b.block_type || "Bloque de Ejercicios"}</span>
+                <span style={{ fontWeight: 600, fontSize: '0.875rem', textTransform: 'capitalize' }}>
+                  {(b.block_type || 'Bloque').replace(/_/g, ' ')}
+                </span>
               </div>
 
-              {/* Exercises as table rows */}
-              <div className="px-4 py-2">
+              {/* Table */}
+              <div style={{ padding: '0 1rem' }}>
                 {/* Column headers */}
-                <div className="grid grid-cols-[1fr_auto_auto] gap-4 py-2 text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 56px 56px', padding: '0.5rem 0', borderBottom: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   <span>Ejercicio</span>
-                  <span className="text-right">Reps</span>
-                  <span className="text-right">Tiempo</span>
+                  <span style={{ textAlign: 'center' }}>Reps</span>
+                  <span style={{ textAlign: 'center' }}>Tiempo</span>
                 </div>
 
                 {/* Exercise rows */}
                 {b.exercises.map((ex, j) => (
-                  <div key={ex.ex_id + j} className="grid grid-cols-[1fr_auto_auto] gap-4 py-2.5 border-t border-border-subtle/50">
-                    <span className="text-sm font-medium">{ex.name}</span>
-                    <span className="text-sm text-text-secondary text-right">{ex.reps || "—"}</span>
-                    <span className="text-sm text-text-secondary text-right">{ex.tiempo_ej || "—"}</span>
+                  <div key={ex.ex_id + j} style={{ display: 'grid', gridTemplateColumns: '1fr 56px 56px', padding: '0.625rem 0', borderBottom: j < b.exercises.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.875rem', fontWeight: 500, paddingRight: '0.5rem' }}>{ex.name}</span>
+                    <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', textAlign: 'center' }}>{ex.reps ?? '—'}</span>
+                    <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', textAlign: 'center' }}>{ex.tiempo_ej ?? '—'}</span>
                   </div>
                 ))}
               </div>

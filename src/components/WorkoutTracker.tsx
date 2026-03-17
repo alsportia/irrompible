@@ -25,89 +25,82 @@ interface WorkoutTrackerProps {
   exercises: ExerciseRow[];
 }
 
-// Helper to parse time string like "40''" or "1'" to seconds.
 function parseTimeToSeconds(timeStr: string | null): number {
   if (!timeStr) return 0;
-  let seconds = 0;
   const clean = timeStr.trim();
   if (clean.includes("'") && !clean.includes("''")) {
-    // 1' -> 1 minute = 60s
     const val = parseInt(clean.replace("'", ""));
-    if (!isNaN(val)) seconds = val * 60;
+    return isNaN(val) ? 0 : val * 60;
   } else if (clean.includes("''")) {
     const val = parseInt(clean.replace("''", ""));
-    if (!isNaN(val)) seconds = val;
-  } else {
-    // try to parse raw int just in case
-    const val = parseInt(clean);
-    if (!isNaN(val)) seconds = val;
+    return isNaN(val) ? 0 : val;
   }
-  return seconds;
+  const val = parseInt(clean);
+  return isNaN(val) ? 0 : val;
 }
+
+const S = {
+  screen: { minHeight: '100vh', display: 'flex', flexDirection: 'column' as const, background: 'var(--bg-primary)', fontFamily: 'var(--font-geist-sans)' },
+  header: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0 },
+  headerBtn: { padding: '0.5rem', marginLeft: '-0.5rem', color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex' },
+  headerCount: { fontSize: '0.875rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: 'var(--text-secondary)' },
+  scrollArea: { flex: 1, overflowY: 'auto' as const, display: 'flex', flexDirection: 'column' as const },
+  videoBox: { width: '100%', aspectRatio: '16/9', background: '#000', flexShrink: 0 },
+  infoArea: { padding: '1.5rem', flex: 1, display: 'flex', flexDirection: 'column' as const, gap: '1rem' },
+  badge: { display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' },
+  blockBadge: { background: 'rgba(59,130,246,0.2)', color: 'var(--accent-primary)', fontSize: '0.75rem', fontWeight: 700, padding: '0.2rem 0.5rem', borderRadius: '4px' },
+  setBadge: { fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 500 },
+  exName: { fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '1.75rem', lineHeight: 1.2, letterSpacing: '-0.02em' },
+  statsRow: { display: 'flex', gap: '1rem', marginTop: '0.5rem' },
+  statCard: { flex: 1, background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-md)', padding: '1rem', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', backdropFilter: 'blur(12px)' },
+  statLabel: { fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' },
+  statValue: { fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '1.75rem' },
+  timerArea: { display: 'flex', flexDirection: 'column' as const, alignItems: 'center', padding: '1.5rem 0' },
+  timerTime: { fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '3rem', letterSpacing: '-0.04em', tabularNums: true },
+  pauseBtn: { marginTop: '1rem', padding: '0.5rem 1.5rem', borderRadius: '9999px', border: '1px solid var(--border-subtle)', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', fontWeight: 500 },
+  bottomBar: { padding: '1rem', background: 'var(--bg-primary)', borderTop: '1px solid var(--border-subtle)', flexShrink: 0, paddingBottom: '2.5rem' },
+  btnRow: { display: 'flex', gap: '0.75rem' },
+};
 
 export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutTrackerProps) {
   const router = useRouter();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [timeElapsed, setTimeElapsed] = useState(0); // for stopwatch
-  const [timeLeft, setTimeLeft] = useState(0);       // for countdown
+  const [timeElapsed, setTimeElapsed] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(0);
   const [isActive, setIsActive] = useState(false);
-  const [countdown, setCountdown] = useState(5);     // countdown before exercise starts
+  const [countdown, setCountdown] = useState(5);
   const [isCountingDown, setIsCountingDown] = useState(true);
-  
+
   const { playCountdownBeep, playWarningBeep, playFinalBeep } = useBeep();
-  
-  // To track total session time
   const startTime = useRef<number>(Date.now());
-  
-  // Wake Lock to prevent screen from sleeping
   const wakeLockRef = useRef<any>(null);
 
-  // Request wake lock when component mounts
   useEffect(() => {
     const requestWakeLock = async () => {
       try {
         if ('wakeLock' in navigator) {
           wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
-          console.log('Wake Lock activated');
         }
-      } catch (err) {
-        console.error('Wake Lock error:', err);
-      }
+      } catch (err) {}
     };
-
     requestWakeLock();
-
-    // Re-request wake lock when page becomes visible again
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && wakeLockRef.current === null) {
-        requestWakeLock();
-      }
+      if (document.visibilityState === 'visible' && !wakeLockRef.current) requestWakeLock();
     };
-
     document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    // Release wake lock when component unmounts
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      if (wakeLockRef.current !== null) {
-        wakeLockRef.current.release().then(() => {
-          console.log('Wake Lock released');
-          wakeLockRef.current = null;
-        });
-      }
+      wakeLockRef.current?.release().then(() => { wakeLockRef.current = null; });
     };
   }, []);
-  
+
   const currentEx = exercises[currentIndex];
   const isFinished = currentIndex >= exercises.length;
-
   const targetTime = currentEx ? parseTimeToSeconds(currentEx.tiempo_ej) : 0;
   const hasTimer = targetTime > 0;
 
   useEffect(() => {
     if (isFinished) return;
-    
-    // Reset timers and start countdown when exercise changes
     setTimeElapsed(0);
     setTimeLeft(targetTime);
     setIsActive(false);
@@ -115,81 +108,54 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
     setIsCountingDown(true);
   }, [currentIndex, isFinished, targetTime]);
 
-  // Countdown before exercise starts
   useEffect(() => {
     if (!isCountingDown || isFinished) return;
-
     if (countdown > 0) {
       playCountdownBeep();
-      const timer = setTimeout(() => {
-        setCountdown(prev => prev - 1);
-      }, 1000);
+      const timer = setTimeout(() => setCountdown(prev => prev - 1), 1000);
       return () => clearTimeout(timer);
     } else {
-      // Countdown finished, start exercise
       playFinalBeep();
       setIsCountingDown(false);
       setIsActive(true);
     }
-  }, [countdown, isCountingDown, isFinished, playCountdownBeep, playFinalBeep]);
+  }, [countdown, isCountingDown, isFinished]);
 
-  useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
-    
-    if (isActive && !isFinished && !isCountingDown) {
-      interval = setInterval(() => {
-        if (hasTimer) {
-          setTimeLeft((prev) => {
-            // Play warning beeps when 5 seconds or less remain
-            if (prev <= 5 && prev > 1) {
-              playWarningBeep();
-            }
-            
-            if (prev <= 1) {
-              playFinalBeep();
-              handleNext(true); // auto-advance when timer rings
-              return 0;
-            }
-            return prev - 1;
-          });
-        } else {
-          setTimeElapsed((prev) => prev + 1);
-        }
-      }, 1000);
-    }
-    
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isActive, isFinished, isCountingDown, hasTimer, currentEx, playWarningBeep, playFinalBeep]);
-
-  // Need a ref for handleNext so it can be called from setInterval without staleness issues
   const currentExRef = useRef(currentEx);
   const timeElapsedRef = useRef(timeElapsed);
   const currentIndexRef = useRef(currentIndex);
-  
   useEffect(() => {
     currentExRef.current = currentEx;
     timeElapsedRef.current = timeElapsed;
     currentIndexRef.current = currentIndex;
   }, [currentEx, timeElapsed, currentIndex]);
 
+  useEffect(() => {
+    if (!isActive || isFinished || isCountingDown) return;
+    const interval = setInterval(() => {
+      if (hasTimer) {
+        setTimeLeft(prev => {
+          if (prev <= 5 && prev > 1) playWarningBeep();
+          if (prev <= 1) { playFinalBeep(); handleNext(true); return 0; }
+          return prev - 1;
+        });
+      } else {
+        setTimeElapsed(prev => prev + 1);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isActive, isFinished, isCountingDown, hasTimer, currentEx]);
+
   const handleNext = async (autoAdvance = false) => {
     const ex = currentExRef.current;
     if (!ex) return;
-    
-    // Temporarily pause timer to avoid double triggers
     setIsActive(false);
-
-    // Assuming we didn't track weight in this simple MVP UI yet, can add later
     const timeToSave = hasTimer ? targetTime : timeElapsedRef.current;
     await saveWorkoutSet(logId, ex.ex_id, null, null, timeToSave);
-
     if (currentIndexRef.current + 1 >= exercises.length) {
-      // Session finished
       const totalDuration = Math.floor((Date.now() - startTime.current) / 1000);
       await finishWorkoutLog(logId, totalDuration);
-      setCurrentIndex(currentIndexRef.current + 1); // trigger finish screen
+      setCurrentIndex(currentIndexRef.current + 1);
     } else {
       setCurrentIndex(prev => prev + 1);
     }
@@ -204,186 +170,161 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
     }
   };
 
-  // Show countdown screen
-  if (isCountingDown && !isFinished) {
-    return (
-      <div className="min-h-screen flex flex-col bg-bg-primary font-sans animate-fade-in">
-        {/* Top Header/Progress */}
-        <div className="flex items-center justify-between p-4 bg-bg-secondary border-b border-border-subtle shrink-0">
-          <button onClick={() => router.push(`/session/${sessionId}`)} className="p-2 -ml-2 text-text-secondary hover:text-white transition">
-            <X size={24} />
-          </button>
-          <div className="text-sm font-semibold tracking-wider uppercase text-text-secondary">
-            {currentIndex + 1} / {exercises.length}
-          </div>
-          <div className="w-10" /> {/* Spacer */}
-        </div>
-
-        {/* Countdown Display */}
-        <div className="flex-1 flex flex-col items-center justify-center p-6">
-          <div className="mb-8 text-center">
-            <div className="flex items-center gap-2 mb-4 justify-center">
-              <span className="bg-accent-primary/20 text-accent-primary text-xs font-bold px-2 py-1 rounded">
-                Bloque {currentEx.block}
-              </span>
-              <span className="text-xs text-text-secondary font-medium">Set {currentEx.set_number}</span>
-            </div>
-            <h2 className="heading-display text-2xl mb-2 leading-tight">{currentEx.name}</h2>
-            <p className="text-text-secondary text-sm">Prepárate...</p>
-          </div>
-
-          <div className="relative flex items-center justify-center mb-8">
-            <svg className="w-64 h-64 transform -rotate-90">
-              <circle cx="128" cy="128" r="120" strokeWidth="8" stroke="currentColor" fill="transparent" className="text-border-subtle" />
-              <circle cx="128" cy="128" r="120" strokeWidth="8" stroke="currentColor" fill="transparent" 
-                className="text-accent-primary transition-all duration-1000 ease-linear"
-                strokeDasharray={2 * Math.PI * 120}
-                strokeDashoffset={(2 * Math.PI * 120) * (countdown / 5)}
-              />
-            </svg>
-            <div className="absolute flex flex-col items-center">
-              <span className="heading-display text-8xl tabular-nums tracking-tighter text-accent-primary animate-pulse">
-                {countdown}
-              </span>
-            </div>
-          </div>
-
-          <button 
-            onClick={() => {
-              setCountdown(0);
-              setIsCountingDown(false);
-              setIsActive(true);
-            }}
-            className="px-8 py-3 rounded-full border border-border-subtle bg-bg-secondary text-text-secondary hover:text-white flex items-center gap-2 transition"
-          >
-            <span className="text-sm font-medium">Saltar cuenta atrás</span>
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (isFinished) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center animate-fade-in relative overflow-hidden">
-        <div className="absolute inset-0 bg-accent-primary/10" />
-        <div className="w-24 h-24 bg-success/20 rounded-full flex items-center justify-center mb-6 relative z-10">
-          <Check size={48} className="text-success" />
-        </div>
-        <h1 className="heading-display text-4xl mb-4 relative z-10">¡Entrenamiento Completado!</h1>
-        <p className="text-text-secondary mb-10 relative z-10">¡Buen trabajo! Tu sesión ha sido registrada correctamente.</p>
-        
-        <button onClick={() => router.push('/')} className="btn-primary glow relative z-10">
-          Volver al Inicio
-        </button>
-      </div>
-    );
-  }
-
-  // Formatting time MM:SS
   const formatTime = (secs: number) => {
-    const mins = Math.floor(secs / 60);
+    const m = Math.floor(secs / 60);
     const s = secs % 60;
-    return `${mins}:${s.toString().padStart(2, '0')}`;
+    return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
+  const circumference = 2 * Math.PI * 88;
+
+  // Countdown screen
+  if (isCountingDown && !isFinished) {
+    const cdCircumference = 2 * Math.PI * 120;
+    return (
+      <div style={S.screen} className="animate-fade-in">
+        <div style={S.header}>
+          <button style={S.headerBtn} onClick={() => router.push(`/session/${sessionId}`)}>
+            <X size={24} />
+          </button>
+          <span style={S.headerCount}>{currentIndex + 1} / {exercises.length}</span>
+          <div style={{ width: '2.5rem' }} />
+        </div>
+
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', gap: '2rem' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={S.badge}>
+              <span style={S.blockBadge}>Bloque {currentEx.block}</span>
+              <span style={S.setBadge}>Set {currentEx.set_number}</span>
+            </div>
+            <h2 style={S.exName}>{currentEx.name}</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.5rem' }}>Prepárate...</p>
+          </div>
+
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="256" height="256" style={{ transform: 'rotate(-90deg)' }}>
+              <circle cx="128" cy="128" r="120" strokeWidth="8" stroke="var(--border-subtle)" fill="transparent" />
+              <circle cx="128" cy="128" r="120" strokeWidth="8" stroke="var(--accent-primary)" fill="transparent"
+                strokeDasharray={cdCircumference}
+                strokeDashoffset={cdCircumference * (countdown / 5)}
+                style={{ transition: 'stroke-dashoffset 1s linear' }}
+              />
+            </svg>
+            <span style={{ position: 'absolute', fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '5rem', color: 'var(--accent-primary)', letterSpacing: '-0.04em' }}>
+              {countdown}
+            </span>
+          </div>
+
+          <button
+            style={S.pauseBtn}
+            onClick={() => { setIsCountingDown(false); setIsActive(true); }}
+          >
+            Saltar cuenta atrás
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Finished screen
+  if (isFinished) {
+    return (
+      <div style={{ ...S.screen, alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '1.5rem' }} className="animate-fade-in">
+        <div style={{ width: '6rem', height: '6rem', borderRadius: '50%', background: 'rgba(16,185,129,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem' }}>
+          <Check size={48} color="var(--success)" />
+        </div>
+        <h1 style={{ fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '2.25rem', letterSpacing: '-0.02em', marginBottom: '1rem' }}>¡Entrenamiento Completado!</h1>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: '2.5rem' }}>¡Buen trabajo! Tu sesión ha sido registrada correctamente.</p>
+        <button onClick={() => router.push('/')} className="btn-primary glow">Volver al Inicio</button>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex flex-col bg-bg-primary font-sans animate-fade-in">
-      {/* Top Header/Progress */}
-      <div className="flex items-center justify-between p-4 bg-bg-secondary border-b border-border-subtle shrink-0">
-        <button onClick={() => router.push(`/session/${sessionId}`)} className="p-2 -ml-2 text-text-secondary hover:text-white transition">
+    <div style={S.screen} className="animate-fade-in">
+      {/* Header */}
+      <div style={S.header}>
+        <button style={S.headerBtn} onClick={() => router.push(`/session/${sessionId}`)}>
           <X size={24} />
         </button>
-        <div className="text-sm font-semibold tracking-wider uppercase text-text-secondary">
-          {currentIndex + 1} / {exercises.length}
-        </div>
-        <div className="w-10" /> {/* Spacer */}
+        <span style={S.headerCount}>{currentIndex + 1} / {exercises.length}</span>
+        <div style={{ width: '2.5rem' }} />
       </div>
 
-      {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto flex flex-col relative">
-        {/* Video Area */}
-        <div className="w-full aspect-video bg-black relative shrink-0">
+      {/* Scrollable content */}
+      <div style={S.scrollArea}>
+        {/* Video */}
+        <div style={S.videoBox}>
           <CachedVideo videoUrl={currentEx?.video_url} />
         </div>
 
-        {/* Exercise Info */}
-        <div className="p-6 flex-1 flex flex-col">
-          <div className="mb-auto">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="bg-accent-primary/20 text-accent-primary text-xs font-bold px-2 py-1 rounded">
-                Bloque {currentEx.block}
-              </span>
-              <span className="text-xs text-text-secondary font-medium">Set {currentEx.set_number}</span>
+        {/* Info */}
+        <div style={S.infoArea}>
+          <div>
+            <div style={S.badge}>
+              <span style={S.blockBadge}>Bloque {currentEx.block}</span>
+              <span style={S.setBadge}>Set {currentEx.set_number}</span>
             </div>
-            
-            <h2 className="heading-display text-3xl mb-4 leading-tight">{currentEx.name}</h2>
-            
-            <div className="flex flex-wrap gap-4 mt-6">
-              {currentEx.reps && (
-                <div className="glass-panel p-4 rounded-xl flex-1 flex flex-col items-center justify-center border-accent-primary/30">
-                  <span className="text-sm text-text-secondary mb-1">Repeticiones</span>
-                  <span className="text-3xl font-bold font-outfit">{currentEx.reps}</span>
-                </div>
-              )}
-              {currentEx.tiempo_ej && (
-                <div className="glass-panel p-4 rounded-xl flex-1 flex flex-col items-center justify-center border-warning/30">
-                  <span className="text-sm text-text-secondary mb-1">Objetivo Tiempo</span>
-                  <span className="text-xl font-bold font-outfit">{currentEx.tiempo_ej}</span>
-                </div>
-              )}
-            </div>
+            <h2 style={S.exName}>{currentEx.name}</h2>
+
+            {(currentEx.reps || currentEx.tiempo_ej) && (
+              <div style={S.statsRow}>
+                {currentEx.reps && (
+                  <div style={S.statCard}>
+                    <span style={S.statLabel}>Repeticiones</span>
+                    <span style={S.statValue}>{currentEx.reps}</span>
+                  </div>
+                )}
+                {currentEx.tiempo_ej && (
+                  <div style={{ ...S.statCard, borderColor: 'rgba(245,158,11,0.3)' }}>
+                    <span style={S.statLabel}>Objetivo</span>
+                    <span style={{ ...S.statValue, fontSize: '1.5rem' }}>{currentEx.tiempo_ej}</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Timer/Stopwatch Display centrally */}
-          <div className="py-8 flex flex-col items-center justify-center mt-6 mb-6">
-             <div className="relative flex items-center justify-center">
-                <svg className="w-48 h-48 transform -rotate-90">
-                  <circle cx="96" cy="96" r="88" strokeWidth="8" stroke="currentColor" fill="transparent" className="text-border-subtle" />
-                  {hasTimer && (
-                    <circle cx="96" cy="96" r="88" strokeWidth="8" stroke="currentColor" fill="transparent" 
-                      className="text-accent-primary transition-all duration-1000 ease-linear"
-                      strokeDasharray={2 * Math.PI * 88}
-                      strokeDashoffset={(2 * Math.PI * 88) * (1 - timeLeft / targetTime)}
-                    />
-                  )}
-                </svg>
-                <div className="absolute flex flex-col items-center">
-                  <TimerIcon size={24} className={hasTimer ? "text-accent-primary mb-2" : "text-text-secondary mb-2"} />
-                  <span className="heading-display text-5xl tabular-nums tracking-tighter">
-                    {formatTime(hasTimer ? timeLeft : timeElapsed)}
-                  </span>
-                </div>
-             </div>
-             
-             <button 
-                onClick={() => setIsActive(!isActive)}
-                className="mt-6 px-6 py-2 rounded-full border border-border-subtle bg-bg-secondary text-text-secondary hover:text-white flex items-center gap-2 transition"
-              >
-                {isActive ? <Pause size={16} /> : <Play size={16} />}
-                <span className="text-sm font-medium">{isActive ? "Pausar" : "Reanudar"}</span>
-              </button>
+          {/* Timer */}
+          <div style={S.timerArea}>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="192" height="192" style={{ transform: 'rotate(-90deg)' }}>
+                <circle cx="96" cy="96" r="88" strokeWidth="8" stroke="var(--border-subtle)" fill="transparent" />
+                {hasTimer && (
+                  <circle cx="96" cy="96" r="88" strokeWidth="8" stroke="var(--accent-primary)" fill="transparent"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={circumference * (1 - timeLeft / targetTime)}
+                    style={{ transition: 'stroke-dashoffset 1s linear' }}
+                  />
+                )}
+              </svg>
+              <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <TimerIcon size={20} color={hasTimer ? 'var(--accent-primary)' : 'var(--text-secondary)'} style={{ marginBottom: '0.25rem' }} />
+                <span style={{ fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '2.75rem', letterSpacing: '-0.04em' }}>
+                  {formatTime(hasTimer ? timeLeft : timeElapsed)}
+                </span>
+              </div>
+            </div>
+
+            <button style={S.pauseBtn} onClick={() => setIsActive(!isActive)}>
+              {isActive ? <Pause size={16} /> : <Play size={16} />}
+              <span>{isActive ? 'Pausar' : 'Reanudar'}</span>
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Bottom Sticky Action */}
-      <div className="p-4 bg-bg-primary border-t border-border-subtle shrink-0 pb-10">
-        <div className="flex gap-3">
+      {/* Bottom bar */}
+      <div style={S.bottomBar}>
+        <div style={S.btnRow}>
           {currentIndex > 0 && (
-            <button 
-              onClick={handlePrevious}
-              className="btn-primary glow flex items-center justify-center gap-2 px-6 py-4"
-            >
-              <ChevronLeft size={24} />
+            <button onClick={handlePrevious} className="btn-primary glow" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '1rem 1.25rem' }}>
+              <ChevronLeft size={22} />
               <span>Anterior</span>
             </button>
           )}
-          <button 
-            onClick={() => handleNext(false)}
-            className="btn-primary glow flex-1 flex items-center justify-center gap-2 py-4"
-          >
-            <Check size={24} />
+          <button onClick={() => handleNext(false)} className="btn-primary glow" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '1rem' }}>
+            <Check size={22} />
             <span>Completar y Siguiente</span>
           </button>
         </div>
