@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Play, Check, X } from "lucide-react";
+import { useUser } from "@/lib/userContext";
 
 interface ExerciseRow {
   block: string;
@@ -107,6 +108,7 @@ function buildBlocks(exercises: ExerciseRow[]): BlockGroup[] {
 
 export default function SessionClient({ sessionId, sessionName, sessionDescription, exercisesRaw }: SessionClientProps) {
   const router = useRouter();
+  const { user } = useUser();
   const [step, setStep] = useState<'energy' | 'summary'>('energy');
   const [selectedEnergy, setSelectedEnergy] = useState<EnergyLevel>(ENERGY_LEVELS[0]);
   const [previewEx, setPreviewEx] = useState<{ name: string; videoUrl: string } | null>(null);
@@ -252,7 +254,7 @@ export default function SessionClient({ sessionId, sessionName, sessionDescripti
 
       {/* Fixed start button */}
       <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, padding: '1.5rem', maxWidth: '28rem', margin: '0 auto', zIndex: 9999, background: 'linear-gradient(to top, #0a0a0c 70%, transparent)', paddingTop: '3rem' }}>
-        <Link href={`/workflow/${sessionId}?energy=${selectedEnergy.pct}`} className="btn-primary glow" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '1rem' }}>
+        <Link href={`/workflow/${sessionId}?energy=${selectedEnergy.pct}&userId=${user?.id ?? ''}&energyLabel=${encodeURIComponent(selectedEnergy.label)}`} className="btn-primary glow" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '1rem' }}>
           <Play fill="currentColor" size={20} />
           <span>Iniciar Entrenamiento</span>
         </Link>

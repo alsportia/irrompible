@@ -59,6 +59,16 @@ const S = {
   btnRow:      { display: 'flex', gap: '0.75rem' },
 };
 
+// ─── Feeling levels ───────────────────────────────────────────────────────────
+
+const FEELINGS = [
+  { label: 'Excelente', emoji: '🌟', score: 100, color: '#10b981' },
+  { label: 'Bien',      emoji: '😊', score: 80,  color: '#3b82f6' },
+  { label: 'Normal',    emoji: '😐', score: 60,  color: '#f59e0b' },
+  { label: 'Duro',      emoji: '😓', score: 40,  color: '#f97316' },
+  { label: 'Muy Duro',  emoji: '🥵', score: 20,  color: '#ef4444' },
+] as const;
+
 // ─── Progress dots ────────────────────────────────────────────────────────────
 
 function ProgressDots({ total, current }: { total: number; current: number }) {
@@ -82,7 +92,7 @@ function ProgressDots({ total, current }: { total: number; current: number }) {
             flex: 1,
             height: '4px',
             borderRadius: '2px',
-            background: i < current ? 'var(--accent-primary)' : 'var(--border-subtle)',
+            background: i < current ? 'var(--accent-primary)' : 'rgba(255,255,255,0.45)',
             transition: 'background 0.3s ease',
           }}
         />
@@ -101,29 +111,12 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
   const [isActive, setIsActive] = useState(false);
   const [countdown, setCountdown] = useState(5);
   const [isCountingDown, setIsCountingDown] = useState(true);
+  const [feelingStep, setFeelingStep] = useState(false);
+  const [selectedFeeling, setSelectedFeeling] = useState<typeof FEELINGS[number] | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const { playCountdownBeep, playWarningBeep, playFinalBeep } = useBeep();
   const startTime = useRef<number>(Date.now());
-  const wakeLockRef = useRef<any>(null);
-
-  useEffect(() => {
-    const requestWakeLock = async () => {
-      try {
-        if ('wakeLock' in navigator) {
-          wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
-        }
-      } catch (err) {}
-    };
-    requestWakeLock();
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && !wakeLockRef.current) requestWakeLock();
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      wakeLockRef.current?.release().then(() => { wakeLockRef.current = null; });
-    };
-  }, []);
 
   const currentEx = exercises[currentIndex];
   const isFinished = currentIndex >= exercises.length;
@@ -189,7 +182,7 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
     await saveWorkoutSet(logId, ex.ex_id, null, null, timeToSave);
     if (currentIndexRef.current + 1 >= exercises.length) {
       const totalDuration = Math.floor((Date.now() - startTime.current) / 1000);
-      await finishWorkoutLog(logId, totalDuration);
+      await finishWorkoutLog(logId, totalDuration, 0, '');
       setCurrentIndex(currentIndexRef.current + 1);
     } else {
       setCurrentIndex(prev => prev + 1);
@@ -259,16 +252,55 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
     );
   }
 
-  // ── Finished ─────────────────────────────────────────────────────────────
+  // ── Finished — feeling selection ─────────────────────────────────────────
   if (isFinished) {
+    if (!feelingStep) {
+      // Auto-show feeling step
+      setTimeout(() => setFeelingStep(true), 0);
+      return null;
+    }
+
+    const handleSaveFeeling = async () => {
+      if (!selectedFeeling) return;
+      setSaving(true);
+      const totalDuration = Math.floor((Date.now() - startTime.current) / 1000);
+      await finishWorkoutLog(logId, totalDuration, selectedFeeling.score, selectedFeeling.label);
+      router.push('/');
+    };
+
     return (
-      <div style={{ ...S.screen, alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '1.5rem' }} className="animate-fade-in">
-        <div style={{ width: '6rem', height: '6rem', borderRadius: '50%', background: 'rgba(16,185,129,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem' }}>
-          <Check size={48} color="var(--success)" />
+      <div style={{ ...S.screen, padding: '1.25rem' }} className="animate-fade-in">
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '1rem' }}>
+          <div style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
+            <div style={{ width: '5rem', height: '5rem', borderRadius: '50%', background: 'rgba(16,185,129,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
+              <Check size={40} color="var(--success)" />
+            </div>
+            <h1 style={{ fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '1.75rem', letterSpacing: '-0.02em', marginBottom: '0.5rem' }}>¡Entrenamiento Completado!</h1>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>¿Cómo ha ido el entrenamiento?</p>
+          </div>
+
+          {FEELINGS.map(f => {
+            const isSelected = selectedFeeling?.label === f.label;
+            return (
+              <button key={f.label} onClick={() => setSelectedFeeling(f)}
+                style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.875rem 1.25rem', borderRadius: 'var(--radius-md)', border: `2px solid ${isSelected ? f.color : 'var(--border-subtle)'}`, background: isSelected ? `${f.color}18` : 'var(--bg-secondary)', cursor: 'pointer', width: '100%', textAlign: 'left' as const, transition: 'all 0.15s ease' }}>
+                <span style={{ fontSize: '1.5rem', lineHeight: 1 }}>{f.emoji}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '1rem', color: isSelected ? f.color : 'var(--text-primary)' }}>{f.label}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{f.score} puntos</div>
+                </div>
+                <div style={{ width: '1.25rem', height: '1.25rem', borderRadius: '50%', border: `2px solid ${isSelected ? f.color : 'var(--border-subtle)'}`, background: isSelected ? f.color : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  {isSelected && <Check size={10} color="#fff" strokeWidth={3} />}
+                </div>
+              </button>
+            );
+          })}
         </div>
-        <h1 style={{ fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '2.25rem', letterSpacing: '-0.02em', marginBottom: '1rem' }}>¡Entrenamiento Completado!</h1>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: '2.5rem' }}>¡Buen trabajo! Tu sesión ha sido registrada correctamente.</p>
-        <button onClick={() => router.push('/')} className="btn-primary glow">Volver al Inicio</button>
+
+        <button onClick={handleSaveFeeling} disabled={!selectedFeeling || saving} className="btn-primary glow"
+          style={{ width: '100%', padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: selectedFeeling ? 1 : 0.5 }}>
+          {saving ? 'Guardando...' : 'Guardar y Volver'}
+        </button>
       </div>
     );
   }

@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Outfit } from "next/font/google";
 import "./globals.css";
+import WakeLock from "@/components/WakeLock";
+import { UserProvider } from "@/lib/userContext";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -44,7 +46,8 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable}`}>
-        {children}
+        <WakeLock />
+        <UserProvider>{children}</UserProvider>
       </body>
     </html>
   );
