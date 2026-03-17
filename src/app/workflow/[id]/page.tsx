@@ -26,7 +26,7 @@ export default async function WorkflowPage({ params }: { params: Promise<{ id: s
     FROM session_exercises se
     JOIN exercises e ON se.ex_id = e.ex_id
     WHERE se.session_id = ?
-    ORDER BY se.block, se.ex_order, se.set_number
+    ORDER BY se.block, se.set_number, se.ex_order
   `, [id]);
 
   if (!exercises || exercises.length === 0) {
