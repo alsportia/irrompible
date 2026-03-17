@@ -77,6 +77,16 @@ function applyEnergy(exercises: ExerciseRow[], pct: number): ExerciseRow[] {
     });
 }
 
+// Extract YouTube video ID from shorts or regular URLs
+function getYtThumbnail(url: string | null): string | null {
+  if (!url) return null;
+  const shortsMatch = url.match(/youtube\.com\/shorts\/([a-zA-Z0-9_-]+)/);
+  if (shortsMatch) return `https://img.youtube.com/vi/${shortsMatch[1]}/mqdefault.jpg`;
+  const watchMatch = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
+  if (watchMatch) return `https://img.youtube.com/vi/${watchMatch[1]}/mqdefault.jpg`;
+  return null;
+}
+
 function buildBlocks(exercises: ExerciseRow[]): BlockGroup[] {
   const blocksMap = new Map<string, BlockGroup>();
   for (const ex of exercises) {
@@ -182,74 +192,90 @@ export default function SessionClient({ sessionId, sessionName, sessionDescripti
   // ── Summary screen ────────────────────────────────────────────────────────
   return (
     <>
-      <main style={{ minHeight: '100dvh', padding: '0 1.25rem 8rem', maxWidth: '28rem', margin: '0 auto', position: 'relative' }} className="animate-fade-in">
+      <main style={{ minHeight: '100dvh', padding: '0 0 8rem', maxWidth: '28rem', margin: '0 auto', position: 'relative' }} className="animate-fade-in">
         {/* Header */}
-        <header style={{ paddingTop: '2rem', paddingBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', position: 'relative', zIndex: 10 }}>
+        <header style={{ padding: '1.25rem 1.25rem 1rem', display: 'flex', alignItems: 'center', gap: '1rem', position: 'sticky', top: 0, zIndex: 20, background: 'var(--bg-primary)', borderBottom: '1px solid var(--border-subtle)' }}>
           <button
             onClick={() => setStep('energy')}
-            style={{ width: '2.5rem', height: '2.5rem', borderRadius: '50%', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+            style={{ width: '2.25rem', height: '2.25rem', borderRadius: '50%', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
           >
-            <ChevronLeft size={24} />
+            <ChevronLeft size={20} />
           </button>
-          <div style={{ flex: 1 }}>
-            <h1 className="heading-display" style={{ fontSize: '1.5rem' }}>{sessionName}</h1>
-            {/* Energy badge */}
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem', marginTop: '0.25rem', background: `${selectedEnergy.color}18`, border: `1px solid ${selectedEnergy.color}40`, borderRadius: '999px', padding: '0.15rem 0.6rem' }}>
-              <span style={{ fontSize: '0.9rem' }}>{selectedEnergy.emoji}</span>
-              <span style={{ fontSize: '0.75rem', fontWeight: 600, color: selectedEnergy.color }}>{selectedEnergy.label}</span>
-              {selectedEnergy.pct < 1 && (
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>· {Math.round(selectedEnergy.pct * 100)}%</span>
-              )}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h1 className="heading-display" style={{ fontSize: '1.25rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sessionName}</h1>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem', marginTop: '0.2rem', background: `${selectedEnergy.color}18`, border: `1px solid ${selectedEnergy.color}40`, borderRadius: '999px', padding: '0.1rem 0.5rem' }}>
+              <span style={{ fontSize: '0.8rem' }}>{selectedEnergy.emoji}</span>
+              <span style={{ fontSize: '0.7rem', fontWeight: 600, color: selectedEnergy.color }}>{selectedEnergy.label}</span>
+              {selectedEnergy.pct < 1 && <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>· {Math.round(selectedEnergy.pct * 100)}%</span>}
             </div>
           </div>
         </header>
 
-        {/* Description */}
-        <section style={{ marginBottom: '1.5rem', position: 'relative', zIndex: 10 }}>
-          <div className="card glass-panel" style={{ borderColor: 'rgba(59,130,246,0.2)', background: 'rgba(59,130,246,0.05)' }}>
-            <h2 style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--accent-primary)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Objetivo de Hoy</h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', lineHeight: 1.6, whiteSpace: 'pre-line' }}>
+        <div style={{ padding: '1rem 1.25rem 0' }}>
+          {/* Description */}
+          <section style={{ marginBottom: '1.5rem' }}>
+            <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--accent-primary)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.625rem' }}>Instrucciones</p>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', lineHeight: 1.65, whiteSpace: 'pre-line' }}>
               {sessionDescription || "Sin descripción proporcionada."}
             </p>
-          </div>
-        </section>
+          </section>
 
-        {/* Blocks */}
-        <section style={{ display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative', zIndex: 10 }}>
-          {blocks.map((b, i) => (
-            <div key={i} style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
-              <div style={{ background: 'var(--bg-tertiary)', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <span style={{ width: '1.75rem', height: '1.75rem', borderRadius: '6px', background: 'rgba(59,130,246,0.2)', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.875rem', flexShrink: 0 }}>
-                  {b.block}
-                </span>
-                <span style={{ fontWeight: 600, fontSize: '0.875rem', textTransform: 'capitalize', flex: 1 }}>
-                  {(b.block_type || 'Bloque').replace(/_/g, ' ')}
-                </span>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', background: 'var(--bg-primary)', padding: '0.2rem 0.6rem', borderRadius: '999px' }}>
-                  {b.totalSets} {b.totalSets === 1 ? 'set' : 'sets'}
-                </span>
-              </div>
-              <div style={{ padding: '0 1rem' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 56px 56px', padding: '0.5rem 0', borderBottom: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  <span>Ejercicio</span>
-                  <span style={{ textAlign: 'center' }}>Reps</span>
-                  <span style={{ textAlign: 'center' }}>Tiempo</span>
-                </div>
-                {b.exercises.map((ex, j) => (
-                  <div key={ex.ex_id + j} style={{ display: 'grid', gridTemplateColumns: '1fr 56px 56px', padding: '0.625rem 0', borderBottom: j < b.exercises.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.875rem', fontWeight: 500, paddingRight: '0.5rem' }}>{ex.name}</span>
-                    <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', textAlign: 'center' }}>{ex.reps && ex.reps !== '0' ? ex.reps : '—'}</span>
-                    <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', textAlign: 'center' }}>{ex.tiempo_ej ?? '—'}</span>
+          {/* Blocks */}
+          <section style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            {blocks.map((b, i) => {
+              const blockLabel = (b.block_type || 'Bloque').replace(/_/g, ' ');
+              return (
+                <div key={i}>
+                  {/* Block header */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '0.5rem' }}>
+                    <div style={{ height: '1px', flex: 1, background: 'var(--border-subtle)' }} />
+                    <span style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--accent-primary)' }}>
+                      {blockLabel}
+                    </span>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', background: 'var(--bg-tertiary)', border: '1px solid var(--border-subtle)', borderRadius: '999px', padding: '0.1rem 0.5rem' }}>
+                      ×{b.totalSets}
+                    </span>
+                    <div style={{ height: '1px', flex: 1, background: 'var(--border-subtle)' }} />
                   </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </section>
+
+                  {/* Exercise rows */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {b.exercises.map((ex, j) => {
+                      const thumb = getYtThumbnail(ex.video_url);
+                      const hasReps = ex.reps && ex.reps !== '0';
+                      const hasTiempo = ex.tiempo_ej && ex.tiempo_ej !== '0';
+                      return (
+                        <div key={ex.ex_id + j} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', padding: '0.5rem', border: '1px solid var(--border-subtle)' }}>
+                          {/* Thumbnail */}
+                          <div style={{ width: '3.25rem', height: '3.25rem', borderRadius: '6px', overflow: 'hidden', flexShrink: 0, background: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {thumb
+                              ? <img src={thumb} alt={ex.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              : <span style={{ fontSize: '1.25rem' }}>💪</span>
+                            }
+                          </div>
+                          {/* Info */}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: '0.875rem', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ex.name}</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
+                              {hasReps && <span>{ex.reps} reps</span>}
+                              {hasReps && hasTiempo && <span style={{ margin: '0 0.3rem', opacity: 0.4 }}>·</span>}
+                              {hasTiempo && <span>{ex.tiempo_ej}s</span>}
+                              {!hasReps && !hasTiempo && <span>—</span>}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </section>
+        </div>
       </main>
 
       {/* Fixed start button */}
-      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, padding: '1.5rem', maxWidth: '28rem', margin: '0 auto', zIndex: 9999, background: 'linear-gradient(to top, #0a0a0c 60%, transparent)', paddingTop: '3rem' }}>
+      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, padding: '1.5rem', maxWidth: '28rem', margin: '0 auto', zIndex: 9999, background: 'linear-gradient(to top, #0a0a0c 70%, transparent)', paddingTop: '3rem' }}>
         <Link
           href={`/workflow/${sessionId}?energy=${selectedEnergy.pct}`}
           className="btn-primary glow"
