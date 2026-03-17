@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { CalendarDays, ChevronRight, User } from "lucide-react";
+import { CalendarDays, ChevronRight, User, Dumbbell } from "lucide-react";
 import { useUser } from "@/lib/userContext";
 import UserSelector from "./UserSelector";
 import CalendarView from "./CalendarView";
@@ -57,6 +57,11 @@ export default function HomeClient({ sessions }: { sessions: Session[] }) {
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', fontWeight: 500 }}>Hola, {user.name}</p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {/* Exercises icon */}
+            <Link href="/exercises"
+              style={{ width: '3rem', height: '3rem', borderRadius: '50%', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', backdropFilter: 'blur(12px)', cursor: 'pointer', textDecoration: 'none' }}>
+              <Dumbbell size={20} />
+            </Link>
             {/* Calendar icon */}
             <button onClick={() => setShowCalendar(true)}
               style={{ width: '3rem', height: '3rem', borderRadius: '50%', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-primary)', backdropFilter: 'blur(12px)', cursor: 'pointer' }}>
