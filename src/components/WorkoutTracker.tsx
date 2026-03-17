@@ -282,8 +282,8 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
             <h2 style={S.exName}>{currentEx.name}</h2>
           </div>
 
-          {/* Stats + Timer en la misma fila */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}>
+          {/* Stats + Timer + Pausa en la misma fila */}
+          <div style={{ display: 'flex', alignItems: 'stretch', gap: '0.75rem', flex: 1 }}>
             {/* Stats a la izquierda */}
             {(currentEx.reps || currentEx.tiempo_ej) && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
@@ -302,29 +302,27 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
               </div>
             )}
 
-            {/* Timer a la derecha */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <svg width="140" height="140" style={{ transform: 'rotate(-90deg)' }}>
-                  <circle cx="70" cy="70" r="62" strokeWidth="6" stroke="var(--border-subtle)" fill="transparent" />
-                  {hasTimer && (
-                    <circle cx="70" cy="70" r="62" strokeWidth="6" stroke="var(--accent-primary)" fill="transparent"
-                      strokeDasharray={2 * Math.PI * 62}
-                      strokeDashoffset={(2 * Math.PI * 62) * (1 - timeLeft / targetTime)}
-                      style={{ transition: 'stroke-dashoffset 1s linear' }}
-                    />
-                  )}
-                </svg>
-                <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <TimerIcon size={14} color={hasTimer ? 'var(--accent-primary)' : 'var(--text-secondary)'} style={{ marginBottom: '0.1rem' }} />
-                  <span style={{ fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '1.75rem', letterSpacing: '-0.04em' }}>
-                    {formatTime(hasTimer ? timeLeft : timeElapsed)}
-                  </span>
-                </div>
+            {/* Timer cuadrado + botón pausa */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <div style={{ ...S.statCard, flex: 1, minWidth: '110px', position: 'relative', overflow: 'hidden' }}>
+                {/* Barra de progreso de fondo si hay timer */}
+                {hasTimer && (
+                  <div style={{
+                    position: 'absolute', bottom: 0, left: 0,
+                    height: `${(timeLeft / targetTime) * 100}%`,
+                    width: '100%',
+                    background: 'rgba(59,130,246,0.1)',
+                    transition: 'height 1s linear'
+                  }} />
+                )}
+                <TimerIcon size={14} color={hasTimer ? 'var(--accent-primary)' : 'var(--text-secondary)'} style={{ marginBottom: '0.25rem', position: 'relative' }} />
+                <span style={{ fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '1.75rem', letterSpacing: '-0.04em', position: 'relative' }}>
+                  {formatTime(hasTimer ? timeLeft : timeElapsed)}
+                </span>
               </div>
-              <button style={S.pauseBtn} onClick={() => setIsActive(!isActive)}>
+              <button style={{ ...S.statCard, cursor: 'pointer', flexDirection: 'row', gap: '0.4rem', padding: '0.5rem 0.75rem' }} onClick={() => setIsActive(!isActive)}>
                 {isActive ? <Pause size={14} /> : <Play size={14} />}
-                <span>{isActive ? 'Pausar' : 'Reanudar'}</span>
+                <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>{isActive ? 'Pausar' : 'Reanudar'}</span>
               </button>
             </div>
           </div>
