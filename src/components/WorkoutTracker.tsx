@@ -182,6 +182,8 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
     new Map(exercises.filter(e => e.video_url).map(e => [e.video_url, { url: e.video_url, name: e.name }])).values()
   );
 
+  const totalBlocks = new Set(exercises.map(e => e.block)).size;
+
   // Countdown screen
   if (isCountingDown && !isFinished) {
     const cdCircumference = 2 * Math.PI * 120;
@@ -198,7 +200,7 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', gap: '2rem' }}>
           <div style={{ textAlign: 'center' }}>
             <div style={S.badge}>
-              <span style={S.blockBadge}>Bloque {currentEx.block}</span>
+              <span style={S.blockBadge}>Bloque {currentEx.block} de {totalBlocks}</span>
               <span style={S.setBadge}>Set {currentEx.set_number} de {Math.max(...exercises.filter(e => e.block === currentEx.block).map(e => e.set_number))}</span>
             </div>
             <h2 style={S.exName}>{currentEx.name}</h2>
@@ -275,7 +277,7 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
         <div style={S.infoArea}>
           <div>
             <div style={S.badge}>
-              <span style={S.blockBadge}>Bloque {currentEx.block}</span>
+              <span style={S.blockBadge}>Bloque {currentEx.block} de {totalBlocks}</span>
               <span style={S.setBadge}>Set {currentEx.set_number} de {Math.max(...exercises.filter(e => e.block === currentEx.block).map(e => e.set_number))}</span>
             </div>
             <h2 style={S.exName}>{currentEx.name}</h2>
