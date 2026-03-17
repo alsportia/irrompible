@@ -97,24 +97,32 @@ export default async function SessionPage({ params }: { params: Promise<{ id: st
           </div>
         </section>
 
-        <section className="relative z-10 flex flex-col gap-6">
+        <section className="relative z-10 flex flex-col gap-4">
           {blocks.map((b, i) => (
-            <div key={i}>
-              <div className="flex items-center gap-2 mb-3">
-                <span className="bg-bg-tertiary w-8 h-8 rounded flex items-center justify-center font-bold text-sm">{b.block}</span>
-                <h3 className="font-semibold">{b.block_type || "Bloque de Ejercicios"}</h3>
+            <div key={i} className="bg-bg-secondary rounded-xl overflow-hidden">
+              {/* Block header */}
+              <div className="flex items-center gap-3 px-4 py-3 bg-bg-tertiary">
+                <span className="w-7 h-7 rounded-md bg-accent-primary/20 text-accent-primary flex items-center justify-center font-bold text-sm shrink-0">
+                  {b.block}
+                </span>
+                <span className="font-semibold text-sm">{b.block_type || "Bloque de Ejercicios"}</span>
               </div>
 
-              <div className="flex flex-col gap-2 pl-[15px] relative">
-                <div className="absolute left-[15px] top-4 bottom-4 w-[2px] bg-border-subtle" />
+              {/* Exercises as table rows */}
+              <div className="px-4 py-2">
+                {/* Column headers */}
+                <div className="grid grid-cols-[1fr_auto_auto] gap-4 py-2 text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                  <span>Ejercicio</span>
+                  <span className="text-right">Reps</span>
+                  <span className="text-right">Tiempo</span>
+                </div>
+
+                {/* Exercise rows */}
                 {b.exercises.map((ex, j) => (
-                  <div key={ex.ex_id + j} className="bg-bg-secondary border border-border-subtle rounded-lg p-3 ml-4 relative">
-                    <div className="absolute -left-[20px] top-1/2 -translate-y-1/2 w-[10px] h-[2px] bg-border-subtle" />
-                    <p className="font-medium text-sm">{ex.name}</p>
-                    <p className="text-xs text-text-secondary mt-1">
-                      {ex.reps && <span className="mr-3">{ex.reps} reps</span>}
-                      {ex.tiempo_ej && <span>{ex.tiempo_ej}</span>}
-                    </p>
+                  <div key={ex.ex_id + j} className="grid grid-cols-[1fr_auto_auto] gap-4 py-2.5 border-t border-border-subtle/50">
+                    <span className="text-sm font-medium">{ex.name}</span>
+                    <span className="text-sm text-text-secondary text-right">{ex.reps || "—"}</span>
+                    <span className="text-sm text-text-secondary text-right">{ex.tiempo_ej || "—"}</span>
                   </div>
                 ))}
               </div>
