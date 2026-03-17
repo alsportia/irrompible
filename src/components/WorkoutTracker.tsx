@@ -52,7 +52,7 @@ const S = {
   setBadge: { fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 500 },
   exName: { fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '1.5rem', lineHeight: 1.2, letterSpacing: '-0.02em' },
   statsRow: { display: 'flex', gap: '0.75rem' },
-  statCard: { flex: 1, background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-md)', padding: '0.625rem', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', backdropFilter: 'blur(12px)' },
+  statCard: { flex: 1, background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-md)', padding: '0.625rem', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(12px)' },
   statLabel: { fontSize: '0.7rem', color: 'var(--text-secondary)', marginBottom: '0.15rem' },
   statValue: { fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '1.5rem' },
   timerArea: { display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', flex: 1 },
@@ -300,15 +300,15 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
               </div>
             )}
 
-            {/* Timer cuadrado */}
-            <div style={{ ...S.statCard, flex: 1, position: 'relative', overflow: 'hidden', justifyContent: 'flex-end', padding: '0.625rem' }}>
+            {/* Timer cuadrado - progreso de izquierda a derecha */}
+            <div style={{ ...S.statCard, flex: 2, position: 'relative', overflow: 'hidden' }}>
               {hasTimer && (
                 <div style={{
-                  position: 'absolute', bottom: 0, left: 0,
-                  height: `${(timeLeft / targetTime) * 100}%`,
-                  width: '100%',
+                  position: 'absolute', top: 0, left: 0,
+                  width: `${(timeLeft / targetTime) * 100}%`,
+                  height: '100%',
                   background: 'rgba(59,130,246,0.35)',
-                  transition: 'height 1s linear',
+                  transition: 'width 1s linear',
                   borderRadius: 'var(--radius-md)',
                 }} />
               )}
