@@ -34,7 +34,16 @@ export async function runMigrations(): Promise<void> {
     )
   `);
 
-  // 5. Assign Unbreakable to all existing users that don't have any program yet
+  // 5. Create program_sessions join table
+  await DB.run(`
+    CREATE TABLE IF NOT EXISTS program_sessions (
+      program_id INTEGER NOT NULL REFERENCES programs(id) ON DELETE CASCADE,
+      session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+      PRIMARY KEY (program_id, session_id)
+    )
+  `);
+
+  // 6. Assign Unbreakable to all existing users that don't have any program yet
   await DB.run(`
     INSERT OR IGNORE INTO user_programs (user_id, program_id)
     SELECT u.id, p.id

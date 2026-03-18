@@ -10,7 +10,20 @@ interface Session {
   exerciseCount?: number;
 }
 
-async function getSessions(): Promise<Session[]> {
+async function getSessions(programId?: string): Promise<Session[]> {
+  if (programId) {
+    // Filter sessions by program via program_sessions join
+    // Order by numeric part of session id (works for both 'sesion_X' and 'elite_sesion_X')
+    return DB.query<Session>(`
+      SELECT s.id, s.name, s.description, COUNT(se.id) as exerciseCount
+      FROM sessions s
+      JOIN program_sessions ps ON ps.session_id = s.id
+      LEFT JOIN session_exercises se ON s.id = se.session_id
+      WHERE ps.program_id = ?
+      GROUP BY s.id
+      ORDER BY LENGTH(s.id), s.id ASC
+    `, [programId]);
+  }
   return DB.query<Session>(`
     SELECT s.id, s.name, s.description, COUNT(se.id) as exerciseCount
     FROM sessions s
@@ -26,6 +39,6 @@ export default async function Home({
   searchParams: Promise<{ programId?: string }>;
 }) {
   const { programId } = await searchParams;
-  const sessions = await getSessions();
+  const sessions = await getSessions(programId);
   return <HomeClient sessions={sessions} programId={programId} />;
 }
