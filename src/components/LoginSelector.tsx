@@ -83,6 +83,12 @@ export default function LoginSelector() {
           >
             {loading ? 'Entrando...' : 'Entrar'}
           </button>
+          <button
+            onClick={() => router.push('/register')}
+            style={{ width: '100%', padding: '0.75rem', background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)', fontSize: '0.875rem', cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            Registrarse
+          </button>
         </div>
       </div>
     </div>

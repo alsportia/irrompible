@@ -9,10 +9,11 @@ async function addColumnIfNotExists(table: string, column: string, definition: s
 }
 
 export async function runMigrations(): Promise<void> {
-  // 1. Add email and role columns to users (idempotent via PRAGMA check)
+  // 1. Add email, role and status columns to users (idempotent via PRAGMA check)
   // Note: SQLite doesn't support ADD COLUMN with UNIQUE constraint directly
   await addColumnIfNotExists('users', 'email', 'TEXT');
   await addColumnIfNotExists('users', 'role', "TEXT NOT NULL DEFAULT 'user'");
+  await addColumnIfNotExists('users', 'status', "TEXT NOT NULL DEFAULT 'active'");
 
   // 2. Create programs table
   await DB.run(`

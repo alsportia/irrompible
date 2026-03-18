@@ -9,13 +9,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Introduce tu email' }, { status: 400 });
   }
 
-  const user = await DB.get<{ id: number; name: string; email: string; role: string }>(
-    'SELECT id, name, email, role FROM users WHERE email = ?',
+  const user = await DB.get<{ id: number; name: string; email: string; role: string; status: string }>(
+    'SELECT id, name, email, role, status FROM users WHERE email = ?',
     [email.trim()]
   );
 
   if (!user) {
     return NextResponse.json({ error: 'Email no encontrado' }, { status: 404 });
+  }
+
+  if (user.status === 'pending') {
+    return NextResponse.json({ error: 'Tu cuenta está pendiente de aprobación por el administrador' }, { status: 403 });
   }
 
   return NextResponse.json({ id: user.id, name: user.name, email: user.email, role: user.role });

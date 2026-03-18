@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/lib/userContext";
-import { UserPlus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp } from "lucide-react";
+import { UserPlus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, UserCheck, UserX } from "lucide-react";
 import type { Program } from "@/types/index";
 
-type UserRow = { id: number; name: string; email: string; role: 'admin' | 'user' };
+type UserRow = { id: number; name: string; email: string; role: 'admin' | 'user'; status: 'active' | 'pending' };
 type UserWithPrograms = UserRow & { programs: Program[]; expanded: boolean };
 
 type ModalState =
@@ -142,6 +142,21 @@ export default function AdminClient() {
     });
   };
 
+  const handleStatusChange = async (userId: number, status: 'active' | 'rejected') => {
+    const res = await fetch(`/api/admin/users/${userId}/status`, {
+      method: 'PATCH',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    if (res.ok) {
+      if (status === 'rejected') {
+        setUsers(prev => prev.filter(u => u.id !== userId));
+      } else {
+        setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: 'active' } : u));
+      }
+    }
+  };
+
   const handleProgramToggle = async (userId: number, programId: number, checked: boolean) => {
     const targetUser = users.find(u => u.id === userId);
     if (!targetUser) return;
@@ -189,7 +204,47 @@ export default function AdminClient() {
           <p style={{ color: 'var(--text-secondary)', textAlign: 'center' }}>Cargando...</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {users.map(u => (
+            {/* Pending users */}
+            {users.filter(u => u.status === 'pending').length > 0 && (
+              <div style={{ marginBottom: '0.5rem' }}>
+                <p style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                  Pendientes de aprobación ({users.filter(u => u.status === 'pending').length})
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {users.filter(u => u.status === 'pending').map(u => (
+                    <div key={u.id} style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 'var(--radius-md)', padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' as const }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.name}</p>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: '0.1rem 0 0' }}>{u.email}</p>
+                        {u.programs.length > 0 && (
+                          <p style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', margin: '0.25rem 0 0' }}>
+                            Solicita: {u.programs.map(p => p.name).join(', ')}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleStatusChange(u.id, 'active')}
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.5rem 0.875rem', background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.4)', borderRadius: 'var(--radius-md)', color: '#10b981', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+                      >
+                        <UserCheck size={14} /> Aceptar
+                      </button>
+                      <button
+                        onClick={() => handleStatusChange(u.id, 'rejected')}
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.5rem 0.875rem', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 'var(--radius-md)', color: 'var(--danger)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+                      >
+                        <UserX size={14} /> Rechazar
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Active users */}
+            <p style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
+              Usuarios activos ({users.filter(u => u.status !== 'pending').length})
+            </p>
+            {users.filter(u => u.status !== 'pending').map(u => (
               <div key={u.id} style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
                 {/* User row */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem 1.25rem', flexWrap: 'wrap' }}>
