@@ -43,19 +43,12 @@ interface SessionClientProps {
 }
 
 const ENERGY_LEVELS = [
-  { label: "A tope!", emoji: "fire", pct: 1.00, color: "#10b981" },
-  { label: "Bien", emoji: "muscle", pct: 0.75, color: "#3b82f6" },
-  { label: "Cansado", emoji: "sweat", pct: 0.50, color: "#f59e0b" },
-  { label: "Muy Cansado", emoji: "sleep", pct: 0.25, color: "#ef4444" },
+  { label: "A tope!", emoji: "🔥", pct: 1.00, color: "#10b981" },
+  { label: "Bien", emoji: "💪", pct: 0.75, color: "#3b82f6" },
+  { label: "Cansado", emoji: "😓", pct: 0.50, color: "#f59e0b" },
+  { label: "Muy Cansado", emoji: "😴", pct: 0.25, color: "#ef4444" },
 ] as const;
 type EnergyLevel = typeof ENERGY_LEVELS[number];
-
-const ENERGY_EMOJIS: Record<string, string> = {
-  "fire": "🔥",
-  "muscle": "💪",
-  "sweat": "😓",
-  "sleep": "😴",
-};
 
 function groupByBlock(exercises: ExerciseRow[]): BlockGroup[] {
   const map = new Map<string, BlockGroup>();
@@ -99,7 +92,6 @@ export default function SessionClient({
   const router = useRouter();
   const { user } = useUser();
 
-  const [showEnergyPicker, setShowEnergyPicker] = useState(false);
   const [selectedEnergy, setSelectedEnergy] = useState<EnergyLevel>(ENERGY_LEVELS[0]);
   const [detailEx, setDetailEx] = useState<ExerciseDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
@@ -108,7 +100,6 @@ export default function SessionClient({
   const blocks = groupByBlock(exercisesRaw);
   const totalExercises = new Set(exercisesRaw.map(e => e.ex_id)).size;
 
-  // Initialize with all blocks expanded
   useEffect(() => {
     setExpandedBlocks(new Set(blocks.map(b => b.block)));
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -141,6 +132,7 @@ export default function SessionClient({
 
   return (
     <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", background: "var(--bg-primary)", fontFamily: "var(--font-geist-sans)" }}>
+      {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.75rem 1rem", background: "var(--bg-secondary)", borderBottom: "1px solid var(--border-subtle)", position: "sticky", top: 0, zIndex: 10 }}>
         <button
           onClick={() => router.back()}
@@ -158,12 +150,14 @@ export default function SessionClient({
         </div>
       </div>
 
+      {/* Session description */}
       {sessionDescription && (
         <div style={{ padding: "1rem", borderBottom: "1px solid var(--border-subtle)" }}>
-          <p style={{ fontSize: "0.875rem", color: "var(--text-secondary)", margin: 0, lineHeight: 1.5 }}>{sessionDescription}</p>
+          <p style={{ fontSize: "0.875rem", color: "var(--text-secondary)", margin: 0, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{sessionDescription}</p>
         </div>
       )}
 
+      {/* Blocks list */}
       <div style={{ flex: 1, overflowY: "auto", padding: "1rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
         {blocks.map((group) => {
           const uniqueExs = getUniqueExercisesInBlock(group);
@@ -241,54 +235,35 @@ export default function SessionClient({
         })}
       </div>
 
-      <div style={{ padding: "1rem", borderTop: "1px solid var(--border-subtle)", background: "var(--bg-primary)", paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
-        {!showEnergyPicker ? (
-          <button
-            onClick={() => setShowEnergyPicker(true)}
-            className="btn-primary glow"
-            style={{ width: "100%", padding: "1rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", fontSize: "1rem", fontWeight: 700 }}
-          >
-            <Play size={20} />
-            Iniciar Entrenamiento
-          </button>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            <p style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, textAlign: "center" as const, color: "var(--text-secondary)" }}>Como te encuentras hoy?</p>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
-              {ENERGY_LEVELS.map(level => {
-                const isSelected = selectedEnergy.label === level.label;
-                return (
-                  <button
-                    key={level.label}
-                    onClick={() => setSelectedEnergy(level)}
-                    style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.625rem 0.75rem", borderRadius: "var(--radius-md)", border: "2px solid " + (isSelected ? level.color : "var(--border-subtle)"), background: isSelected ? level.color + "18" : "var(--bg-secondary)", cursor: "pointer", textAlign: "left" as const }}
-                  >
-                    <span style={{ fontSize: "1.25rem" }}>{ENERGY_EMOJIS[level.emoji]}</span>
-                    <span style={{ fontSize: "0.8rem", fontWeight: 600, color: isSelected ? level.color : "var(--text-primary)" }}>{level.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-            <div style={{ display: "flex", gap: "0.5rem" }}>
+      {/* Energy selector + start — always visible at bottom */}
+      <div style={{ padding: "1rem", borderTop: "1px solid var(--border-subtle)", background: "var(--bg-primary)", paddingBottom: "max(1rem, env(safe-area-inset-bottom))", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+        <p style={{ margin: 0, fontSize: "0.8rem", fontWeight: 600, textAlign: "center" as const, color: "var(--text-secondary)" }}>Como te encuentras hoy?</p>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "0.4rem" }}>
+          {ENERGY_LEVELS.map(level => {
+            const isSelected = selectedEnergy.label === level.label;
+            return (
               <button
-                onClick={() => setShowEnergyPicker(false)}
-                style={{ padding: "0.875rem 1rem", borderRadius: "var(--radius-md)", border: "1px solid var(--border-subtle)", background: "var(--bg-secondary)", color: "var(--text-secondary)", cursor: "pointer", fontWeight: 600 }}
+                key={level.label}
+                onClick={() => setSelectedEnergy(level)}
+                style={{ display: "flex", flexDirection: "column" as const, alignItems: "center", gap: "0.25rem", padding: "0.5rem 0.25rem", borderRadius: "var(--radius-md)", border: "2px solid " + (isSelected ? level.color : "var(--border-subtle)"), background: isSelected ? level.color + "18" : "var(--bg-secondary)", cursor: "pointer" }}
               >
-                Cancelar
+                <span style={{ fontSize: "1.25rem" }}>{level.emoji}</span>
+                <span style={{ fontSize: "0.6rem", fontWeight: 600, color: isSelected ? level.color : "var(--text-secondary)", textAlign: "center" as const, lineHeight: 1.2 }}>{level.label}</span>
               </button>
-              <button
-                onClick={startWorkout}
-                className="btn-primary glow"
-                style={{ flex: 1, padding: "0.875rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", fontWeight: 700 }}
-              >
-                <Play size={18} />
-                Empezar
-              </button>
-            </div>
-          </div>
-        )}
+            );
+          })}
+        </div>
+        <button
+          onClick={startWorkout}
+          className="btn-primary glow"
+          style={{ width: "100%", padding: "1rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", fontSize: "1rem", fontWeight: 700 }}
+        >
+          <Play size={20} />
+          Iniciar Entrenamiento
+        </button>
       </div>
 
+      {/* Exercise detail modal */}
       {(detailEx || loadingDetail) && (
         <div
           onClick={() => setDetailEx(null)}
@@ -313,7 +288,7 @@ export default function SessionClient({
                     </button>
                   </div>
                   {detailEx.description && (
-                    <p style={{ fontSize: "0.875rem", color: "var(--text-secondary)", lineHeight: 1.6, marginBottom: "1rem" }}>{detailEx.description}</p>
+                    <p style={{ fontSize: "0.875rem", color: "var(--text-secondary)", lineHeight: 1.6, marginBottom: "1rem", whiteSpace: "pre-wrap" }}>{detailEx.description}</p>
                   )}
                   {detailEx.muscles && (
                     <div style={{ marginBottom: "0.75rem" }}>
