@@ -212,7 +212,7 @@ export default function AdminClient() {
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   {users.filter(u => u.status === 'pending').map(u => (
-                    <div key={u.id} style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 'var(--radius-md)', padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' as const }}>
+                    <div key={u.id} style={{ background: 'rgba(10, 30, 10, 0.85)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 'var(--radius-md)', padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' as const, backdropFilter: 'blur(10px)' }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p style={{ fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.name}</p>
                         <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: '0.1rem 0 0' }}>{u.email}</p>
@@ -224,13 +224,13 @@ export default function AdminClient() {
                       </div>
                       <button
                         onClick={() => handleStatusChange(u.id, 'active')}
-                        style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.5rem 0.875rem', background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.4)', borderRadius: 'var(--radius-md)', color: '#10b981', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.5rem 0.875rem', background: '#166534', border: '1px solid #22c55e', borderRadius: 'var(--radius-md)', color: '#dcfce7', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' as const }}
                       >
                         <UserCheck size={14} /> Aceptar
                       </button>
                       <button
                         onClick={() => handleStatusChange(u.id, 'rejected')}
-                        style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.5rem 0.875rem', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 'var(--radius-md)', color: 'var(--danger)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.5rem 0.875rem', background: '#7f1d1d', border: '1px solid #ef4444', borderRadius: 'var(--radius-md)', color: '#fee2e2', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' as const }}
                       >
                         <UserX size={14} /> Rechazar
                       </button>
@@ -245,7 +245,7 @@ export default function AdminClient() {
               Usuarios activos ({users.filter(u => u.status !== 'pending').length})
             </p>
             {users.filter(u => u.status !== 'pending').map(u => (
-              <div key={u.id} style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+              <div key={u.id} style={{ background: 'rgba(10, 25, 10, 0.85)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 'var(--radius-md)', overflow: 'hidden', backdropFilter: 'blur(10px)' }}>
                 {/* User row */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem 1.25rem', flexWrap: 'wrap' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>

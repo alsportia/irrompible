@@ -94,7 +94,7 @@ export default function LoginSelector() {
         </p>
         <button
           onClick={() => router.push('/register')}
-          style={{ padding: '0.6rem 1.5rem', background: 'transparent', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)', fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'inherit' }}
+          style={{ padding: '0.6rem 1.5rem', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.35)', borderRadius: 'var(--radius-md)', color: 'rgba(255,255,255,0.8)', fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'inherit', backdropFilter: 'blur(8px)' }}
         >
           Registrarse
         </button>

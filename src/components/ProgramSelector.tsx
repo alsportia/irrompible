@@ -93,7 +93,7 @@ export default function ProgramSelector() {
           {/* Logout */}
           <button
             onClick={handleLogout}
-            style={{ width: '100%', padding: '0.875rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', background: 'transparent', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)', fontSize: '0.875rem', cursor: 'pointer', fontFamily: 'inherit' }}
+            style={{ width: '100%', padding: '0.875rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 'var(--radius-md)', color: 'rgba(255,255,255,0.7)', fontSize: '0.875rem', cursor: 'pointer', fontFamily: 'inherit', backdropFilter: 'blur(8px)' }}
           >
             <LogOut size={16} />
             Cerrar sesión
