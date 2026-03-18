@@ -44,6 +44,7 @@ export default function LoginSelector() {
       {/* Glow */}
       <div style={{ position: 'fixed', top: '-100px', left: '-50px', width: '16rem', height: '16rem', background: 'var(--accent-glow)', borderRadius: '50%', filter: 'blur(80px)', opacity: 0.6, pointerEvents: 'none' }} />
 
+      {/* Center content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', maxWidth: '28rem', margin: '0 auto', width: '100%', position: 'relative', zIndex: 10 }}>
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
@@ -83,13 +84,20 @@ export default function LoginSelector() {
           >
             {loading ? 'Entrando...' : 'Entrar'}
           </button>
-          <button
-            onClick={() => router.push('/register')}
-            style={{ width: '100%', padding: '0.75rem', background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)', fontSize: '0.875rem', cursor: 'pointer', fontFamily: 'inherit' }}
-          >
-            Registrarse
-          </button>
         </div>
+      </div>
+
+      {/* Footer register button */}
+      <div style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))', textAlign: 'center', position: 'relative', zIndex: 10 }}>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '0.6rem' }}>
+          ¿Aún no tienes cuenta?
+        </p>
+        <button
+          onClick={() => router.push('/register')}
+          style={{ padding: '0.6rem 1.5rem', background: 'transparent', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)', fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'inherit' }}
+        >
+          Registrarse
+        </button>
       </div>
     </div>
   );
