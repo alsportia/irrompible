@@ -214,7 +214,7 @@ export default function SessionClient({
         </div>
 
         {/* Continue button */}
-        <div style={{ padding: "1rem", borderTop: "1px solid var(--border-subtle)", paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
+        <div style={{ paddingTop: "1rem", paddingLeft: "1rem", paddingRight: "1rem", paddingBottom: "max(1rem, env(safe-area-inset-bottom))", borderTop: "1px solid var(--border-subtle)" }}>
           <button
             onClick={() => setView("summary")}
             className="btn-primary glow"
@@ -334,7 +334,7 @@ export default function SessionClient({
       </div>
 
       {/* Start button */}
-      <div style={{ padding: "1rem", borderTop: "1px solid var(--border-subtle)", background: "var(--bg-primary)", paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
+      <div style={{ paddingTop: "1rem", paddingLeft: "1rem", paddingRight: "1rem", paddingBottom: "max(1rem, env(safe-area-inset-bottom))", borderTop: "1px solid var(--border-subtle)", background: "var(--bg-primary)" }}>
         <button
           onClick={startWorkout}
           className="btn-primary glow"
