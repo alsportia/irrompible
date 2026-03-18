@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Play, Info, Shuffle, X, ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronLeft, Play, Info, Shuffle, X, ChevronDown, ChevronUp, Zap } from "lucide-react";
 import { useUser } from "@/lib/userContext";
 import { getExerciseById } from "@/app/actions";
 import CachedVideo from "./CachedVideo";
@@ -43,12 +43,34 @@ interface SessionClientProps {
 }
 
 const ENERGY_LEVELS = [
-  { label: "A tope!", emoji: "🔥", pct: 1.00, color: "#10b981" },
-  { label: "Bien", emoji: "💪", pct: 0.75, color: "#3b82f6" },
-  { label: "Cansado", emoji: "😓", pct: 0.50, color: "#f59e0b" },
-  { label: "Muy Cansado", emoji: "😴", pct: 0.25, color: "#ef4444" },
+  { label: "¡A tope!", emoji: "🔥", pct: 1.00, color: "#10b981" },
+  { label: "Bien",         emoji: "💪", pct: 0.75, color: "#3b82f6" },
+  { label: "Cansado",      emoji: "😓", pct: 0.50, color: "#f59e0b" },
+  { label: "Muy Cansado",  emoji: "😴", pct: 0.25, color: "#ef4444" },
 ] as const;
 type EnergyLevel = typeof ENERGY_LEVELS[number];
+
+// Mirror of the server-side applyEnergy in workflow/[id]/page.tsx
+function applyEnergy(exercises: ExerciseRow[], pct: number): ExerciseRow[] {
+  if (pct >= 1) return exercises;
+  const maxSetPerBlock = new Map<string, number>();
+  exercises.forEach(e => {
+    maxSetPerBlock.set(e.block, Math.max(maxSetPerBlock.get(e.block) ?? 0, e.set_number));
+  });
+  return exercises
+    .map(ex => {
+      if (ex.reps && ex.reps !== "0") {
+        const n = parseInt(ex.reps);
+        if (!isNaN(n) && n > 1) return { ...ex, reps: String(Math.max(1, Math.round(n * pct))) };
+      }
+      return ex;
+    })
+    .filter(ex => {
+      const maxSet = maxSetPerBlock.get(ex.block) ?? 1;
+      if (maxSet <= 1) return true;
+      return ex.set_number <= Math.max(1, Math.round(maxSet * pct));
+    });
+}
 
 function groupByBlock(exercises: ExerciseRow[]): BlockGroup[] {
   const map = new Map<string, BlockGroup>();
@@ -92,18 +114,21 @@ export default function SessionClient({
   const router = useRouter();
   const { user } = useUser();
 
+  // "energy" = picking level, "summary" = showing adapted session
+  const [view, setView] = useState<"energy" | "summary">("energy");
   const [selectedEnergy, setSelectedEnergy] = useState<EnergyLevel>(ENERGY_LEVELS[0]);
   const [detailEx, setDetailEx] = useState<ExerciseDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [expandedBlocks, setExpandedBlocks] = useState<Set<string>>(new Set());
 
-  const blocks = groupByBlock(exercisesRaw);
-  const totalExercises = new Set(exercisesRaw.map(e => e.ex_id)).size;
+  const adaptedExercises = applyEnergy(exercisesRaw, selectedEnergy.pct);
+  const blocks = groupByBlock(adaptedExercises);
+  const totalExercises = new Set(adaptedExercises.map(e => e.ex_id)).size;
 
   useEffect(() => {
     setExpandedBlocks(new Set(blocks.map(b => b.block)));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionId]);
+  }, [sessionId, view]);
 
   const toggleBlock = (block: string) => {
     setExpandedBlocks(prev => {
@@ -130,12 +155,85 @@ export default function SessionClient({
     router.push("/workflow/" + sessionId + "?" + params.toString());
   };
 
+  // ── Energy picker view ────────────────────────────────────────────────────
+  if (view === "energy") {
+    return (
+      <div style={{ height: "100dvh", display: "flex", flexDirection: "column", background: "var(--bg-primary)", fontFamily: "var(--font-geist-sans)" }}>
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.75rem 1rem", background: "var(--bg-secondary)", borderBottom: "1px solid var(--border-subtle)" }}>
+          <button
+            onClick={() => router.back()}
+            style={{ padding: "0.5rem", marginLeft: "-0.5rem", color: "var(--text-secondary)", background: "none", border: "none", cursor: "pointer", display: "flex" }}
+          >
+            <ChevronLeft size={24} />
+          </button>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h1 style={{ fontFamily: "var(--font-outfit)", fontWeight: 700, fontSize: "1.1rem", letterSpacing: "-0.02em", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {sessionName}
+            </h1>
+          </div>
+        </div>
+
+        {/* Energy picker */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: "2rem 1.25rem", gap: "1.5rem" }}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ width: "4rem", height: "4rem", borderRadius: "50%", background: "rgba(59,130,246,0.15)", border: "1px solid rgba(59,130,246,0.3)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1rem" }}>
+              <Zap size={28} color="var(--accent-primary)" />
+            </div>
+            <h2 style={{ fontFamily: "var(--font-outfit)", fontWeight: 700, fontSize: "1.5rem", letterSpacing: "-0.02em", margin: "0 0 0.5rem" }}>
+              Como te encuentras hoy?
+            </h2>
+            <p style={{ color: "var(--text-secondary)", fontSize: "0.875rem", margin: 0 }}>
+              Adaptaremos el entrenamiento a tu nivel de energia
+            </p>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            {ENERGY_LEVELS.map(level => {
+              const isSelected = selectedEnergy.label === level.label;
+              return (
+                <button
+                  key={level.label}
+                  onClick={() => setSelectedEnergy(level)}
+                  style={{ display: "flex", alignItems: "center", gap: "1rem", padding: "1rem 1.25rem", borderRadius: "var(--radius-md)", border: "2px solid " + (isSelected ? level.color : "var(--border-subtle)"), background: isSelected ? level.color + "18" : "var(--bg-secondary)", cursor: "pointer", textAlign: "left" as const, transition: "all 0.15s ease" }}
+                >
+                  <span style={{ fontSize: "1.75rem", lineHeight: 1 }}>{level.emoji}</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontFamily: "var(--font-outfit)", fontWeight: 700, fontSize: "1rem", color: isSelected ? level.color : "var(--text-primary)" }}>{level.label}</div>
+                    <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+                      {level.pct < 1 ? Math.round(level.pct * 100) + "% de reps y sets" : "Entrenamiento completo"}
+                    </div>
+                  </div>
+                  <div style={{ width: "1.25rem", height: "1.25rem", borderRadius: "50%", border: "2px solid " + (isSelected ? level.color : "var(--border-subtle)"), background: isSelected ? level.color : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    {isSelected && <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#fff" }} />}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Continue button */}
+        <div style={{ padding: "1rem", borderTop: "1px solid var(--border-subtle)", paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
+          <button
+            onClick={() => setView("summary")}
+            className="btn-primary glow"
+            style={{ width: "100%", padding: "1rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", fontSize: "1rem", fontWeight: 700 }}
+          >
+            Ver resumen
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Summary view ──────────────────────────────────────────────────────────
   return (
     <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", background: "var(--bg-primary)", fontFamily: "var(--font-geist-sans)" }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.75rem 1rem", background: "var(--bg-secondary)", borderBottom: "1px solid var(--border-subtle)", position: "sticky", top: 0, zIndex: 10 }}>
         <button
-          onClick={() => router.back()}
+          onClick={() => setView("energy")}
           style={{ padding: "0.5rem", marginLeft: "-0.5rem", color: "var(--text-secondary)", background: "none", border: "none", cursor: "pointer", display: "flex" }}
         >
           <ChevronLeft size={24} />
@@ -145,7 +243,7 @@ export default function SessionClient({
             {sessionName}
           </h1>
           <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", margin: 0 }}>
-            {totalExercises} ejercicios
+            {totalExercises} ejercicios &middot; <span style={{ color: selectedEnergy.color }}>{selectedEnergy.emoji} {selectedEnergy.label}</span>
           </p>
         </div>
       </div>
@@ -235,24 +333,8 @@ export default function SessionClient({
         })}
       </div>
 
-      {/* Energy selector + start — always visible at bottom */}
-      <div style={{ padding: "1rem", borderTop: "1px solid var(--border-subtle)", background: "var(--bg-primary)", paddingBottom: "max(1rem, env(safe-area-inset-bottom))", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-        <p style={{ margin: 0, fontSize: "0.8rem", fontWeight: 600, textAlign: "center" as const, color: "var(--text-secondary)" }}>Como te encuentras hoy?</p>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "0.4rem" }}>
-          {ENERGY_LEVELS.map(level => {
-            const isSelected = selectedEnergy.label === level.label;
-            return (
-              <button
-                key={level.label}
-                onClick={() => setSelectedEnergy(level)}
-                style={{ display: "flex", flexDirection: "column" as const, alignItems: "center", gap: "0.25rem", padding: "0.5rem 0.25rem", borderRadius: "var(--radius-md)", border: "2px solid " + (isSelected ? level.color : "var(--border-subtle)"), background: isSelected ? level.color + "18" : "var(--bg-secondary)", cursor: "pointer" }}
-              >
-                <span style={{ fontSize: "1.25rem" }}>{level.emoji}</span>
-                <span style={{ fontSize: "0.6rem", fontWeight: 600, color: isSelected ? level.color : "var(--text-secondary)", textAlign: "center" as const, lineHeight: 1.2 }}>{level.label}</span>
-              </button>
-            );
-          })}
-        </div>
+      {/* Start button */}
+      <div style={{ padding: "1rem", borderTop: "1px solid var(--border-subtle)", background: "var(--bg-primary)", paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
         <button
           onClick={startWorkout}
           className="btn-primary glow"
