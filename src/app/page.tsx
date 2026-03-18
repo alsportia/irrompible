@@ -12,8 +12,6 @@ interface Session {
 
 async function getSessions(programId?: string): Promise<Session[]> {
   if (programId) {
-    // Filter sessions by program via program_sessions join
-    // Order by numeric part of session id (works for both 'sesion_X' and 'elite_sesion_X')
     return DB.query<Session>(`
       SELECT s.id, s.name, s.description, COUNT(se.id) as exerciseCount
       FROM sessions s
@@ -33,12 +31,24 @@ async function getSessions(programId?: string): Promise<Session[]> {
   `);
 }
 
+async function getProgramName(programId?: string): Promise<string> {
+  if (!programId) return "Unbreakable";
+  const [prog] = await DB.query<{ name: string }>(
+    "SELECT name FROM programs WHERE id = ?",
+    [programId]
+  );
+  return prog?.name ?? "Programa";
+}
+
 export default async function Home({
   searchParams,
 }: {
   searchParams: Promise<{ programId?: string }>;
 }) {
   const { programId } = await searchParams;
-  const sessions = await getSessions(programId);
-  return <HomeClient sessions={sessions} programId={programId} />;
+  const [sessions, programName] = await Promise.all([
+    getSessions(programId),
+    getProgramName(programId),
+  ]);
+  return <HomeClient sessions={sessions} programId={programId} programName={programName} />;
 }

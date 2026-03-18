@@ -16,7 +16,7 @@ interface Session {
   exerciseCount?: number;
 }
 
-export default function HomeClient({ sessions, programId }: { sessions: Session[]; programId?: string }) {
+export default function HomeClient({ sessions, programId, programName }: { sessions: Session[]; programId?: string; programName?: string }) {
   const { user, setUser } = useUser();
   const router = useRouter();
   const [showCalendar, setShowCalendar] = useState(false);
@@ -55,7 +55,7 @@ export default function HomeClient({ sessions, programId }: { sessions: Session[
         {/* Header — fixed */}
         <header style={{ paddingTop: '2.5rem', paddingBottom: '1.5rem', paddingLeft: '1.25rem', paddingRight: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, position: 'relative', zIndex: 10, background: 'var(--bg-primary)', borderBottom: '1px solid var(--border-subtle)' }}>
           <div>
-            <h1 className="heading-display" style={{ fontSize: '2.25rem', marginBottom: '0.25rem' }}>Unbreakable</h1>
+            <h1 className="heading-display" style={{ fontSize: '2.25rem', marginBottom: '0.25rem' }}>{programName ?? "Unbreakable"}</h1>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', fontWeight: 500 }}>Hola, {user.name}</p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
