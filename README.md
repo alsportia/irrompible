@@ -38,27 +38,52 @@ unbreakable-app/
 │   └── icon-512.png
 ├── src/
 │   ├── app/
-│   │   ├── layout.tsx          # Layout raíz (fuentes, WakeLock global)
-│   │   ├── page.tsx            # Home — lista de sesiones
+│   │   ├── layout.tsx          # Layout raíz (migración DB, fuentes, WakeLock)
+│   │   ├── page.tsx            # Home — lista de sesiones del programa
 │   │   ├── globals.css         # Variables CSS y clases globales
 │   │   ├── actions.ts          # Server Actions (crear log, guardar sets)
+│   │   ├── admin/
+│   │   │   └── page.tsx        # Panel de administración (solo rol admin)
+│   │   ├── programs/
+│   │   │   └── page.tsx        # Selector de programas post-login
 │   │   ├── session/[id]/
 │   │   │   └── page.tsx        # Server Component — fetch datos sesión
 │   │   └── workflow/[id]/
 │   │       └── page.tsx        # Server Component — fetch ejercicios + aplica energía
+│   ├── api/
+│   │   ├── auth/
+│   │   │   ├── login/route.ts      # POST — login por email
+│   │   │   └── validate/route.ts   # GET — valida sesión activa
+│   │   ├── programs/route.ts       # GET — programas del usuario
+│   │   ├── users/route.ts          # GET/POST — usuarios
+│   │   └── admin/
+│   │       ├── programs/route.ts           # GET — todos los programas
+│   │       ├── users/route.ts              # GET — todos los usuarios
+│   │       ├── users/[id]/role/route.ts    # PATCH — cambiar rol
+│   │       └── users/[id]/programs/route.ts # GET/PUT — programas de un usuario
 │   ├── components/
-│   │   ├── SessionClient.tsx   # Client Component — pantalla energía + resumen sesión
-│   │   ├── WorkoutTracker.tsx  # Client Component — pantalla de entrenamiento activo
-│   │   ├── CachedVideo.tsx     # Reproductor de vídeo con caché IndexedDB
+│   │   ├── LoginSelector.tsx   # Pantalla de login por email
+│   │   ├── ProgramSelector.tsx # Selector de programas post-login
+│   │   ├── AdminClient.tsx     # Panel de administración (UI)
+│   │   ├── HomeClient.tsx      # Lista de sesiones del programa activo
+│   │   ├── SessionClient.tsx   # Resumen de sesión + selector de energía
+│   │   ├── WorkoutTracker.tsx  # Pantalla de entrenamiento activo
+│   │   ├── CachedVideo.tsx     # Reproductor de vídeo (YouTube embed)
 │   │   ├── VideoPrefetcher.tsx # Pre-descarga vídeos en segundo plano
+│   │   ├── CalendarView.tsx    # Vista de calendario de entrenamientos
 │   │   └── WakeLock.tsx        # Mantiene pantalla activa (global, en layout)
 │   └── lib/
 │       ├── db.ts               # Wrapper SQLite3 con métodos query/run/get
+│       ├── migrate.ts          # Migraciones de DB (se ejecuta al arrancar)
+│       ├── adminAuth.ts        # Helper requireAdmin() para rutas protegidas
+│       ├── userContext.tsx     # Context de usuario (id, name, email, role)
 │       ├── useBeep.ts          # Hook Web Audio API para pitidos de cuenta atrás
 │       └── videoCache.ts       # Caché de vídeos en IndexedDB
 └── recursos/                   # (fuera de unbreakable-app)
-    ├── Unbreakable.xlsx        # Fuente de datos original
-    └── extract_data.py         # Script Python para poblar la DB desde el Excel
+    ├── Unbreakable.xlsx        # Fuente de datos Unbreakable
+    ├── Elite.xlsx              # Fuente de datos Elite
+    ├── extract_data.py         # Script para poblar DB desde Unbreakable.xlsx
+    └── extract_elite.py        # Script para poblar DB desde Elite.xlsx
 ```
 
 ---
@@ -68,35 +93,69 @@ unbreakable-app/
 ### Esquema
 
 ```sql
+users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT,
+  email TEXT UNIQUE,
+  role TEXT DEFAULT 'user'    -- 'admin' | 'user'
+)
+
+programs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT
+)
+
+user_programs (
+  user_id INTEGER,
+  program_id INTEGER,
+  PRIMARY KEY (user_id, program_id)
+)
+
+program_sessions (
+  program_id INTEGER,
+  session_id TEXT,
+  PRIMARY KEY (program_id, session_id)
+)
+
 sessions (
-  id TEXT PRIMARY KEY,        -- ej: "sesion_1"
-  name TEXT,                  -- ej: "Sesion 1"
-  description TEXT            -- descripción completa de la sesión
+  id TEXT PRIMARY KEY,        -- ej: "sesion_1", "elite_sesion_1"
+  name TEXT,
+  description TEXT
 )
 
 exercises (
   ex_id TEXT PRIMARY KEY,
   name TEXT,
-  video_url TEXT              -- URL de YouTube Shorts
+  video_url TEXT,             -- URL de YouTube Shorts
+  description TEXT,
+  muscles TEXT,
+  joints TEXT,
+  easier_id TEXT,             -- referencia a ejercicio más fácil
+  harder_id TEXT              -- referencia a ejercicio más difícil
 )
 
 session_exercises (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   session_id TEXT,
   block TEXT,                 -- letra/número del bloque: "1", "2"...
-  block_type TEXT,            -- "super_series", "tabata", "interval_repetitions_with_pause"...
-  set_number INTEGER,         -- número de set dentro del bloque
+  block_type TEXT,            -- "super_series", "tabata", "circuit"...
+  set_number INTEGER,
   ex_id TEXT,
-  ex_order INTEGER,           -- orden del ejercicio dentro del set
-  tiempo_ej TEXT,             -- duración en segundos (ej: "40", "50")
+  ex_order INTEGER,
+  tiempo_ej TEXT,             -- duración (ej: "40''", "1'")
   reps TEXT                   -- repeticiones (ej: "15", "6")
 )
 
 workout_logs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   session_id TEXT,
+  user_id INTEGER,
   date DATETIME DEFAULT CURRENT_TIMESTAMP,
-  duration INTEGER            -- duración total en segundos
+  completed_at DATETIME,
+  duration INTEGER,
+  energy_label TEXT,
+  feeling_score INTEGER,
+  feeling_label TEXT
 )
 
 workout_sets (
@@ -109,129 +168,117 @@ workout_sets (
 )
 ```
 
-### Orden de ejercicios en workflow
+### Programas disponibles
 
-Los ejercicios se ordenan `ORDER BY block, set_number, ex_order` para que el flujo sea correcto en superseries: Set1(ej1→ej2→ej3) → Set2(ej1→ej2→ej3).
+| ID | Nombre | Sesiones |
+|---|---|---|
+| 1 | Unbreakable | 50 |
+| 23 | Elite | 69 |
 
 ---
 
 ## Flujo de navegación
 
 ```
-Home (lista sesiones)
-  └─► SessionClient — pantalla de nivel de energía
-        └─► SessionClient — resumen de sesión (con datos ajustados)
-              └─► WorkoutTracker — entrenamiento activo
-                    └─► Pantalla de fin de entrenamiento
+LoginSelector (email)
+  └─► ProgramSelector (lista de programas del usuario)
+        ├─► [Admin] Panel de administración
+        └─► HomeClient (lista de sesiones del programa)
+              └─► SessionClient (resumen + selector de energía)
+                    └─► WorkoutTracker (entrenamiento activo)
+                          └─► Pantalla de valoración + fin
 ```
+
+---
+
+## Autenticación y roles
+
+### Login
+- El usuario introduce su email en `LoginSelector`.
+- Se llama a `POST /api/auth/login` que busca el usuario por email.
+- El usuario se guarda en `localStorage` como JSON `{ id, name, email, role }`.
+- Al recargar, `GET /api/auth/validate` verifica que el usuario sigue existiendo en la DB.
+
+### Roles
+- `user` — acceso solo a sus programas asignados.
+- `admin` — acceso a todos los programas + botón de acceso al panel de administración.
+
+### Panel de administración
+- Accesible desde `ProgramSelector` si el usuario tiene rol `admin`.
+- Permite cambiar el rol de cualquier usuario.
+- Permite asignar/desasignar programas a cada usuario.
+- Las rutas `/api/admin/*` están protegidas con `requireAdmin()` que verifica el header `x-user-id`.
 
 ---
 
 ## Funcionalidades implementadas
 
-### 1. Home — Lista de sesiones
-- Muestra todas las sesiones ordenadas numéricamente.
-- Cada tarjeta muestra nombre, descripción (truncada a 2 líneas) y número de series.
-- Diseño dark con glassmorphism.
+### 1. Login por email
+- Pantalla inicial con campo de email.
+- Redirige a `/programs` tras login exitoso.
 
-### 2. Selección de nivel de energía
-Aparece al entrar en una sesión, antes del resumen. Cuatro niveles:
+### 2. Selector de programas
+- Muestra los programas asignados al usuario como botones.
+- Botón de administración visible solo para admins.
+- Al seleccionar un programa navega a `/?programId=X`.
 
-| Nivel | Emoji | Porcentaje |
-|---|---|---|
-| ¡A tope! | 🔥 | 100% |
-| Bien | 💪 | 75% |
-| Cansado | 😓 | 50% |
-| Muy Cansado | 😴 | 25% |
+### 3. Home — Lista de sesiones
+- Muestra el nombre del programa activo en el header (dinámico, no hardcodeado).
+- Sesiones divididas en "completadas" y "pendientes".
+- La primera sesión pendiente se marca como "Toca hoy" y se hace scroll automático hasta ella.
+- Botón de volver a la selección de programas.
 
-- Por defecto seleccionado: ¡A tope! (100%).
-- El porcentaje se aplica a:
-  - **Reps**: se escalan proporcionalmente (mínimo 1).
-  - **Sets**: en bloques con múltiples sets, se reduce el número de sets.
-- El nivel seleccionado se pasa como query param `?energy=0.75` a la ruta `/workflow/[id]`.
+### 4. Resumen de sesión (SessionClient)
+- Bloques expandidos por defecto.
+- Cada ejercicio muestra thumbnail de YouTube, nombre, reps y/o tiempo.
+- Botón de info (ⓘ) abre modal con vídeo, descripción, músculos, articulaciones y alternativas más fácil/difícil.
+- Selector de nivel de energía antes de iniciar.
 
-### 3. Resumen de sesión
-- Header sticky con nombre de sesión y badge del nivel de energía seleccionado.
-- Sección de instrucciones con la descripción completa de la sesión.
-- Bloques separados por divisores con nombre del tipo y badge `×N sets`.
-- Cada ejercicio muestra:
-  - Thumbnail de YouTube (extraído de la URL del vídeo).
-  - Overlay de play sobre el thumbnail.
-  - Nombre del ejercicio.
-  - Reps y/o tiempo objetivo.
-- Al pulsar el thumbnail se abre un **modal de previsualización** con el vídeo en formato vertical (9:16), autoplay y loop continuo.
-- Botón fijo "Iniciar Entrenamiento" en la parte inferior.
+### 5. Nivel de energía
 
-### 4. Entrenamiento activo (WorkoutTracker)
+| Nivel | Porcentaje aplicado |
+|---|---|
+| ¡A tope! | 100% |
+| Bien | 75% |
+| Cansado | 50% |
+| Muy Cansado | 25% |
 
-#### Header con progreso
-- Fila de píldoras (una por ejercicio): azul = completado, blanco semitransparente = pendiente.
-- Si hay más de 20 ejercicios, cambia a barra de progreso continua con contador "X / Y".
+El porcentaje escala reps y número de sets en el workflow.
 
-#### Cuenta atrás pre-ejercicio
-- 5 segundos de cuenta atrás antes de cada ejercicio.
-- Círculo SVG animado que se llena progresivamente.
-- Pitido en cada segundo (Web Audio API, 600 Hz).
-- Pitido final diferente al llegar a 0 (1200 Hz).
-- Al llegar a 0, espera 1,1s para que la animación del círculo complete antes de pasar al ejercicio.
-- Botón "Saltar cuenta atrás" disponible.
-- Muestra bloque, set y nombre del ejercicio siguiente.
+### 6. Entrenamiento activo (WorkoutTracker)
+- Cuenta atrás de 5s con círculo SVG animado y pitidos.
+- Vídeo a pantalla completa con todos los iframes pre-renderizados.
+- Timer con barra de progreso para ejercicios con tiempo.
+- Pitidos de aviso en los últimos 5 segundos.
+- Botones Anterior / Completar y Siguiente.
+- Pantalla de valoración al finalizar (Excelente → Muy Duro).
 
-#### Pantalla de ejercicio
-- Vídeo a pantalla completa (flex: 1, ocupa todo el espacio disponible).
-- Todos los iframes pre-renderizados y ocultados con `display: none/block` para evitar recargas.
-- Si no hay vídeo, muestra placeholder con icono.
-- Info area en la parte inferior:
-  - Badge de bloque (izquierda) y set (derecha) con `justify-content: space-between`.
-  - Nombre del ejercicio en grande.
-  - Fila de cards: Reps | Objetivo (tiempo) | Timer | Pausa.
-  - Timer con barra de progreso horizontal (izquierda a derecha, azul semitransparente).
-- Botones: "Anterior" (si no es el primero) + "Completar y Siguiente".
+### 7. Caché de vídeos (IndexedDB)
+- `VideoPrefetcher` descarga los vídeos de la sesión en segundo plano.
+- Las reproducciones siguientes usan la caché local.
 
-#### Temporizador
-- Ejercicios con `tiempo_ej`: cuenta atrás desde el tiempo objetivo.
-- Ejercicios con `reps`: cuenta hacia arriba (tiempo transcurrido).
-- Pitidos de aviso en los últimos 5 segundos (1000 Hz).
-- Auto-avance al llegar a 0.
-- Botón de pausa/reanudar.
+### 8. Wake Lock
+- Implementado globalmente en `layout.tsx`.
+- Evita que el móvil se bloquee durante el entrenamiento.
 
-#### Cuenta atrás de fin de ejercicio
-- Pitidos de aviso (1000 Hz) cuando quedan 5, 4, 3, 2 segundos.
-- Pitido final (1200 Hz) al llegar a 0.
-
-#### Navegación
-- Botón "Anterior" para volver al ejercicio previo (resetea la cuenta atrás).
-- Botón X para salir al resumen de sesión.
-
-#### Pantalla de fin
-- Pantalla de felicitación al completar todos los ejercicios.
-- Registra duración total del entrenamiento en `workout_logs`.
-
-### 5. Caché de vídeos (IndexedDB)
-- Los vídeos de YouTube se descargan la primera vez y se almacenan en IndexedDB.
-- Las siguientes reproducciones usan la caché local.
-- `VideoPrefetcher` pre-descarga todos los vídeos de la sesión en segundo plano al entrar al resumen.
-
-### 6. Wake Lock
-- Implementado globalmente en `layout.tsx` mediante el componente `WakeLock.tsx`.
-- Usa la API `navigator.wakeLock.request('screen')`.
-- Se reactiva automáticamente al volver a la pestaña (evento `visibilitychange`).
-- Evita que el móvil se bloquee mientras la app está en pantalla.
-
-### 7. Registro de entrenamientos
-- Al iniciar un entrenamiento se crea un `workout_log` en la DB.
-- Cada ejercicio completado guarda un `workout_set` con el tiempo realizado.
-- Al finalizar se registra la duración total.
+### 9. Registro de entrenamientos
+- `workout_logs` registra cada sesión con duración, energía y valoración.
+- `workout_sets` registra cada ejercicio con tiempo realizado.
+- Vista de calendario disponible desde el home.
 
 ---
 
-## Datos — Script de extracción
+## Datos — Scripts de extracción
 
-El archivo `extract_data.py` (en la raíz del workspace) lee `recursos/Unbreakable.xlsx` y puebla `unbreakable-app/data/unbreakable.db`.
+```bash
+# Poblar programa Unbreakable desde Excel
+python3 extract_data.py
 
-- Requiere Python con `pandas` y `openpyxl`: `pip install pandas openpyxl`
-- Las descripciones se extraen buscando la primera celda con más de 80 caracteres en las primeras 20 filas de cada hoja.
-- Ejecutar desde la raíz: `python3 extract_data.py`
+# Poblar programa Elite desde Excel
+python3 extract_elite.py
+```
+
+Ambos scripts requieren: `pip install pandas openpyxl`
 
 ---
 
@@ -243,7 +290,7 @@ npm install
 npm run dev        # http://localhost:3000
 ```
 
-> El servidor escucha en `0.0.0.0` para ser accesible desde otros dispositivos en la misma red (útil para probar en iPhone).
+> El servidor escucha en `0.0.0.0` para ser accesible desde otros dispositivos en la misma red.
 
 ## Deploy
 
@@ -261,6 +308,6 @@ git push origin main
 
 - Todos los componentes interactivos son Client Components (`"use client"`).
 - Las páginas de ruta son Server Components que hacen el fetch de datos y pasan props a los Client Components.
+- Next.js 15+: `params` y `searchParams` son Promises y deben awaitearse.
 - No se usa `useEffect` para fetch de datos — todo el fetching es server-side.
-- Los estilos se definen como objetos `const S = { ... }` al inicio del componente para mantener el JSX limpio.
 - El idioma de la UI es **español**.
