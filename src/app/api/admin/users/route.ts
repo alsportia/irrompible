@@ -6,7 +6,7 @@ export async function GET(req: NextRequest) {
   const auth = await requireAdmin(req);
   if (auth instanceof NextResponse) return auth;
 
-  const users = await DB.query('SELECT id, name, email, role FROM users ORDER BY name ASC');
+  const users = await DB.query('SELECT id, name, email, role, status FROM users ORDER BY name ASC');
   return NextResponse.json(users);
 }
 
