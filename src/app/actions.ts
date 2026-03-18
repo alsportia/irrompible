@@ -42,3 +42,21 @@ export async function getCompletedSessionIds(userId: number): Promise<string[]> 
   );
   return rows.map(r => r.session_id);
 }
+
+export async function getExerciseById(exId: string) {
+  const [ex] = await DB.query<{
+    ex_id: string; name: string; video_url: string | null;
+    description: string | null; muscles: string | null; joints: string | null;
+    easier_id: string | null; easier_name: string | null;
+    harder_id: string | null; harder_name: string | null;
+  }>(`
+    SELECT e.ex_id, e.name, e.video_url, e.description, e.muscles, e.joints,
+           e.easier_id, easy.name as easier_name,
+           e.harder_id, hard.name as harder_name
+    FROM exercises e
+    LEFT JOIN exercises easy ON e.easier_id = easy.ex_id
+    LEFT JOIN exercises hard ON e.harder_id = hard.ex_id
+    WHERE e.ex_id = ?
+  `, [exId]);
+  return ex ?? null;
+}

@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { CalendarDays, ChevronRight, User, Dumbbell } from "lucide-react";
+import { CalendarDays, ChevronRight, User, Dumbbell, ChevronLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useUser } from "@/lib/userContext";
-import UserSelector from "./UserSelector";
+import LoginSelector from "./LoginSelector";
 import CalendarView from "./CalendarView";
 import { getCompletedSessionIds } from "@/app/actions";
 
@@ -15,8 +16,9 @@ interface Session {
   exerciseCount?: number;
 }
 
-export default function HomeClient({ sessions }: { sessions: Session[] }) {
+export default function HomeClient({ sessions, programId }: { sessions: Session[]; programId?: string }) {
   const { user, setUser } = useUser();
+  const router = useRouter();
   const [showCalendar, setShowCalendar] = useState(false);
   const [completedIds, setCompletedIds] = useState<string[]>([]);
   const nextRef = useRef<HTMLDivElement>(null);
@@ -36,7 +38,7 @@ export default function HomeClient({ sessions }: { sessions: Session[] }) {
     return () => clearTimeout(t);
   }, [completedIds, user]);
 
-  if (!user) return <UserSelector />;
+  if (!user) return <LoginSelector />;
 
   // Split sessions: done vs pending
   const doneSessions = sessions.filter(s => completedIds.includes(s.id));
@@ -57,6 +59,12 @@ export default function HomeClient({ sessions }: { sessions: Session[] }) {
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', fontWeight: 500 }}>Hola, {user.name}</p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {/* Back to programs */}
+            <button onClick={() => router.push('/programs')}
+              title="Volver a programas"
+              style={{ width: '3rem', height: '3rem', borderRadius: '50%', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', backdropFilter: 'blur(12px)', cursor: 'pointer' }}>
+              <ChevronLeft size={20} />
+            </button>
             {/* Exercises icon */}
             <Link href="/exercises"
               style={{ width: '3rem', height: '3rem', borderRadius: '50%', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', backdropFilter: 'blur(12px)', cursor: 'pointer', textDecoration: 'none' }}>

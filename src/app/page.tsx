@@ -20,7 +20,12 @@ async function getSessions(): Promise<Session[]> {
   `);
 }
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ programId?: string }>;
+}) {
+  const { programId } = await searchParams;
   const sessions = await getSessions();
-  return <HomeClient sessions={sessions} />;
+  return <HomeClient sessions={sessions} programId={programId} />;
 }

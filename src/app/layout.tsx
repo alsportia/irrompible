@@ -3,6 +3,10 @@ import { Geist, Geist_Mono, Outfit } from "next/font/google";
 import "./globals.css";
 import WakeLock from "@/components/WakeLock";
 import { UserProvider } from "@/lib/userContext";
+import { runMigrations } from "@/lib/migrate";
+
+// Run DB migrations on server startup (idempotent)
+runMigrations().catch((err) => console.error("Migration error:", err));
 
 const outfit = Outfit({
   subsets: ["latin"],

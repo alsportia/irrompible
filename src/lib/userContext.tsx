@@ -2,9 +2,11 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
-interface User {
+export interface User {
   id: number;
   name: string;
+  email: string;
+  role: 'admin' | 'user';
 }
 
 interface UserContextType {
@@ -21,7 +23,29 @@ export function UserProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const stored = localStorage.getItem('ub_user');
     if (stored) {
-      try { setUserState(JSON.parse(stored)); } catch {}
+      try {
+        const parsed: User = JSON.parse(stored);
+        fetch('/api/auth/validate', {
+          headers: { 'x-user-id': String(parsed.id) },
+        })
+          .then(res => {
+            if (res.status === 401) return null;
+            return res.json();
+          })
+          .then(data => {
+            if (!data || data.valid === false) {
+              setUserState(null);
+              localStorage.removeItem('ub_user');
+            } else {
+              setUserState(parsed);
+            }
+          })
+          .catch(() => {
+            setUserState(parsed);
+          })
+          .finally(() => setLoaded(true));
+        return;
+      } catch {}
     }
     setLoaded(true);
   }, []);
