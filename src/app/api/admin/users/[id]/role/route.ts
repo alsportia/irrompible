@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/adminAuth';
 import { DB } from '@/lib/db';
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAdmin(req);
   if (auth instanceof NextResponse) return auth;
 
@@ -11,7 +11,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ error: 'Rol inválido' }, { status: 400 });
   }
 
-  const { id } = params;
+  const { id } = await params;
   const result = await DB.run('UPDATE users SET role = ? WHERE id = ?', [role, id]);
   if (result.changes === 0) {
     return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });

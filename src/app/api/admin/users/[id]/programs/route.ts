@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/adminAuth';
 import { DB } from '@/lib/db';
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAdmin(req);
   if (auth instanceof NextResponse) return auth;
 
-  const { id } = params;
+  const { id } = await params;
   const programs = await DB.query(
     `SELECT p.id, p.name FROM programs p
      INNER JOIN user_programs up ON up.program_id = p.id
@@ -17,11 +17,11 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json(programs);
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAdmin(req);
   if (auth instanceof NextResponse) return auth;
 
-  const { id } = params;
+  const { id } = await params;
   const { programIds } = await req.json() as { programIds: number[] };
 
   await DB.run('DELETE FROM user_programs WHERE user_id = ?', [id]);
