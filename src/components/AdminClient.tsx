@@ -43,6 +43,21 @@ export default function AdminClient() {
 
   const headers = { 'x-user-id': String(user?.id ?? 0) };
 
+  async function handleBackup() {
+    const res = await fetch('/api/admin/backup', { headers });
+    if (!res.ok) return;
+    const blob = await res.blob();
+    const disposition = res.headers.get('Content-Disposition') ?? '';
+    const match = disposition.match(/filename="(.+)"/);
+    const filename = match?.[1] ?? 'backup.db';
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   async function handleRestore(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -209,47 +224,34 @@ export default function AdminClient() {
 
       <div style={{ maxWidth: '48rem', margin: '0 auto', position: 'relative', zIndex: 10 }}>
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <button
-              onClick={() => router.push('/programs')}
-              style={{ background: 'transparent', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)', fontSize: '0.875rem', padding: '0.5rem 1rem', cursor: 'pointer', fontFamily: 'inherit' }}
-            >
-              ← Volver
-            </button>
-            <h1 className="heading-display" style={{ fontSize: '1.5rem', margin: 0 }}>Usuarios</h1>
-          </div>
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
-            <a
-              href="/api/admin/backup"
-              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.625rem 1rem', fontSize: '0.875rem', background: 'transparent', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none' }}
-            >
-              <Download size={16} />
-              Backup DB
-            </a>
-            <label
-              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.625rem 1rem', fontSize: '0.875rem', background: 'transparent', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', color: restoring ? 'var(--text-secondary)' : 'var(--warning, #f59e0b)', cursor: restoring ? 'not-allowed' : 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
-            >
-              <Download size={16} style={{ transform: 'rotate(180deg)' }} />
-              {restoring ? 'Restaurando...' : 'Restaurar DB'}
-              <input type="file" accept=".db" onChange={handleRestore} disabled={restoring} style={{ display: 'none' }} />
-            </label>
-            {restoreError && <span style={{ fontSize: '0.75rem', color: 'var(--danger)' }}>{restoreError}</span>}
-            <button
-              onClick={openCreate}
-              className="btn-primary"
-              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.625rem 1rem', fontSize: '0.875rem' }}
-            >
-              <UserPlus size={16} />
-              Nuevo usuario
-            </button>
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+          <button
+            onClick={() => router.push('/programs')}
+            style={{ background: 'transparent', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)', fontSize: '0.875rem', padding: '0.5rem 1rem', cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            ← Volver
+          </button>
+          <h1 className="heading-display" style={{ fontSize: '1.5rem', margin: 0 }}>Admin</h1>
         </div>
 
         {loading ? (
           <p style={{ color: 'var(--text-secondary)', textAlign: 'center' }}>Cargando...</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            {/* Section header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+              <p style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: 'var(--text-secondary)', margin: 0 }}>
+                Usuarios
+              </p>
+              <button
+                onClick={openCreate}
+                className="btn-primary"
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.875rem', fontSize: '0.8rem' }}
+              >
+                <UserPlus size={14} />
+                Nuevo usuario
+              </button>
+            </div>
             {/* Pending users */}
             {users.filter(u => u.status === 'pending').length > 0 && (
               <div style={{ marginBottom: '0.5rem' }}>
@@ -361,6 +363,31 @@ export default function AdminClient() {
                 )}
               </div>
             ))}
+            {/* Maintenance section */}
+            <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '1.5rem' }}>
+              <p style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: 'var(--text-secondary)', margin: '0 0 0.75rem' }}>
+                Mantenimiento
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <button
+                  onClick={handleBackup}
+                  className="btn-primary"
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.875rem', fontSize: '0.9rem', fontWeight: 700, width: '100%' }}
+                >
+                  <Download size={18} />
+                  Descargar copia de seguridad
+                </button>
+                <label
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.875rem', fontSize: '0.9rem', fontWeight: 700, width: '100%', background: 'transparent', border: '2px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', color: restoring ? 'var(--text-secondary)' : 'var(--text-primary)', cursor: restoring ? 'not-allowed' : 'pointer', fontFamily: 'inherit', boxSizing: 'border-box' as const }}
+                >
+                  <Download size={18} style={{ transform: 'rotate(180deg)' }} />
+                  {restoring ? 'Restaurando...' : 'Restaurar desde copia de seguridad'}
+                  <input type="file" accept=".db" onChange={handleRestore} disabled={restoring} style={{ display: 'none' }} />
+                </label>
+                {restoreError && <p style={{ color: 'var(--danger)', fontSize: '0.8rem', margin: 0, textAlign: 'center' }}>{restoreError}</p>}
+              </div>
+            </div>
+
           </div>
         )}
       </div>
