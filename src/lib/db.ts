@@ -5,19 +5,18 @@ import fs from 'fs';
 const dbPath = path.join(process.cwd(), 'data', 'unbreakable.db');
 const seedPath = path.join(process.cwd(), 'seed.db'); // outside the volume mount
 
-// On first deploy (volume is empty), copy seed DB so existing data is preserved
-if (!fs.existsSync(dbPath) && fs.existsSync(seedPath)) {
-  fs.copyFileSync(seedPath, dbPath);
-  console.log('Initialized database from seed.db');
-}
-
-// Enable Promise wrapping for sqlite3 using standard util.promisify or a simple wrapper
-// Instead of a full ORM, we'll write a simple async wrapper for sqlite3
 export class DB {
   private static instance: sqlite3.Database;
 
   public static getInstance(): sqlite3.Database {
     if (!DB.instance) {
+      // Lazy init: only runs at request time, not during build
+      const dataDir = path.dirname(dbPath);
+      if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+      if (!fs.existsSync(dbPath) && fs.existsSync(seedPath)) {
+        fs.copyFileSync(seedPath, dbPath);
+        console.log('Initialized database from seed.db');
+      }
       DB.instance = new sqlite3.Database(dbPath, (err) => {
         if (err) {
           console.error('Error opening database', err.message);
