@@ -195,16 +195,16 @@ export default function SessionClient({
                 <button
                   key={level.label}
                   onClick={() => setSelectedEnergy(level)}
-                  style={{ display: "flex", alignItems: "center", gap: "1rem", padding: "1rem 1.25rem", borderRadius: "var(--radius-md)", border: "2px solid " + (isSelected ? level.color : "var(--border-subtle)"), background: isSelected ? level.color + "18" : "var(--bg-secondary)", cursor: "pointer", textAlign: "left" as const, transition: "all 0.15s ease" }}
+                  style={{ display: "flex", alignItems: "center", gap: "1rem", padding: "1rem 1.25rem", borderRadius: "var(--radius-md)", border: "2px solid " + (isSelected ? level.color : "var(--border-subtle)"), background: isSelected ? level.color + "cc" : "var(--bg-secondary)", cursor: "pointer", textAlign: "left" as const, transition: "all 0.15s ease" }}
                 >
                   <span style={{ fontSize: "1.75rem", lineHeight: 1 }}>{level.emoji}</span>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontFamily: "var(--font-outfit)", fontWeight: 700, fontSize: "1rem", color: isSelected ? level.color : "var(--text-primary)" }}>{level.label}</div>
-                    <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+                    <div style={{ fontFamily: "var(--font-outfit)", fontWeight: 700, fontSize: "1rem", color: isSelected ? "#fff" : "var(--text-primary)" }}>{level.label}</div>
+                    <div style={{ fontSize: "0.75rem", color: isSelected ? "rgba(255,255,255,0.8)" : "var(--text-secondary)" }}>
                       {level.pct < 1 ? Math.round(level.pct * 100) + "% de reps y sets" : "Entrenamiento completo"}
                     </div>
                   </div>
-                  <div style={{ width: "1.25rem", height: "1.25rem", borderRadius: "50%", border: "2px solid " + (isSelected ? level.color : "var(--border-subtle)"), background: isSelected ? level.color : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <div style={{ width: "1.25rem", height: "1.25rem", borderRadius: "50%", border: "2px solid " + level.color, background: level.color, boxShadow: "0 0 0 2px #fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     {isSelected && <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#fff" }} />}
                   </div>
                 </button>
