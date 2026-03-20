@@ -123,27 +123,25 @@ export default function SessionClient({
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [expandedBlocks, setExpandedBlocks] = useState<Set<string>>(new Set());
 
-  // Resume prompt
+  // Resume prompt — initialize from localStorage immediately (lazy init)
   const [resumeData, setResumeData] = useState<{ logId: number; currentIndex: number } | null>(null);
   const [showResumeModal, setShowResumeModal] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem(`workout_progress_${sessionId}`);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        // Only offer resume if saved less than 24h ago
-        if (parsed.logId && parsed.currentIndex > 0 && Date.now() - parsed.savedAt < 86400000) {
-          setResumeData({ logId: parsed.logId, currentIndex: parsed.currentIndex });
-          setShowResumeModal(true);
-        } else {
-          localStorage.removeItem(`workout_progress_${sessionId}`);
-        }
-      } catch {
+    if (!saved) return;
+    try {
+      const parsed = JSON.parse(saved);
+      // Offer resume if saved less than 24h ago and has a valid logId
+      if (parsed.logId && Date.now() - parsed.savedAt < 86400000) {
+        setResumeData({ logId: parsed.logId, currentIndex: parsed.currentIndex ?? 0 });
+        setShowResumeModal(true);
+      } else {
         localStorage.removeItem(`workout_progress_${sessionId}`);
       }
+    } catch {
+      localStorage.removeItem(`workout_progress_${sessionId}`);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
 
   const adaptedExercises = applyEnergy(exercisesRaw, selectedEnergy.pct);

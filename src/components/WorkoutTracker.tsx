@@ -203,9 +203,10 @@ export default function WorkoutTracker({ sessionId, logId, exercises, initialInd
   const handleAbandon = () => {
     setIsActive(false);
     // Save progress so SessionClient can offer to resume
+    // Use ref to get the latest index value
     localStorage.setItem(`workout_progress_${sessionId}`, JSON.stringify({
       logId,
-      currentIndex,
+      currentIndex: currentIndexRef.current,
       savedAt: Date.now(),
     }));
     router.push(`/session/${sessionId}`);
@@ -229,7 +230,7 @@ export default function WorkoutTracker({ sessionId, logId, exercises, initialInd
     return (
       <div style={S.screen} className="animate-fade-in">
         <div style={S.header}>
-          <button style={S.headerBtn} onClick={() => router.push(`/session/${sessionId}`)}>
+          <button style={S.headerBtn} onClick={handleAbandon}>
             <X size={24} />
           </button>
           <ProgressDots total={exercises.length} current={currentIndex} />
@@ -325,7 +326,7 @@ export default function WorkoutTracker({ sessionId, logId, exercises, initialInd
   return (
     <div style={S.screen} className="animate-fade-in">
       <div style={S.header}>
-        <button style={S.headerBtn} onClick={() => router.push(`/session/${sessionId}`)}>
+        <button style={S.headerBtn} onClick={handleAbandon}>
           <X size={24} />
         </button>
         <ProgressDots total={exercises.length} current={currentIndex} />
