@@ -6,7 +6,9 @@ import { useUser } from "@/lib/userContext";
 
 interface WorkoutDay {
   date: string;
-  session_id: string;
+  session_id: number;
+  session_code: string;
+  session_name: string;
   feeling_label: string | null;
   feeling_score: number | null;
 }
@@ -154,7 +156,7 @@ export default function CalendarView({ onClose }: { onClose: () => void }) {
                       <span style={{ fontSize: '0.75rem', fontWeight: 700, color }}>{d.getDate()}/{d.getMonth()+1}</span>
                     </div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '0.875rem', fontWeight: 600 }}>{w.session_id.replace('sesion_', 'Sesión ')}</div>
+                      <div style={{ fontSize: '0.875rem', fontWeight: 600 }}>{w.session_name || w.session_code}</div>
                       {w.feeling_label && <div style={{ fontSize: '0.75rem', color, marginTop: '0.1rem' }}>{w.feeling_label}</div>}
                     </div>
                     {w.feeling_score && <span style={{ fontSize: '0.75rem', fontWeight: 700, color }}>{w.feeling_score}pts</span>}

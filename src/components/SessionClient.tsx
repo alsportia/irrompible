@@ -11,7 +11,7 @@ interface ExerciseRow {
   block: string;
   block_type: string | null;
   set_number: number;
-  ex_id: string;
+  ex_id: number;
   ex_order: number;
   tiempo_ej: string | null;
   reps: string | null;
@@ -20,9 +20,9 @@ interface ExerciseRow {
   description: string | null;
   muscles: string | null;
   joints: string | null;
-  easier_id: string | null;
+  easier_id: number | null;
   easier_name: string | null;
-  harder_id: string | null;
+  harder_id: number | null;
   harder_name: string | null;
 }
 
@@ -86,7 +86,7 @@ function groupByBlock(exercises: ExerciseRow[]): BlockGroup[] {
 }
 
 function getUniqueExercisesInBlock(group: BlockGroup): ExerciseRow[] {
-  const seen = new Set<string>();
+  const seen = new Set<number>();
   return group.exercises.filter(ex => {
     if (seen.has(ex.ex_id)) return false;
     seen.add(ex.ex_id);
@@ -139,7 +139,7 @@ export default function SessionClient({
     });
   };
 
-  const openDetail = async (exId: string) => {
+  const openDetail = async (exId: number) => {
     setLoadingDetail(true);
     const detail = await getExerciseById(exId);
     setDetailEx(detail);

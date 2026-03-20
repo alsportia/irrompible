@@ -10,7 +10,7 @@ import CalendarView from "./CalendarView";
 import { getCompletedSessionIds } from "@/app/actions";
 
 interface Session {
-  id: string;
+  id: number;
   name: string;
   description: string;
   exerciseCount?: number;
@@ -20,7 +20,7 @@ export default function HomeClient({ sessions, programId, programName }: { sessi
   const { user, setUser } = useUser();
   const router = useRouter();
   const [showCalendar, setShowCalendar] = useState(false);
-  const [completedIds, setCompletedIds] = useState<string[]>([]);
+  const [completedIds, setCompletedIds] = useState<number[]>([]);
   const nextRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

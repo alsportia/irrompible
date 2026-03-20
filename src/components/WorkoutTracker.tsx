@@ -11,7 +11,7 @@ interface ExerciseRow {
   block: string;
   block_type: string | null;
   set_number: number;
-  ex_id: string;
+  ex_id: number;
   ex_order: number;
   tiempo_ej: string | null;
   reps: string | null;

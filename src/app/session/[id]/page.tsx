@@ -5,7 +5,8 @@ import SessionClient from "@/components/SessionClient";
 export const dynamic = "force-dynamic";
 
 interface SessionDetail {
-  id: string;
+  id: number;
+  session_code: string;
   name: string;
   description: string;
 }
@@ -14,7 +15,7 @@ interface ExerciseRow {
   block: string;
   block_type: string | null;
   set_number: number;
-  ex_id: string;
+  ex_id: number;
   ex_order: number;
   tiempo_ej: string | null;
   reps: string | null;
@@ -23,9 +24,9 @@ interface ExerciseRow {
   description: string | null;
   muscles: string | null;
   joints: string | null;
-  easier_id: string | null;
+  easier_id: number | null;
   easier_name: string | null;
-  harder_id: string | null;
+  harder_id: number | null;
   harder_name: string | null;
 }
 
@@ -33,7 +34,7 @@ export default async function SessionPage({ params }: { params: Promise<{ id: st
   const { id } = await params;
 
   const [session] = await DB.query<SessionDetail>(
-    "SELECT id, name, description FROM sessions WHERE id = ?",
+    "SELECT id, session_code, name, description FROM sessions WHERE id = ?",
     [id]
   );
 
@@ -47,9 +48,9 @@ export default async function SessionPage({ params }: { params: Promise<{ id: st
            e.easier_id, easy.name as easier_name,
            e.harder_id, hard.name as harder_name
     FROM session_exercises se
-    JOIN exercises e ON se.ex_id = e.ex_id
-    LEFT JOIN exercises easy ON e.easier_id = easy.ex_id
-    LEFT JOIN exercises hard ON e.harder_id = hard.ex_id
+    JOIN exercises e ON se.ex_id = e.id
+    LEFT JOIN exercises easy ON e.easier_id = easy.id
+    LEFT JOIN exercises hard ON e.harder_id = hard.id
     WHERE se.session_id = ?
     ORDER BY se.block, se.ex_order, se.set_number
   `, [id]);

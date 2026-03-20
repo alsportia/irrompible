@@ -9,7 +9,7 @@ interface ExerciseRow {
   block: string;
   block_type: string | null;
   set_number: number;
-  ex_id: string;
+  ex_id: number;
   ex_order: number;
   tiempo_ej: string | null;
   reps: string | null;
@@ -19,12 +19,10 @@ interface ExerciseRow {
 
 function applyEnergy(exercises: ExerciseRow[], pct: number): ExerciseRow[] {
   if (pct >= 1) return exercises;
-
   const maxSetPerBlock = new Map<string, number>();
   exercises.forEach(e => {
     maxSetPerBlock.set(e.block, Math.max(maxSetPerBlock.get(e.block) ?? 0, e.set_number));
   });
-
   return exercises
     .map(ex => {
       if (ex.reps && ex.reps !== '0') {
@@ -54,9 +52,10 @@ export default async function WorkflowPage({
   const energyLabelStr = energyLabel ? decodeURIComponent(energyLabel) : '¡A tope!';
 
   const rawExercises = await DB.query<ExerciseRow>(`
-    SELECT se.block, se.block_type, se.set_number, se.ex_id, se.ex_order, se.tiempo_ej, se.reps, e.name, e.video_url
+    SELECT se.block, se.block_type, se.set_number, se.ex_id, se.ex_order, se.tiempo_ej, se.reps,
+           e.name, e.video_url
     FROM session_exercises se
-    JOIN exercises e ON se.ex_id = e.ex_id
+    JOIN exercises e ON se.ex_id = e.id
     WHERE se.session_id = ?
     ORDER BY se.block, se.set_number, se.ex_order
   `, [id]);
@@ -67,7 +66,7 @@ export default async function WorkflowPage({
   }
 
   const exercises = applyEnergy(rawExercises, energyPct);
-  const logId = await createWorkoutLog(id, userIdNum, energyLabelStr);
+  const logId = await createWorkoutLog(parseInt(id), userIdNum, energyLabelStr);
 
   return <WorkoutTracker sessionId={id} logId={logId} exercises={exercises} />;
 }

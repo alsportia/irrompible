@@ -45,13 +45,13 @@ export default function ExercisesClient({ exercises }: Props) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [modal, setModal] = useState<ExerciseItem | null>(null);
-  const rowRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const rowRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
   const filtered = query.trim()
     ? exercises.filter(e => e.name.toLowerCase().includes(query.toLowerCase()))
     : exercises;
 
-  const scrollTo = useCallback((id: string) => {
+  const scrollTo = useCallback((id: number) => {
     setModal(null);
     // small delay so modal closes first
     setTimeout(() => {
@@ -101,8 +101,8 @@ export default function ExercisesClient({ exercises }: Props) {
             const muscles = parseMuscles(ex.muscles);
             return (
               <div
-                key={ex.ex_id}
-                ref={el => { if (el) rowRefs.current.set(ex.ex_id, el); else rowRefs.current.delete(ex.ex_id); }}
+                key={ex.id}
+                ref={el => { if (el) rowRefs.current.set(ex.id, el); else rowRefs.current.delete(ex.id); }}
                 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.625rem 1rem', borderBottom: '1px solid var(--border-subtle)', cursor: 'pointer' }}
                 onClick={() => openModal(ex)}
               >
