@@ -202,14 +202,12 @@ export default function WorkoutTracker({ sessionId, logId, exercises, initialInd
 
   const handleAbandon = () => {
     setIsActive(false);
-    // Save progress so SessionClient can offer to resume
-    // Use ref to get the latest index value
     localStorage.setItem(`workout_progress_${sessionId}`, JSON.stringify({
       logId,
       currentIndex: currentIndexRef.current,
       savedAt: Date.now(),
     }));
-    router.push(`/session/${sessionId}`);
+    router.replace(`/session/${sessionId}`);
   };
 
   const formatTime = (secs: number) => {
@@ -280,7 +278,7 @@ export default function WorkoutTracker({ sessionId, logId, exercises, initialInd
       const totalDuration = Math.floor((Date.now() - startTime.current) / 1000);
       await finishWorkoutLog(logId, totalDuration, selectedFeeling.score, selectedFeeling.label);
       localStorage.removeItem(`workout_progress_${sessionId}`);
-      router.push('/');
+      router.replace('/');
     };
 
     return (

@@ -175,7 +175,7 @@ export default function SessionClient({
       userId: String(user?.id ?? 0),
       energyLabel: encodeURIComponent(selectedEnergy.label),
     });
-    router.push("/workflow/" + sessionId + "?" + params.toString());
+    router.replace("/workflow/" + sessionId + "?" + params.toString());
   };
 
   const resumeWorkout = () => {
@@ -188,7 +188,7 @@ export default function SessionClient({
       resumeLogId: String(resumeData.logId),
       startIndex: String(resumeData.currentIndex),
     });
-    router.push("/workflow/" + sessionId + "?" + params.toString());
+    router.replace("/workflow/" + sessionId + "?" + params.toString());
   };
 
   const discardAndStart = () => {
