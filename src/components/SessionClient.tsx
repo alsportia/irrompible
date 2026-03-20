@@ -123,26 +123,9 @@ export default function SessionClient({
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [expandedBlocks, setExpandedBlocks] = useState<Set<string>>(new Set());
 
-  // Resume prompt — initialize from localStorage immediately (lazy init)
+  // Resume prompt
   const [resumeData, setResumeData] = useState<{ logId: number; currentIndex: number } | null>(null);
   const [showResumeModal, setShowResumeModal] = useState(false);
-
-  useEffect(() => {
-    const saved = localStorage.getItem(`workout_progress_${sessionId}`);
-    if (!saved) return;
-    try {
-      const parsed = JSON.parse(saved);
-      // Offer resume if saved less than 24h ago and has a valid logId
-      if (parsed.logId && Date.now() - parsed.savedAt < 86400000) {
-        setResumeData({ logId: parsed.logId, currentIndex: parsed.currentIndex ?? 0 });
-        setShowResumeModal(true);
-      } else {
-        localStorage.removeItem(`workout_progress_${sessionId}`);
-      }
-    } catch {
-      localStorage.removeItem(`workout_progress_${sessionId}`);
-    }
-  }, [sessionId]);
 
   const adaptedExercises = applyEnergy(exercisesRaw, selectedEnergy.pct);
   const blocks = groupByBlock(adaptedExercises);
@@ -170,6 +153,23 @@ export default function SessionClient({
   };
 
   const startWorkout = () => {
+    // If there's saved progress, show the resume modal instead of starting directly
+    const saved = localStorage.getItem(`workout_progress_${sessionId}`);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.logId && Date.now() - parsed.savedAt < 86400000) {
+          setResumeData({ logId: parsed.logId, currentIndex: parsed.currentIndex ?? 0 });
+          setShowResumeModal(true);
+          return;
+        }
+      } catch { /* ignore */ }
+      localStorage.removeItem(`workout_progress_${sessionId}`);
+    }
+    launchWorkout();
+  };
+
+  const launchWorkout = () => {
     const params = new URLSearchParams({
       energy: String(selectedEnergy.pct),
       userId: String(user?.id ?? 0),
@@ -195,6 +195,7 @@ export default function SessionClient({
     localStorage.removeItem(`workout_progress_${sessionId}`);
     setResumeData(null);
     setShowResumeModal(false);
+    launchWorkout();
   };
 
   // ── Energy picker view ────────────────────────────────────────────────────
@@ -265,27 +266,6 @@ export default function SessionClient({
             Ver resumen
           </button>
         </div>
-
-        {/* Resume modal */}
-        {showResumeModal && resumeData && (
-          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: "1.5rem" }}>
-            <div style={{ background: "var(--bg-secondary)", borderRadius: "var(--radius-lg)", padding: "1.5rem", width: "100%", maxWidth: "360px", display: "flex", flexDirection: "column", gap: "1rem" }}>
-              <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>⏸️</div>
-                <h2 style={{ fontFamily: "var(--font-outfit)", fontWeight: 700, fontSize: "1.25rem", margin: "0 0 0.5rem" }}>Sesión en progreso</h2>
-                <p style={{ fontSize: "0.875rem", color: "var(--text-secondary)", margin: 0 }}>
-                  Tienes esta sesión a medias. ¿Quieres continuar donde lo dejaste?
-                </p>
-              </div>
-              <button onClick={resumeWorkout} className="btn-primary glow" style={{ width: "100%", padding: "0.875rem", fontWeight: 700 }}>
-                Continuar
-              </button>
-              <button onClick={discardAndStart} style={{ width: "100%", padding: "0.875rem", background: "none", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-md)", color: "var(--text-secondary)", cursor: "pointer", fontWeight: 500, fontSize: "0.9rem" }}>
-                Empezar de nuevo
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     );
   }
