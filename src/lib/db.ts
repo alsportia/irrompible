@@ -3,7 +3,7 @@ import path from 'path';
 import fs from 'fs';
 
 const dbPath = path.join(process.cwd(), 'data', 'unbreakable.db');
-const seedPath = path.join(process.cwd(), 'data', 'seed.db');
+const seedPath = path.join(process.cwd(), 'seed.db'); // outside the volume mount
 
 // On first deploy (volume is empty), copy seed DB so existing data is preserved
 if (!fs.existsSync(dbPath) && fs.existsSync(seedPath)) {
