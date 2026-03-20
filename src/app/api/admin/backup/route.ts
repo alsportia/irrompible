@@ -4,8 +4,8 @@ import fs from 'fs';
 import path from 'path';
 
 export async function GET(req: NextRequest) {
-  const authError = await requireAdmin(req);
-  if (authError) return authError;
+  const auth = await requireAdmin(req);
+  if (auth instanceof NextResponse) return auth;
 
   const dbPath = path.join(process.cwd(), 'data', 'unbreakable.db');
 
