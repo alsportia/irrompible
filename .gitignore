@@ -41,5 +41,6 @@ yarn-error.log*
 next-env.d.ts
 
 # local database (will use Railway volume)
-/data/*.db
-/data/*.db-*
+/data/unbreakable.db
+/data/unbreakable.db-*
+/data/app.db

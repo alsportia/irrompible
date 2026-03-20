@@ -1,9 +1,15 @@
 import sqlite3 from 'sqlite3';
 import path from 'path';
+import fs from 'fs';
 
-// Define the path to the database. We put it in the data folder.
-// Using process.cwd() ensures it points to the root of the next.js app folder during execution.
 const dbPath = path.join(process.cwd(), 'data', 'unbreakable.db');
+const seedPath = path.join(process.cwd(), 'data', 'seed.db');
+
+// On first deploy (volume is empty), copy seed DB so existing data is preserved
+if (!fs.existsSync(dbPath) && fs.existsSync(seedPath)) {
+  fs.copyFileSync(seedPath, dbPath);
+  console.log('Initialized database from seed.db');
+}
 
 // Enable Promise wrapping for sqlite3 using standard util.promisify or a simple wrapper
 // Instead of a full ORM, we'll write a simple async wrapper for sqlite3
