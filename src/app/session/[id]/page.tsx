@@ -60,7 +60,7 @@ export default async function SessionPage({ params }: { params: Promise<{ id: st
   return (
     <>
       <SessionClient
-        sessionId={session.id}
+        sessionId={String(session.id)}
         sessionName={session.name}
         sessionDescription={session.description}
         exercisesRaw={exercisesRaw}
