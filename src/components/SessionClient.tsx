@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Play, Info, Shuffle, X, ChevronDown, ChevronUp, Zap } from "lucide-react";
+import { ChevronLeft, Play, Info, Shuffle, X, ChevronDown, ChevronUp, Zap, Video } from "lucide-react";
 import { useUser } from "@/lib/userContext";
 import { getExerciseById } from "@/app/actions";
 import CachedVideo from "./CachedVideo";
@@ -96,6 +96,8 @@ function getUniqueExercisesInBlock(group: BlockGroup): ExerciseRow[] {
 
 function getYTThumbnail(url: string | null): string | null {
   if (!url) return null;
+  // Local video — use a dumbbell placeholder (handled in JSX)
+  if (url.startsWith('/')) return '__local__';
   const shortsMatch = url.match(/youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/);
   if (shortsMatch) return "https://img.youtube.com/vi/" + shortsMatch[1] + "/mqdefault.jpg";
   const shortMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
@@ -250,8 +252,8 @@ export default function SessionClient({
 
       {/* Session description */}
       {sessionDescription && (
-        <div style={{ padding: "1rem", borderBottom: "1px solid var(--border-subtle)" }}>
-          <p style={{ fontSize: "0.875rem", color: "var(--text-secondary)", margin: 0, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{sessionDescription}</p>
+        <div style={{ padding: "1rem", borderBottom: "1px solid var(--border-subtle)", background: "var(--bg-secondary)" }}>
+          <p style={{ fontSize: "0.875rem", color: "var(--text-primary)", margin: 0, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{sessionDescription}</p>
         </div>
       )}
 
@@ -296,7 +298,9 @@ export default function SessionClient({
                         style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.75rem 1rem", borderBottom: idx < uniqueExs.length - 1 ? "1px solid var(--border-subtle)" : "none" }}
                       >
                         <div style={{ width: "3.5rem", height: "3.5rem", borderRadius: "8px", overflow: "hidden", flexShrink: 0, background: "var(--bg-tertiary)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          {thumb ? (
+                          {thumb === '__local__' ? (
+                            <Video size={16} color="var(--accent-primary)" />
+                          ) : thumb ? (
                             <img src={thumb} alt={ex.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                           ) : (
                             <Shuffle size={16} color="var(--text-secondary)" />
@@ -359,7 +363,7 @@ export default function SessionClient({
               <div style={{ padding: "3rem", textAlign: "center", color: "var(--text-secondary)" }}>Cargando...</div>
             ) : detailEx ? (
               <>
-                <div style={{ height: "220px", background: "#000", flexShrink: 0 }}>
+                <div style={{ height: "220px", background: "#000", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <CachedVideo videoUrl={detailEx.video_url} exerciseName={detailEx.name} />
                 </div>
                 <div style={{ flex: 1, overflowY: "auto", padding: "1.25rem" }}>
