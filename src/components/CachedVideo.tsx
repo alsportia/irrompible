@@ -8,25 +8,21 @@ interface CachedVideoProps {
   exerciseName?: string;
 }
 
-// Extracts YouTube video ID from any YouTube URL format including Shorts
 function getYTEmbedUrl(url: string | null): string | null {
   if (!url) return null;
 
-  // youtube.com/shorts/ID
   const shortsMatch = url.match(/youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/);
   if (shortsMatch) {
     const id = shortsMatch[1];
     return `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&loop=1&playlist=${id}&playsinline=1&controls=1&modestbranding=1`;
   }
 
-  // youtu.be/ID
   const shortMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
   if (shortMatch) {
     const id = shortMatch[1];
     return `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&loop=1&playlist=${id}&playsinline=1&controls=1&modestbranding=1`;
   }
 
-  // youtube.com/watch?v=ID
   const watchMatch = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
   if (watchMatch) {
     const id = watchMatch[1];
@@ -73,6 +69,21 @@ const placeholder = {
 
 export default function CachedVideo({ videoUrl, exerciseName }: CachedVideoProps) {
   const [failed, setFailed] = useState(false);
+
+  // Local video file
+  if (videoUrl && videoUrl.startsWith('/') && !failed) {
+    return (
+      <video
+        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+        src={videoUrl}
+        autoPlay
+        muted
+        loop
+        playsInline
+        onError={() => setFailed(true)}
+      />
+    );
+  }
 
   const embedUrl = getYTEmbedUrl(videoUrl);
 
