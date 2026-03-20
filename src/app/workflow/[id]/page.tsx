@@ -43,10 +43,10 @@ export default async function WorkflowPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ energy?: string; userId?: string; energyLabel?: string }>;
+  searchParams: Promise<{ energy?: string; userId?: string; energyLabel?: string; resumeLogId?: string; startIndex?: string }>;
 }) {
   const { id } = await params;
-  const { energy, userId, energyLabel } = await searchParams;
+  const { energy, userId, energyLabel, resumeLogId, startIndex } = await searchParams;
   const energyPct = Math.min(1, Math.max(0.1, parseFloat(energy ?? '1') || 1));
   const userIdNum = parseInt(userId ?? '0') || 0;
   const energyLabelStr = energyLabel ? decodeURIComponent(energyLabel) : '¡A tope!';
@@ -66,7 +66,13 @@ export default async function WorkflowPage({
   }
 
   const exercises = applyEnergy(rawExercises, energyPct);
-  const logId = await createWorkoutLog(parseInt(id), userIdNum, energyLabelStr);
 
-  return <WorkoutTracker sessionId={id} logId={logId} exercises={exercises} />;
+  // If resuming, reuse the existing log; otherwise create a new one
+  const logId = resumeLogId
+    ? parseInt(resumeLogId)
+    : await createWorkoutLog(parseInt(id), userIdNum, energyLabelStr);
+
+  const initialIndex = startIndex ? Math.min(parseInt(startIndex) || 0, exercises.length - 1) : 0;
+
+  return <WorkoutTracker sessionId={id} logId={logId} exercises={exercises} initialIndex={initialIndex} />;
 }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Check, X, Timer as TimerIcon, Play, Pause, ChevronLeft } from "lucide-react";
+import { Check, X, Timer as TimerIcon, Play, Pause, ChevronLeft, StopCircle } from "lucide-react";
 import { finishWorkoutLog, saveWorkoutSet } from "@/app/actions";
 import CachedVideo from "./CachedVideo";
 import { useBeep } from "@/lib/useBeep";
@@ -23,6 +23,7 @@ interface WorkoutTrackerProps {
   sessionId: string;
   logId: number;
   exercises: ExerciseRow[];
+  initialIndex?: number;
 }
 
 function parseTimeToSeconds(timeStr: string | null): number {
@@ -103,9 +104,9 @@ function ProgressDots({ total, current }: { total: number; current: number }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutTrackerProps) {
+export default function WorkoutTracker({ sessionId, logId, exercises, initialIndex = 0 }: WorkoutTrackerProps) {
   const router = useRouter();
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
   const [isActive, setIsActive] = useState(false);
@@ -183,6 +184,7 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
     if (currentIndexRef.current + 1 >= exercises.length) {
       const totalDuration = Math.floor((Date.now() - startTime.current) / 1000);
       await finishWorkoutLog(logId, totalDuration, 0, '');
+      localStorage.removeItem(`workout_progress_${sessionId}`);
       setCurrentIndex(currentIndexRef.current + 1);
     } else {
       setCurrentIndex(prev => prev + 1);
@@ -196,6 +198,17 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
       setCountdown(5);
       setCurrentIndex(prev => prev - 1);
     }
+  };
+
+  const handleAbandon = () => {
+    setIsActive(false);
+    // Save progress so SessionClient can offer to resume
+    localStorage.setItem(`workout_progress_${sessionId}`, JSON.stringify({
+      logId,
+      currentIndex,
+      savedAt: Date.now(),
+    }));
+    router.push(`/session/${sessionId}`);
   };
 
   const formatTime = (secs: number) => {
@@ -265,6 +278,7 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
       setSaving(true);
       const totalDuration = Math.floor((Date.now() - startTime.current) / 1000);
       await finishWorkoutLog(logId, totalDuration, selectedFeeling.score, selectedFeeling.label);
+      localStorage.removeItem(`workout_progress_${sessionId}`);
       router.push('/');
     };
 
@@ -368,6 +382,10 @@ export default function WorkoutTracker({ sessionId, logId, exercises }: WorkoutT
             <button style={{ ...S.statCard, flex: 1, cursor: 'pointer', gap: '0.4rem' }} onClick={() => setIsActive(!isActive)}>
               {isActive ? <Pause size={18} /> : <Play size={18} />}
               <span style={{ fontSize: '0.75rem', fontWeight: 500 }}>{isActive ? 'Pausar' : 'Reanudar'}</span>
+            </button>
+            <button style={{ ...S.statCard, flex: 1, cursor: 'pointer', gap: '0.4rem', borderColor: 'rgba(239,68,68,0.3)' }} onClick={handleAbandon}>
+              <StopCircle size={18} color="#ef4444" />
+              <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#ef4444' }}>Terminar</span>
             </button>
           </div>
         </div>
