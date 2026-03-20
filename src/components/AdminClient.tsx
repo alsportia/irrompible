@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/lib/userContext";
-import { UserPlus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, UserCheck, UserX } from "lucide-react";
+import { UserPlus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, UserCheck, UserX, Download } from "lucide-react";
 import type { Program } from "@/types/index";
 
 type UserRow = { id: number; name: string; email: string; role: 'admin' | 'user'; status: 'active' | 'pending' };
@@ -38,8 +38,37 @@ export default function AdminClient() {
   const [formEmail, setFormEmail] = useState('');
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  const [restoreError, setRestoreError] = useState('');
 
   const headers = { 'x-user-id': String(user?.id ?? 0) };
+
+  async function handleRestore(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!confirm(`¿Restaurar la base de datos desde "${file.name}"? La app se reiniciará.`)) {
+      e.target.value = '';
+      return;
+    }
+    setRestoring(true);
+    setRestoreError('');
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/admin/restore', { method: 'POST', headers, body: formData });
+      if (!res.ok) {
+        const { error } = await res.json();
+        setRestoreError(error ?? 'Error al restaurar');
+      } else {
+        window.location.reload();
+      }
+    } catch {
+      setRestoreError('Error de red');
+    } finally {
+      setRestoring(false);
+      e.target.value = '';
+    }
+  }
 
   useEffect(() => {
     if (!user) { router.push('/'); return; }
@@ -190,14 +219,31 @@ export default function AdminClient() {
             </button>
             <h1 className="heading-display" style={{ fontSize: '1.5rem', margin: 0 }}>Usuarios</h1>
           </div>
-          <button
-            onClick={openCreate}
-            className="btn-primary"
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.625rem 1rem', fontSize: '0.875rem' }}
-          >
-            <UserPlus size={16} />
-            Nuevo usuario
-          </button>
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <a
+              href="/api/admin/backup"
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.625rem 1rem', fontSize: '0.875rem', background: 'transparent', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'none' }}
+            >
+              <Download size={16} />
+              Backup DB
+            </a>
+            <label
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.625rem 1rem', fontSize: '0.875rem', background: 'transparent', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', color: restoring ? 'var(--text-secondary)' : 'var(--warning, #f59e0b)', cursor: restoring ? 'not-allowed' : 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
+            >
+              <Download size={16} style={{ transform: 'rotate(180deg)' }} />
+              {restoring ? 'Restaurando...' : 'Restaurar DB'}
+              <input type="file" accept=".db" onChange={handleRestore} disabled={restoring} style={{ display: 'none' }} />
+            </label>
+            {restoreError && <span style={{ fontSize: '0.75rem', color: 'var(--danger)' }}>{restoreError}</span>}
+            <button
+              onClick={openCreate}
+              className="btn-primary"
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.625rem 1rem', fontSize: '0.875rem' }}
+            >
+              <UserPlus size={16} />
+              Nuevo usuario
+            </button>
+          </div>
         </div>
 
         {loading ? (

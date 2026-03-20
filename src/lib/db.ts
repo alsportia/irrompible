@@ -31,6 +31,13 @@ export class DB {
     return DB.instance;
   }
 
+  public static close(): void {
+    if (DB.instance) {
+      DB.instance.close();
+      DB.instance = undefined as any;
+    }
+  }
+
   public static async query<T = any>(sql: string, params: any[] = []): Promise<T[]> {
     const db = DB.getInstance();
     return new Promise((resolve, reject) => {
