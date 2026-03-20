@@ -13,9 +13,12 @@ export class DB {
       // Lazy init: only runs at request time, not during build
       const dataDir = path.dirname(dbPath);
       if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
-      if (!fs.existsSync(dbPath) && fs.existsSync(seedPath)) {
-        fs.copyFileSync(seedPath, dbPath);
-        console.log('Initialized database from seed.db');
+      if (fs.existsSync(seedPath)) {
+        const dbEmpty = !fs.existsSync(dbPath) || fs.statSync(dbPath).size < 4096;
+        if (dbEmpty) {
+          fs.copyFileSync(seedPath, dbPath);
+          console.log('Initialized database from seed.db');
+        }
       }
       DB.instance = new sqlite3.Database(dbPath, (err) => {
         if (err) {
