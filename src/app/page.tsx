@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { DB } from "@/lib/db";
 import HomeClient from "@/components/HomeClient";
 
@@ -46,6 +47,7 @@ export default async function Home({
   searchParams: Promise<{ programId?: string }>;
 }) {
   const { programId } = await searchParams;
+  if (!programId) redirect('/programs');
   const [sessions, programName] = await Promise.all([
     getSessions(programId),
     getProgramName(programId),

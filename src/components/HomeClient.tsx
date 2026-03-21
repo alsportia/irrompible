@@ -16,7 +16,7 @@ interface Session {
   exerciseCount?: number;
 }
 
-export default function HomeClient({ sessions, programId, programName }: { sessions: Session[]; programId?: string; programName?: string }) {
+export default function HomeClient({ sessions, programId, programName }: { sessions: Session[]; programId: string; programName?: string }) {
   const { user, setUser } = useUser();
   const router = useRouter();
   const [showCalendar, setShowCalendar] = useState(false);
@@ -90,7 +90,7 @@ export default function HomeClient({ sessions, programId, programName }: { sessi
           {doneSessions.length > 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem', marginBottom: '0.875rem' }}>
               {doneSessions.map(session => (
-                <SessionCard key={session.id} session={session} done />
+                <SessionCard key={session.id} session={session} programId={programId} done />
               ))}
             </div>
           )}
@@ -108,7 +108,7 @@ export default function HomeClient({ sessions, programId, programName }: { sessi
               )}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
                 {pendingSessions.map((session, i) => (
-                  <SessionCard key={session.id} session={session} highlight={i === 0} />
+                  <SessionCard key={session.id} session={session} programId={programId} highlight={i === 0} />
                 ))}
               </div>
             </div>
@@ -126,9 +126,9 @@ export default function HomeClient({ sessions, programId, programName }: { sessi
   );
 }
 
-function SessionCard({ session, done, highlight }: { session: Session; done?: boolean; highlight?: boolean }) {
+function SessionCard({ session, programId, done, highlight }: { session: Session; programId: string; done?: boolean; highlight?: boolean }) {
   return (
-    <Link href={`/session/${session.id}`}>
+    <Link href={`/session/${session.id}?programId=${programId}`}>
       <div className="card glass-panel" style={{ cursor: 'pointer', opacity: done ? 0.55 : 1, position: 'relative', border: highlight ? '1px solid rgba(59,130,246,0.4)' : undefined }}>
         {highlight && (
           <div style={{ position: 'absolute', top: '-1px', left: '1rem', background: 'var(--accent-primary)', color: '#fff', fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', padding: '0.15rem 0.5rem', borderRadius: '0 0 6px 6px' }}>
