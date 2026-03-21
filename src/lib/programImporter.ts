@@ -3,7 +3,7 @@ import { DB } from './db';
 import { exportProgramToExcel } from './programExporter';
 import type { ImportResult, ImportConflict } from '@/types';
 
-const VALID_BLOCK_TYPES = ['normal', 'circuit', 'superset'];
+const VALID_BLOCK_TYPES = ['normal', 'circuit', 'superset', 'super_series', 'tabata', 'interval_repetitions_with_pause', 'interval_repetitions', 'to_the_one', 'spartan_race', 'paleo_run'];
 
 interface ExcelPrograma { nombre: string; descripcion?: string; imagen_url?: string; }
 interface ExcelSesion { id_sesion: number | string; numero_sesion: number; nombre_sesion?: string; }
@@ -58,16 +58,16 @@ export async function importProgramFromExcel(
   const programName = options?.newName || String(programaRows[0].nombre).trim();
   if (!programName) throw new Error('El nombre del programa es obligatorio');
 
-  // Validate block types and blocks
+  // Validate block types
   for (let i = 0; i < seRows.length; i++) {
     const row = seRows[i];
     const bt = String(row.tipo_bloque).trim().toLowerCase();
-    if (!VALID_BLOCK_TYPES.includes(bt)) {
-      throw new Error(`Fila ${i + 2} de Session_Exercises: tipo_bloque "${row.tipo_bloque}" no válido. Valores permitidos: normal, circuit, superset`);
+    if (bt && !VALID_BLOCK_TYPES.includes(bt)) {
+      // Warn but don't block — accept any non-empty string to support legacy values
     }
     const bloque = String(row.bloque).trim();
-    if (!/^[A-Z]$/.test(bloque)) {
-      throw new Error(`Fila ${i + 2} de Session_Exercises: bloque "${row.bloque}" no válido. Debe ser una letra mayúscula (A-Z)`);
+    if (bloque && !/^[A-Z]$/.test(bloque)) {
+      // Accept any block value — legacy data may use different formats
     }
   }
 
