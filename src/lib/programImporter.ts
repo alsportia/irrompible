@@ -26,9 +26,10 @@ function parseSheet<T>(wb: XLSX.WorkBook, sheetName: string): T[] {
   return XLSX.utils.sheet_to_json<T>(ws, { defval: '' });
 }
 
-function validateColumns(rows: Record<string, unknown>[], required: string[], sheetName: string): void {
+function validateColumns(rows: unknown[], required: string[], sheetName: string): void {
   if (rows.length === 0) return;
-  const keys = Object.keys(rows[0]);
+  const first = rows[0] as Record<string, unknown>;
+  const keys = Object.keys(first);
   for (const col of required) {
     if (!keys.includes(col)) throw new Error(`Columna obligatoria "${col}" no encontrada en hoja "${sheetName}"`);
   }
@@ -49,10 +50,10 @@ export async function importProgramFromExcel(
   if (programaRows.length === 0) throw new Error('La hoja "Programa" está vacía');
 
   // Validate columns
-  validateColumns(programaRows as unknown as Record<string, unknown>[], ['nombre'], 'Programa');
-  validateColumns(sesionesRows as unknown as Record<string, unknown>[], ['id_sesion', 'numero_sesion'], 'Sesiones');
-  validateColumns(ejerciciosRows as unknown as Record<string, unknown>[], ['id_ejercicio', 'nombre'], 'Ejercicios');
-  validateColumns(seRows as unknown as Record<string, unknown>[], ['id_sesion', 'id_ejercicio', 'bloque', 'tipo_bloque', 'numero_serie', 'orden_ejercicio'], 'Session_Exercises');
+  validateColumns(programaRows, ['nombre'], 'Programa');
+  validateColumns(sesionesRows, ['id_sesion', 'numero_sesion'], 'Sesiones');
+  validateColumns(ejerciciosRows, ['id_ejercicio', 'nombre'], 'Ejercicios');
+  validateColumns(seRows, ['id_sesion', 'id_ejercicio', 'bloque', 'tipo_bloque', 'numero_serie', 'orden_ejercicio'], 'Session_Exercises');
 
   const programName = options?.newName || String(programaRows[0].nombre).trim();
   if (!programName) throw new Error('El nombre del programa es obligatorio');
