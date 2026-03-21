@@ -13,7 +13,7 @@ interface Props {
 
 const inputStyle: React.CSSProperties = {
   width: "100%", padding: "0.625rem 0.75rem",
-  background: "var(--bg-primary)", border: "1px solid var(--border-subtle)",
+  background: "rgba(5, 18, 5, 0.72)", border: "1px solid var(--border-subtle)",
   borderRadius: "var(--radius-md)", color: "var(--text-primary)",
   fontSize: "0.875rem", fontFamily: "inherit", boxSizing: "border-box",
 };
@@ -44,43 +44,49 @@ export default function ProgramWizard({ headers, programId, onSaved, onCancel }:
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Load exercise catalog
+  // Load exercise catalog AND program data together to avoid race condition
   useEffect(() => {
-    fetch("/api/admin/exercises?limit=2000", { headers })
+    const catalogPromise = fetch("/api/admin/exercises?limit=2000", { headers })
       .then(r => r.json())
-      .then(d => setExercises(d.exercises ?? []));
-  }, [headers]);
+      .then(d => d.exercises ?? [] as ExerciseRow[]);
 
-  // Load existing program in edit mode
-  useEffect(() => {
-    if (!programId) return;
+    if (!programId) {
+      catalogPromise.then(cat => setExercises(cat));
+      return;
+    }
+
     setLoading(true);
-    fetch(`/api/admin/programs/${programId}`, { headers })
-      .then(r => r.json())
-      .then(data => {
-        setName(data.name ?? "");
-        setDescription(data.description ?? "");
-        setImageUrl(data.image_url ?? "");
-        const loadedSessions: WizardSession[] = (data.sessions ?? []).map((s: any) => ({
-          tempId: newTempId(),
-          numero_sesion: s.numero_sesion,
-          nombre_sesion: s.name ?? "",
-          exercises: (s.exercises ?? []).map((e: any) => ({
+    const programPromise = fetch(`/api/admin/programs/${programId}`, { headers }).then(r => r.json());
+
+    Promise.all([catalogPromise, programPromise]).then(([catalog, data]) => {
+      setExercises(catalog);
+      setName(data.name ?? "");
+      setDescription(data.description ?? "");
+      setImageUrl(data.image_url ?? "");
+      const loadedSessions: WizardSession[] = (data.sessions ?? []).map((s: any) => ({
+        tempId: newTempId(),
+        numero_sesion: s.numero_sesion,
+        nombre_sesion: s.name ?? "",
+        exercises: (s.exercises ?? []).map((e: any) => {
+          const catEx = catalog.find((c: ExerciseRow) => c.id === e.ex_id);
+          return {
             tempId: newTempId(),
             ex_id: e.ex_id,
-            ex_name: e.ex_name ?? "",
+            ex_name: catEx?.name ?? e.ex_name ?? "",
             bloque: e.block ?? "A",
             tipo_bloque: e.block_type ?? "normal",
             set_number: e.set_number ?? 1,
             ex_order: e.ex_order ?? 1,
             reps: e.reps ?? "",
             tiempo_ej: e.tiempo_ej ?? "",
-          })),
-        }));
-        setSessions(loadedSessions.length ? loadedSessions : [emptySession(1)]);
-        setLoading(false);
-      });
-  }, [programId, headers]);
+          };
+        }),
+      }));
+      setSessions(loadedSessions.length ? loadedSessions : [emptySession(1)]);
+      setLoading(false);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [programId]);
 
   const activeSession = sessions[activeIdx];
 
