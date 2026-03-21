@@ -21,6 +21,7 @@ interface ExerciseRow {
   reps: string | null;
   name: string;
   video_url: string | null;
+  video_url_yt: string | null;
   description: string | null;
   muscles: string | null;
   joints: string | null;
