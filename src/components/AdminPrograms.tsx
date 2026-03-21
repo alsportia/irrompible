@@ -75,22 +75,24 @@ export default function AdminPrograms() {
 
   if (view === "create" || (typeof view === "object" && "edit" in view)) {
     return (
-      <div style={{ minHeight: "100dvh", background: "var(--bg-primary)", padding: "1.5rem 1.25rem" }}>
+      <div style={{ minHeight: "100dvh", padding: "1.5rem 1.25rem" }}>
         <div style={{ position: "fixed", top: "-100px", left: "-50px", width: "16rem", height: "16rem", background: "var(--accent-glow)", borderRadius: "50%", filter: "blur(80px)", opacity: 0.6, pointerEvents: "none" }} />
         <div style={{ maxWidth: "56rem", margin: "0 auto", position: "relative", zIndex: 10 }}>
-          <ProgramWizard
-            headers={headers}
-            programId={typeof view === "object" ? view.edit : undefined}
-            onSaved={() => { setView("list"); load(); setMessage({ type: "success", text: "Programa guardado correctamente" }); }}
-            onCancel={() => setView("list")}
-          />
+          <div style={{ background: "var(--glass-bg)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid var(--glass-border)", borderRadius: "var(--radius-lg)", padding: "1.5rem" }}>
+            <ProgramWizard
+              headers={headers}
+              programId={typeof view === "object" ? view.edit : undefined}
+              onSaved={() => { setView("list"); load(); setMessage({ type: "success", text: "Programa guardado correctamente" }); }}
+              onCancel={() => setView("list")}
+            />
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: "100dvh", background: "var(--bg-primary)", padding: "1.5rem 1.25rem" }}>
+    <div style={{ minHeight: "100dvh", padding: "1.5rem 1.25rem" }}>
       <div style={{ position: "fixed", top: "-100px", left: "-50px", width: "16rem", height: "16rem", background: "var(--accent-glow)", borderRadius: "50%", filter: "blur(80px)", opacity: 0.6, pointerEvents: "none" }} />
 
       <div style={{ maxWidth: "56rem", margin: "0 auto", position: "relative", zIndex: 10, display: "flex", flexDirection: "column", gap: "1.5rem" }}>
@@ -124,7 +126,7 @@ export default function AdminPrograms() {
         ) : programs.length === 0 ? (
           <p style={{ color: "var(--text-secondary)" }}>No hay programas. Crea uno o importa un Excel.</p>
         ) : (
-          <div style={{ overflowX: "auto" }}>
+          <div style={{ overflowX: "auto", background: "var(--glass-bg)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid var(--glass-border)", borderRadius: "var(--radius-lg)" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr>
