@@ -5,6 +5,7 @@ import { Dumbbell } from 'lucide-react';
 
 interface CachedVideoProps {
   videoUrl: string | null;
+  videoUrlYt?: string | null;
   exerciseName?: string;
 }
 
@@ -67,11 +68,11 @@ const placeholder = {
   }
 };
 
-export default function CachedVideo({ videoUrl, exerciseName }: CachedVideoProps) {
-  const [failed, setFailed] = useState(false);
+export default function CachedVideo({ videoUrl, videoUrlYt, exerciseName }: CachedVideoProps) {
+  const [localFailed, setLocalFailed] = useState(false);
 
-  // Local video file
-  if (videoUrl && videoUrl.startsWith('/') && !failed) {
+  // Local video file — try first, fall back to YT on error
+  if (videoUrl && videoUrl.startsWith('/') && !localFailed) {
     return (
       <video
         style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', background: '#000' }}
@@ -80,14 +81,16 @@ export default function CachedVideo({ videoUrl, exerciseName }: CachedVideoProps
         muted
         loop
         playsInline
-        onError={() => setFailed(true)}
+        onError={() => setLocalFailed(true)}
       />
     );
   }
 
-  const embedUrl = getYTEmbedUrl(videoUrl);
+  // YouTube fallback (or primary if no local)
+  const ytSource = localFailed ? videoUrlYt : (videoUrl ?? videoUrlYt);
+  const embedUrl = getYTEmbedUrl(ytSource ?? null);
 
-  if (!videoUrl || !embedUrl || failed) {
+  if (!embedUrl) {
     return (
       <div style={{ ...placeholder.wrapper, height: '100%' }}>
         <div style={placeholder.iconBox}>
@@ -105,7 +108,6 @@ export default function CachedVideo({ videoUrl, exerciseName }: CachedVideoProps
       src={embedUrl}
       allow="autoplay; encrypted-media; gyroscope; picture-in-picture"
       allowFullScreen
-      onError={() => setFailed(true)}
     />
   );
 }

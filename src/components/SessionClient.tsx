@@ -17,6 +17,7 @@ interface ExerciseRow {
   reps: string | null;
   name: string;
   video_url: string | null;
+  video_url_yt: string | null;
   description: string | null;
   muscles: string | null;
   joints: string | null;
@@ -405,7 +406,7 @@ export default function SessionClient({
             ) : detailEx ? (
               <>
                 <div style={{ height: "220px", background: "#000", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <CachedVideo videoUrl={detailEx.video_url} exerciseName={detailEx.name} />
+                  <CachedVideo videoUrl={detailEx.video_url} videoUrlYt={detailEx.video_url_yt} exerciseName={detailEx.name} />
                 </div>
                 <div style={{ flex: 1, overflowY: "auto", padding: "1.25rem" }}>
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "1rem" }}>

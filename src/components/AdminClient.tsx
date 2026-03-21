@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useUser } from "@/lib/userContext";
 import { UserPlus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, UserCheck, UserX, Download } from "lucide-react";
 import type { Program } from "@/types/index";
+import AdminExercises from "./AdminExercises";
 
 type UserRow = { id: number; name: string; email: string; role: 'admin' | 'user'; status: 'active' | 'pending' };
 type UserWithPrograms = UserRow & { programs: Program[]; expanded: boolean };
@@ -387,6 +388,9 @@ export default function AdminClient() {
                 {restoreError && <p style={{ color: 'var(--danger)', fontSize: '0.8rem', margin: 0, textAlign: 'center' }}>{restoreError}</p>}
               </div>
             </div>
+
+            {/* Exercises section */}
+            <AdminExercises headers={headers} />
 
           </div>
         )}

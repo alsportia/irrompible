@@ -44,7 +44,7 @@ export default async function SessionPage({ params }: { params: Promise<{ id: st
 
   const exercisesRaw = await DB.query<ExerciseRow>(`
     SELECT se.block, se.block_type, se.set_number, se.ex_id, se.ex_order, se.tiempo_ej, se.reps,
-           e.name, e.video_url, e.description, e.muscles, e.joints,
+           e.name, e.video_url, e.video_url_yt, e.description, e.muscles, e.joints,
            e.easier_id, easy.name as easier_name,
            e.harder_id, hard.name as harder_name
     FROM session_exercises se

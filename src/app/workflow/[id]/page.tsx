@@ -15,6 +15,7 @@ interface ExerciseRow {
   reps: string | null;
   name: string;
   video_url: string | null;
+  video_url_yt: string | null;
 }
 
 function applyEnergy(exercises: ExerciseRow[], pct: number): ExerciseRow[] {
@@ -53,7 +54,7 @@ export default async function WorkflowPage({
 
   const rawExercises = await DB.query<ExerciseRow>(`
     SELECT se.block, se.block_type, se.set_number, se.ex_id, se.ex_order, se.tiempo_ej, se.reps,
-           e.name, e.video_url
+           e.name, e.video_url, e.video_url_yt
     FROM session_exercises se
     JOIN exercises e ON se.ex_id = e.id
     WHERE se.session_id = ?

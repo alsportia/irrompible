@@ -52,12 +52,12 @@ export async function getCompletedSessionIds(userId: number): Promise<number[]> 
 
 export async function getExerciseById(exId: number) {
   const [ex] = await DB.query<{
-    id: number; name: string; video_url: string | null;
+    id: number; name: string; video_url: string | null; video_url_yt: string | null;
     description: string | null; muscles: string | null; joints: string | null;
     easier_id: number | null; easier_name: string | null;
     harder_id: number | null; harder_name: string | null;
   }>(`
-    SELECT e.id, e.name, e.video_url, e.description, e.muscles, e.joints,
+    SELECT e.id, e.name, e.video_url, e.video_url_yt, e.description, e.muscles, e.joints,
            e.easier_id, easy.name as easier_name,
            e.harder_id, hard.name as harder_name
     FROM exercises e

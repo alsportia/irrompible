@@ -17,6 +17,7 @@ interface ExerciseRow {
   reps: string | null;
   name: string;
   video_url: string | null;
+  video_url_yt: string | null;
 }
 
 interface WorkoutTrackerProps {
@@ -217,7 +218,7 @@ export default function WorkoutTracker({ sessionId, logId, exercises, initialInd
   };
 
   const uniqueVideoUrls = Array.from(
-    new Map(exercises.filter(e => e.video_url).map(e => [e.video_url, { url: e.video_url, name: e.name }])).values()
+    new Map(exercises.filter(e => e.video_url || e.video_url_yt).map(e => [e.video_url ?? e.video_url_yt, { url: e.video_url, urlYt: e.video_url_yt, name: e.name }])).values()
   );
   const totalBlocks = new Set(exercises.map(e => e.block)).size;
 
@@ -333,12 +334,12 @@ export default function WorkoutTracker({ sessionId, logId, exercises, initialInd
 
       <div style={S.scrollArea}>
         <div style={S.videoBox}>
-          {uniqueVideoUrls.map(({ url, name }) => (
-            <div key={url ?? name} style={{ width: '100%', height: '100%', display: currentEx?.video_url === url ? 'block' : 'none' }}>
-              <CachedVideo videoUrl={url} exerciseName={name} />
+          {uniqueVideoUrls.map(({ url, urlYt, name }) => (
+            <div key={url ?? urlYt ?? name} style={{ width: '100%', height: '100%', display: (currentEx?.video_url === url || (!currentEx?.video_url && currentEx?.video_url_yt === urlYt)) ? 'block' : 'none' }}>
+              <CachedVideo videoUrl={url} videoUrlYt={urlYt} exerciseName={name} />
             </div>
           ))}
-          {!currentEx?.video_url && (
+          {!currentEx?.video_url && !currentEx?.video_url_yt && (
             <div style={{ width: '100%', height: '100%' }}>
               <CachedVideo videoUrl={null} exerciseName={currentEx?.name} />
             </div>
