@@ -50,6 +50,13 @@ export async function getCompletedSessionIds(userId: number): Promise<number[]> 
   return rows.map(r => r.session_id);
 }
 
+export async function unmarkSessionCompleted(userId: number, sessionId: number): Promise<void> {
+  await DB.run(
+    "DELETE FROM workout_logs WHERE user_id = ? AND session_id = ?",
+    [userId, sessionId]
+  );
+}
+
 export async function getExerciseById(exId: number) {
   const [ex] = await DB.query<{
     id: number; name: string; video_url: string | null; video_url_yt: string | null;
