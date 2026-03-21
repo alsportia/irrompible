@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { DB } from "@/lib/db";
-import { requireAdmin } from "@/lib/requireAdmin";
+import { requireAdmin } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
