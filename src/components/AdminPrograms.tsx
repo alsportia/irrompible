@@ -17,7 +17,7 @@ type View = "list" | "create" | { edit: number };
 
 export default function AdminPrograms() {
   const { user } = useUser();
-  const headers: Record<string, string> = user ? { "x-user-id": String(user.id) } : {};
+  const userId = user?.id;
 
   const [programs, setPrograms] = useState<ProgramRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -26,15 +26,17 @@ export default function AdminPrograms() {
   const [deleting, setDeleting] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
+  const headers: Record<string, string> = userId ? { "x-user-id": String(userId) } : {};
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/programs", { headers });
+      const res = await fetch("/api/admin/programs", { headers: userId ? { "x-user-id": String(userId) } : {} });
       const data = await res.json();
       setPrograms(Array.isArray(data) ? data : []);
     } catch {}
     setLoading(false);
-  }, [headers]);
+  }, [userId]);
 
   useEffect(() => { load(); }, [load]);
 
