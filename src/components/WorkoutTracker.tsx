@@ -279,7 +279,7 @@ export default function WorkoutTracker({ sessionId, logId, exercises, initialInd
       const totalDuration = Math.floor((Date.now() - startTime.current) / 1000);
       await finishWorkoutLog(logId, totalDuration, selectedFeeling.score, selectedFeeling.label);
       localStorage.removeItem(`workout_progress_${sessionId}`);
-      router.replace('/');
+      router.replace(`/session/${sessionId}`);
     };
 
     return (

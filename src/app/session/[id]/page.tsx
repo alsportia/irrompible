@@ -9,6 +9,7 @@ interface SessionDetail {
   session_code: string;
   name: string;
   description: string;
+  program_id: number;
 }
 
 interface ExerciseRow {
@@ -35,7 +36,7 @@ export default async function SessionPage({ params }: { params: Promise<{ id: st
   const { id } = await params;
 
   const [session] = await DB.query<SessionDetail>(
-    "SELECT id, session_code, name, description FROM sessions WHERE id = ?",
+    "SELECT id, session_code, name, description, program_id FROM sessions WHERE id = ?",
     [id]
   );
 
@@ -64,6 +65,7 @@ export default async function SessionPage({ params }: { params: Promise<{ id: st
         sessionId={String(session.id)}
         sessionName={session.name}
         sessionDescription={session.description}
+        programId={session.program_id}
         exercisesRaw={exercisesRaw}
       />
       <VideoPrefetcher videoUrls={videoUrls} />

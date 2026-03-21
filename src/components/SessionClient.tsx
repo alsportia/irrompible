@@ -40,6 +40,7 @@ interface SessionClientProps {
   sessionId: string;
   sessionName: string;
   sessionDescription: string;
+  programId: number;
   exercisesRaw: ExerciseRow[];
 }
 
@@ -112,6 +113,7 @@ export default function SessionClient({
   sessionId,
   sessionName,
   sessionDescription,
+  programId,
   exercisesRaw,
 }: SessionClientProps) {
   const router = useRouter();
@@ -206,7 +208,7 @@ export default function SessionClient({
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.75rem 1rem", background: "var(--bg-secondary)", borderBottom: "1px solid var(--border-subtle)" }}>
           <button
-            onClick={() => router.back()}
+            onClick={() => router.push(`/?programId=${programId}`)}
             style={{ padding: "0.5rem", marginLeft: "-0.5rem", color: "var(--text-secondary)", background: "none", border: "none", cursor: "pointer", display: "flex" }}
           >
             <ChevronLeft size={24} />
