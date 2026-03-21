@@ -252,7 +252,7 @@ export default function ProgramWizard({ headers, programId, onSaved, onCancel }:
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
             <h3 style={{ margin: 0, color: "var(--text-primary)" }}>Ejercicios</h3>
-            <div style={{ display: "flex", gap: "0.25rem" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.25rem" }}>
               {sessions.map((s, i) => (
                 <button key={s.tempId} onClick={() => setActiveIdx(i)}
                   style={{ padding: "0.25rem 0.6rem", borderRadius: "var(--radius-md)", border: "1px solid var(--border-subtle)", cursor: "pointer", fontSize: "0.8rem",
@@ -269,7 +269,14 @@ export default function ProgramWizard({ headers, programId, onSaved, onCancel }:
                 <input style={{ ...inputStyle, flex: 1 }} placeholder="Buscar ejercicio..." value={exSearch} onChange={e => setExSearch(e.target.value)} />
               </div>
 
-              {activeSession.exercises.map((ex, exIdx) => (
+              {activeSession.exercises.map((ex, exIdx) => {
+                // Always include the currently selected exercise in the options list
+                const currentEx = ex.ex_id ? exercises.find(x => x.id === ex.ex_id) : null;
+                const options = filteredExercises.some(x => x.id === ex.ex_id)
+                  ? filteredExercises
+                  : currentEx ? [currentEx, ...filteredExercises] : filteredExercises;
+
+                return (
                 <div key={ex.tempId} style={{ background: "var(--bg-secondary)", borderRadius: "var(--radius-md)", padding: "0.75rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                     <span style={{ color: "var(--text-secondary)", fontSize: "0.8rem", minWidth: 20 }}>#{exIdx + 1}</span>
@@ -279,7 +286,7 @@ export default function ProgramWizard({ headers, programId, onSaved, onCancel }:
                         updateExercise(activeIdx, exIdx, { ex_id: Number(e.target.value), ex_name: found?.name ?? "" });
                       }}>
                       <option value={0}>-- Seleccionar ejercicio --</option>
-                      {filteredExercises.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                      {options.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
                     </select>
                     <div style={{ display: "flex", gap: "0.25rem" }}>
                       <button onClick={() => moveExercise(exIdx, -1)} disabled={exIdx === 0} style={{ background: "none", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-sm)", cursor: "pointer", padding: "0.25rem", color: "var(--text-secondary)" }}><ChevronUp size={14} /></button>
@@ -316,7 +323,7 @@ export default function ProgramWizard({ headers, programId, onSaved, onCancel }:
                     </div>
                   </div>
                 </div>
-              ))}
+              ); })}
 
               <button onClick={addExercise} style={{ padding: "0.5rem", border: "1px dashed var(--border-subtle)", borderRadius: "var(--radius-md)", background: "none", cursor: "pointer", color: "var(--text-secondary)", fontSize: "0.85rem" }}>
                 <Plus size={14} /> Añadir ejercicio
