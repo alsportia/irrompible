@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/lib/userContext";
-import { UserPlus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, UserCheck, UserX, Download } from "lucide-react";
+import { UserPlus, Pencil, Trash2, Check, X, ChevronDown, ChevronUp, UserCheck, UserX, Download, Dumbbell } from "lucide-react";
 import type { Program } from "@/types/index";
 import AdminExercises from "./AdminExercises";
 
@@ -370,6 +370,14 @@ export default function AdminClient() {
                 Mantenimiento
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <button
+                  onClick={() => router.push('/admin/programs')}
+                  className="btn-primary"
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.875rem', fontSize: '0.9rem', fontWeight: 700, width: '100%' }}
+                >
+                  <Dumbbell size={18} />
+                  Gestionar programas
+                </button>
                 <button
                   onClick={handleBackup}
                   className="btn-primary"
