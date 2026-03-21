@@ -75,69 +75,85 @@ export default function AdminPrograms() {
 
   if (view === "create" || (typeof view === "object" && "edit" in view)) {
     return (
-      <div style={{ padding: "1.5rem" }}>
-        <ProgramWizard
-          headers={headers}
-          programId={typeof view === "object" ? view.edit : undefined}
-          onSaved={() => { setView("list"); load(); setMessage({ type: "success", text: "Programa guardado correctamente" }); }}
-          onCancel={() => setView("list")}
-        />
+      <div style={{ minHeight: "100dvh", background: "var(--bg-primary)", padding: "1.5rem 1.25rem" }}>
+        <div style={{ position: "fixed", top: "-100px", left: "-50px", width: "16rem", height: "16rem", background: "var(--accent-glow)", borderRadius: "50%", filter: "blur(80px)", opacity: 0.6, pointerEvents: "none" }} />
+        <div style={{ maxWidth: "56rem", margin: "0 auto", position: "relative", zIndex: 10 }}>
+          <ProgramWizard
+            headers={headers}
+            programId={typeof view === "object" ? view.edit : undefined}
+            onSaved={() => { setView("list"); load(); setMessage({ type: "success", text: "Programa guardado correctamente" }); }}
+            onCancel={() => setView("list")}
+          />
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
-        <h2 style={{ margin: 0, color: "var(--text-primary)" }}>Programas de entrenamiento</h2>
-        <button onClick={() => setView("create")}
-          style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", padding: "0.5rem 1rem", background: "var(--accent)", color: "#fff", border: "none", borderRadius: "var(--radius-md)", cursor: "pointer", fontSize: "0.875rem" }}>
-          <Plus size={16} /> Nuevo programa
-        </button>
-      </div>
+    <div style={{ minHeight: "100dvh", background: "var(--bg-primary)", padding: "1.5rem 1.25rem" }}>
+      <div style={{ position: "fixed", top: "-100px", left: "-50px", width: "16rem", height: "16rem", background: "var(--accent-glow)", borderRadius: "50%", filter: "blur(80px)", opacity: 0.6, pointerEvents: "none" }} />
 
-      <ProgramImportExport headers={headers} onImported={() => { load(); setMessage({ type: "success", text: "Programa importado correctamente" }); }} />
-
-      {message && (
-        <p style={{ color: message.type === "success" ? "#27ae60" : "#e74c3c", fontSize: "0.875rem", margin: 0 }}>
-          {message.text}
-        </p>
-      )}
-
-      {loading ? (
-        <p style={{ color: "var(--text-secondary)" }}>Cargando...</p>
-      ) : programs.length === 0 ? (
-        <p style={{ color: "var(--text-secondary)" }}>No hay programas. Crea uno o importa un Excel.</p>
-      ) : (
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr>
-                <th style={thStyle}>Nombre</th>
-                <th style={thStyle}>Descripción</th>
-                <th style={{ ...thStyle, textAlign: "center" }}>Sesiones</th>
-                <th style={{ ...thStyle, textAlign: "center" }}>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {programs.map(p => (
-                <tr key={p.id}>
-                  <td style={tdStyle}>{p.name}</td>
-                  <td style={{ ...tdStyle, color: "var(--text-secondary)" }}>{p.description ?? "—"}</td>
-                  <td style={{ ...tdStyle, textAlign: "center" }}>{p.session_count}</td>
-                  <td style={{ ...tdStyle, textAlign: "center" }}>
-                    <div style={{ display: "inline-flex", gap: "0.25rem" }}>
-                      <button style={iconBtn} title="Editar" onClick={() => setView({ edit: p.id })}><Pencil size={16} /></button>
-                      <button style={iconBtn} title="Exportar" onClick={() => handleExport(p.id, p.name)}><Download size={16} /></button>
-                      <button style={{ ...iconBtn, color: "#e74c3c" }} title="Eliminar" onClick={() => setDeleteTarget(p)}><Trash2 size={16} /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <div style={{ maxWidth: "56rem", margin: "0 auto", position: "relative", zIndex: 10, display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+          <button onClick={() => window.history.back()}
+            style={{ background: "transparent", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-md)", color: "var(--text-secondary)", fontSize: "0.875rem", padding: "0.5rem 1rem", cursor: "pointer", fontFamily: "inherit" }}>
+            ← Volver
+          </button>
+          <h1 style={{ fontSize: "1.5rem", margin: 0, fontWeight: 700 }}>Programas de entrenamiento</h1>
         </div>
-      )}
+
+        {/* Actions row */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
+          <ProgramImportExport headers={headers} onImported={() => { load(); setMessage({ type: "success", text: "Programa importado correctamente" }); }} />
+          <button onClick={() => setView("create")}
+            style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", padding: "0.5rem 1rem", background: "var(--accent)", color: "#fff", border: "none", borderRadius: "var(--radius-md)", cursor: "pointer", fontSize: "0.875rem" }}>
+            <Plus size={16} /> Nuevo programa
+          </button>
+        </div>
+
+        {message && (
+          <p style={{ color: message.type === "success" ? "#27ae60" : "#e74c3c", fontSize: "0.875rem", margin: 0 }}>
+            {message.text}
+          </p>
+        )}
+
+        {/* Programs list */}
+        {loading ? (
+          <p style={{ color: "var(--text-secondary)" }}>Cargando...</p>
+        ) : programs.length === 0 ? (
+          <p style={{ color: "var(--text-secondary)" }}>No hay programas. Crea uno o importa un Excel.</p>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr>
+                  <th style={thStyle}>Nombre</th>
+                  <th style={thStyle}>Descripción</th>
+                  <th style={{ ...thStyle, textAlign: "center" }}>Sesiones</th>
+                  <th style={{ ...thStyle, textAlign: "center" }}>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {programs.map(p => (
+                  <tr key={p.id}>
+                    <td style={tdStyle}>{p.name}</td>
+                    <td style={{ ...tdStyle, color: "var(--text-secondary)" }}>{p.description ?? "—"}</td>
+                    <td style={{ ...tdStyle, textAlign: "center" }}>{p.session_count}</td>
+                    <td style={{ ...tdStyle, textAlign: "center" }}>
+                      <div style={{ display: "inline-flex", gap: "0.25rem" }}>
+                        <button style={iconBtn} title="Editar" onClick={() => setView({ edit: p.id })}><Pencil size={16} /></button>
+                        <button style={iconBtn} title="Exportar" onClick={() => handleExport(p.id, p.name)}><Download size={16} /></button>
+                        <button style={{ ...iconBtn, color: "#e74c3c" }} title="Eliminar" onClick={() => setDeleteTarget(p)}><Trash2 size={16} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       {/* Delete confirmation modal */}
       {deleteTarget && (
