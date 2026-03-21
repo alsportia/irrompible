@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   try {
     if (template === 'true') {
       const buffer = await generateTemplateExcel();
-      return new NextResponse(buffer, {
+      return new NextResponse(new Uint8Array(buffer), {
         headers: {
           'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
           'Content-Disposition': 'attachment; filename="plantilla_programa.xlsx"',
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
 
     if (id) {
       const buffer = await exportProgramToExcel(Number(id));
-      return new NextResponse(buffer, {
+      return new NextResponse(new Uint8Array(buffer), {
         headers: {
           'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
           'Content-Disposition': `attachment; filename="programa_${id}.xlsx"`,
