@@ -119,44 +119,104 @@ function SessionCard({ session, programId, done, highlight, onUnmark }: {
   highlight?: boolean;
   onUnmark?: (e: React.MouseEvent) => void;
 }) {
+  const bg = done
+    ? 'rgba(8, 22, 8, 0.82)'
+    : highlight
+      ? 'rgba(20, 50, 20, 0.88)'
+      : 'rgba(12, 32, 12, 0.85)';
+
+  const borderColor = done
+    ? 'rgba(255,255,255,0.06)'
+    : highlight
+      ? 'rgba(232,245,233,0.35)'
+      : 'rgba(255,255,255,0.1)';
+
   return (
-    <Link href={`/session/${session.id}?programId=${programId}`}>
-      <div className="card glass-panel" style={{ cursor: 'pointer', opacity: done ? 0.6 : 1, position: 'relative', border: highlight ? '1px solid rgba(59,130,246,0.4)' : undefined }}>
-        {highlight && (
-          <div style={{ position: 'absolute', top: '-1px', left: '1rem', background: 'var(--accent-primary)', color: '#fff', fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', padding: '0.15rem 0.5rem', borderRadius: '0 0 6px 6px' }}>
-            Toca hoy
-          </div>
-        )}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ flex: 1, paddingRight: '0.75rem' }}>
-            <h3 className="heading-display" style={{ fontSize: '1.125rem', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              {done && <span style={{ fontSize: '0.8rem', color: 'var(--success, #10b981)' }}>✓</span>}
-              {session.name}
-            </h3>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any }}>
-              {session.description || "Entrenamiento programado."}
+    <Link href={`/session/${session.id}?programId=${programId}`} style={{ textDecoration: 'none' }}>
+      <div style={{
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '1rem',
+        padding: '1rem 1rem 1rem 1.25rem',
+        background: bg,
+        border: `1px solid ${borderColor}`,
+        borderRadius: 'var(--radius-md)',
+        cursor: 'pointer',
+        backdropFilter: 'blur(12px)',
+        transition: 'background 0.15s ease',
+      }}>
+        {/* Checkmark or number */}
+        <div style={{
+          width: '2.25rem',
+          height: '2.25rem',
+          borderRadius: '50%',
+          flexShrink: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: done ? 'rgba(102,187,106,0.15)' : 'rgba(255,255,255,0.06)',
+          border: `2px solid ${done ? '#66bb6a' : 'rgba(255,255,255,0.15)'}`,
+        }}>
+          {done
+            ? <span style={{ color: '#66bb6a', fontSize: '1rem', fontWeight: 700, lineHeight: 1 }}>✓</span>
+            : <ChevronRight size={16} color="var(--text-secondary)" />
+          }
+        </div>
+
+        {/* Content */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h3 style={{
+            fontFamily: 'var(--font-outfit)',
+            fontWeight: 700,
+            fontSize: '1.05rem',
+            letterSpacing: '-0.01em',
+            margin: 0,
+            color: done ? 'var(--text-secondary)' : 'var(--text-primary)',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}>
+            {session.name}
+          </h3>
+          {session.description && (
+            <p style={{
+              color: 'var(--text-secondary)',
+              fontSize: '0.75rem',
+              marginTop: '0.2rem',
+              overflow: 'hidden',
+              display: '-webkit-box',
+              WebkitLineClamp: 1,
+              WebkitBoxOrient: 'vertical' as any,
+              opacity: done ? 0.7 : 1,
+            }}>
+              {session.description}
             </p>
-            <div style={{ marginTop: '0.625rem' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 600, background: 'rgba(255,255,255,0.06)', color: 'var(--text-secondary)', padding: '0.2rem 0.5rem', borderRadius: '6px' }}>
-                {session.exerciseCount} series
-              </span>
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
-            {done && onUnmark && (
-              <button
-                onClick={onUnmark}
-                title="Desmarcar como completada"
-                style={{ padding: '0.4rem', borderRadius: '50%', background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >
-                <RotateCcw size={14} />
-              </button>
-            )}
-            <div style={{ color: done ? 'var(--text-secondary)' : 'var(--accent-primary)', background: done ? 'rgba(255,255,255,0.05)' : 'rgba(59,130,246,0.1)', padding: '0.5rem', borderRadius: '50%' }}>
-              <ChevronRight size={20} />
-            </div>
+          )}
+          <div style={{ marginTop: '0.35rem' }}>
+            <span style={{ fontSize: '0.7rem', fontWeight: 600, background: 'rgba(255,255,255,0.06)', color: 'var(--text-secondary)', padding: '0.15rem 0.4rem', borderRadius: '4px' }}>
+              {session.exerciseCount} series
+            </span>
           </div>
         </div>
+
+        {/* Unmark button */}
+        {done && onUnmark && (
+          <button
+            onClick={onUnmark}
+            title="Desmarcar como completada"
+            style={{ padding: '0.4rem', borderRadius: '50%', background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+          >
+            <RotateCcw size={14} />
+          </button>
+        )}
+
+        {/* "Toca hoy" badge */}
+        {highlight && (
+          <div style={{ position: 'absolute', top: '-1px', right: '1rem', background: 'var(--accent-primary)', color: '#0a1a0a', fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', padding: '0.15rem 0.5rem', borderRadius: '0 0 6px 6px' }}>
+            Siguiente
+          </div>
+        )}
       </div>
     </Link>
   );
