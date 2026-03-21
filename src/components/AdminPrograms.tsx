@@ -17,7 +17,7 @@ type View = "list" | "create" | { edit: number };
 
 export default function AdminPrograms() {
   const { user } = useUser();
-  const headers = user ? { "x-user-id": String(user.id) } : {};
+  const headers: Record<string, string> = user ? { "x-user-id": String(user.id) } : {};
 
   const [programs, setPrograms] = useState<ProgramRow[]>([]);
   const [loading, setLoading] = useState(false);
