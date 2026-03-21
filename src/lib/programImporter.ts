@@ -49,10 +49,10 @@ export async function importProgramFromExcel(
   if (programaRows.length === 0) throw new Error('La hoja "Programa" está vacía');
 
   // Validate columns
-  validateColumns(programaRows as Record<string, unknown>[], ['nombre'], 'Programa');
-  validateColumns(sesionesRows as Record<string, unknown>[], ['id_sesion', 'numero_sesion'], 'Sesiones');
-  validateColumns(ejerciciosRows as Record<string, unknown>[], ['id_ejercicio', 'nombre'], 'Ejercicios');
-  validateColumns(seRows as Record<string, unknown>[], ['id_sesion', 'id_ejercicio', 'bloque', 'tipo_bloque', 'numero_serie', 'orden_ejercicio'], 'Session_Exercises');
+  validateColumns(programaRows as unknown as Record<string, unknown>[], ['nombre'], 'Programa');
+  validateColumns(sesionesRows as unknown as Record<string, unknown>[], ['id_sesion', 'numero_sesion'], 'Sesiones');
+  validateColumns(ejerciciosRows as unknown as Record<string, unknown>[], ['id_ejercicio', 'nombre'], 'Ejercicios');
+  validateColumns(seRows as unknown as Record<string, unknown>[], ['id_sesion', 'id_ejercicio', 'bloque', 'tipo_bloque', 'numero_serie', 'orden_ejercicio'], 'Session_Exercises');
 
   const programName = options?.newName || String(programaRows[0].nombre).trim();
   if (!programName) throw new Error('El nombre del programa es obligatorio');
