@@ -1,5 +1,6 @@
 [build]
 builder = "NIXPACKS"
+# cache-bust: 1
 
 [deploy]
 startCommand = "npm run start"
