@@ -23,6 +23,7 @@ Aplicación web progresiva (PWA) de entrenamiento personal diseñada para usarse
 - Variables CSS disponibles: `--bg-primary`, `--bg-secondary`, `--bg-tertiary`, `--accent-primary`, `--text-secondary`, `--border-subtle`, `--glass-bg`, `--glass-border`, `--radius-sm`, `--radius-md`, `--radius-lg`, `--success`, `--danger`, `--warning`.
 - Clases CSS globales: `btn-primary`, `btn-primary glow`, `glass-panel`, `card`, `heading-display`, `animate-fade-in`.
 - Layout de pantalla completa: usar `height: 100dvh` (no `100vh`) para respetar la barra de navegación en iOS.
+- `--bg-primary` es `transparent` — para paneles con contenido usar `var(--glass-bg)` con `backdropFilter: 'blur(12px)'`.
 
 ---
 
@@ -40,11 +41,15 @@ unbreakable-app/
 ├── src/
 │   ├── app/
 │   │   ├── layout.tsx              # Layout raíz (fuentes, WakeLock)
-│   │   ├── page.tsx                # Home — lista de sesiones del programa
+│   │   ├── page.tsx                # Home — lista de sesiones (requiere ?programId=X)
 │   │   ├── globals.css             # Variables CSS y clases globales
-│   │   ├── actions.ts              # Server Actions (crear log, guardar sets)
+│   │   ├── actions.ts              # Server Actions
 │   │   ├── admin/
-│   │   │   └── page.tsx            # Panel de administración (solo rol admin)
+│   │   │   ├── page.tsx            # Panel admin — 4 botones + usuarios pendientes
+│   │   │   ├── users/page.tsx      # Gestión de usuarios
+│   │   │   ├── programs/page.tsx   # Gestión de programas (importar/exportar/editar)
+│   │   │   ├── exercises/page.tsx  # Gestión de ejercicios
+│   │   │   └── maintenance/page.tsx # Backup y restauración de DB
 │   │   ├── programs/
 │   │   │   └── page.tsx            # Selector de programas post-login
 │   │   ├── session/[id]/
@@ -53,45 +58,55 @@ unbreakable-app/
 │   │       └── page.tsx            # Server Component — fetch ejercicios + aplica energía
 │   ├── app/api/
 │   │   ├── auth/
-│   │   │   ├── login/route.ts      # POST — login por email
-│   │   │   └── validate/route.ts   # GET — valida sesión activa
-│   │   ├── programs/route.ts       # GET — programas del usuario
-│   │   ├── users/route.ts          # GET/POST — usuarios
-│   │   ├── public/
-│   │   │   └── programs/route.ts   # GET — programas públicos (sin auth)
-│   │   ├── calendar/route.ts       # GET — historial de entrenamientos
+│   │   │   ├── login/route.ts
+│   │   │   ├── register/route.ts
+│   │   │   └── validate/route.ts
+│   │   ├── programs/route.ts       # GET — programas del usuario autenticado
+│   │   ├── users/route.ts
+│   │   ├── public/programs/route.ts
+│   │   ├── calendar/route.ts
 │   │   └── admin/
-│   │       ├── programs/route.ts               # GET — todos los programas
-│   │       ├── users/route.ts                  # GET — todos los usuarios
-│   │       ├── users/[id]/role/route.ts         # PATCH — cambiar rol
-│   │       ├── users/[id]/status/route.ts       # PATCH — cambiar estado
-│   │       └── users/[id]/programs/route.ts     # GET/PUT — programas de un usuario
+│   │       ├── programs/route.ts               # GET/POST — todos los programas
+│   │       ├── programs/[id]/route.ts           # GET/PATCH/DELETE — programa concreto
+│   │       ├── programs/export/route.ts         # GET — exportar programa a Excel
+│   │       ├── programs/import/route.ts         # POST — importar programa desde Excel
+│   │       ├── exercises/route.ts               # GET — catálogo de ejercicios (límite 2000)
+│   │       ├── exercises/[id]/route.ts
+│   │       ├── users/route.ts
+│   │       ├── users/[id]/route.ts
+│   │       ├── users/[id]/role/route.ts
+│   │       ├── users/[id]/status/route.ts
+│   │       ├── users/[id]/programs/route.ts
+│   │       ├── backup/route.ts
+│   │       └── restore/route.ts
 │   ├── components/
 │   │   ├── LoginSelector.tsx       # Pantalla de login por email
 │   │   ├── ProgramSelector.tsx     # Selector de programas post-login
-│   │   ├── AdminClient.tsx         # Panel de administración (UI)
 │   │   ├── HomeClient.tsx          # Lista de sesiones del programa activo
 │   │   ├── SessionClient.tsx       # Resumen de sesión + selector de energía
 │   │   ├── WorkoutTracker.tsx      # Pantalla de entrenamiento activo
-│   │   ├── CachedVideo.tsx         # Reproductor de vídeo (YouTube embed)
+│   │   ├── CachedVideo.tsx         # Reproductor de vídeo (YouTube / local)
 │   │   ├── VideoPrefetcher.tsx     # Pre-descarga vídeos en segundo plano
 │   │   ├── CalendarView.tsx        # Vista de calendario de entrenamientos
-│   │   └── WakeLock.tsx            # Mantiene pantalla activa (global, en layout)
+│   │   ├── WakeLock.tsx            # Mantiene pantalla activa (global, en layout)
+│   │   ├── AdminClient.tsx         # Panel admin principal (nav + pendientes)
+│   │   ├── AdminUsers.tsx          # Gestión completa de usuarios
+│   │   ├── AdminPrograms.tsx       # Gestión de programas (lista + wizard + import/export)
+│   │   ├── AdminExercises.tsx      # Gestión de ejercicios (CRUD + paginación)
+│   │   ├── AdminExercisesPage.tsx  # Wrapper de AdminExercises con header/volver
+│   │   ├── AdminMaintenance.tsx    # Backup y restauración de DB
+│   │   ├── ProgramWizard.tsx       # Wizard 4 pasos para crear/editar programas
+│   │   └── ProgramImportExport.tsx # Botones importar/exportar + modal de conflicto
 │   └── lib/
 │       ├── db.ts                   # Wrapper SQLite3 — init lazy, copia seed si vacío
-│       ├── migrate.ts              # Migraciones de DB (addColumnIfNotExists)
-│       ├── adminAuth.ts            # Helper requireAdmin() para rutas protegidas
+│       ├── migrate.ts              # Migraciones de DB
+│       ├── adminAuth.ts            # Helper requireAdmin()
 │       ├── userContext.tsx         # Context de usuario (id, name, email, role)
 │       ├── useBeep.ts              # Hook Web Audio API para pitidos de cuenta atrás
-│       └── videoCache.ts           # Caché de vídeos en IndexedDB
-└── ../scripts/                     # Scripts Python de extracción de datos (fuera del repo)
-    ├── extract_data.py             # Poblar DB desde Unbreakable.xlsx
-    ├── extract_elite.py            # Poblar DB desde Elite.xlsx
-    ├── extract_primal.py
-    ├── extract_programs.py
-    ├── migrate_schema.py
-    ├── parse_difficulty.py
-    └── parse_pdf.py
+│       ├── videoCache.ts           # Caché de vídeos en IndexedDB
+│       ├── programExporter.ts      # Genera Excel 4 hojas desde un programa
+│       └── programImporter.ts      # Parsea y valida Excel para importar programa
+└── ../scripts/                     # Scripts Python de extracción de datos
 ```
 
 ---
@@ -100,15 +115,11 @@ unbreakable-app/
 
 ### Persistencia en producción
 
-La carpeta `data/` está montada como un **Railway Volume** (`/app/data`). Esto garantiza que la base de datos sobrevive entre deploys.
-
-Al arrancar, `db.ts` comprueba si `unbreakable.db` existe y tiene contenido. Si no (primer deploy o volumen vacío), copia automáticamente `seed.db` — que sí va en git — como punto de partida.
+La carpeta `data/` está montada como un **Railway Volume** (`/app/data`). Al arrancar, `db.ts` comprueba si `unbreakable.db` existe. Si no, copia `seed.db` automáticamente.
 
 `data/unbreakable.db` está en `.gitignore`. `seed.db` no.
 
 ### Actualizar el seed
-
-Si quieres que el próximo entorno nuevo arranque con datos frescos:
 
 ```bash
 cp data/unbreakable.db seed.db
@@ -120,99 +131,30 @@ git push
 ### Esquema actual
 
 ```sql
-users (
-  id      INTEGER PRIMARY KEY AUTOINCREMENT,
-  name    TEXT,
-  email   TEXT UNIQUE,
-  role    TEXT DEFAULT 'user',    -- 'admin' | 'user'
-  status  TEXT DEFAULT 'active'   -- 'active' | 'inactive'
-)
-
-programs (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  name        TEXT NOT NULL UNIQUE,
-  description TEXT,
-  image_url   TEXT
-)
-
-user_programs (
-  user_id    INTEGER REFERENCES users(id) ON DELETE CASCADE,
-  program_id INTEGER REFERENCES programs(id) ON DELETE CASCADE,
-  PRIMARY KEY (user_id, program_id)
-)
-
-sessions (
-  id           INTEGER PRIMARY KEY AUTOINCREMENT,
-  session_code TEXT UNIQUE,       -- ej: "primal_sesion_3"
-  name         TEXT,
-  description  TEXT,
-  program_id   INTEGER REFERENCES programs(id)
-)
-
-exercises (
-  id          INTEGER PRIMARY KEY,
-  name        TEXT NOT NULL,
-  video_url   TEXT,               -- URL de YouTube Shorts
-  description TEXT,
-  muscles     TEXT,
-  joints      TEXT,
-  easier_id   INTEGER REFERENCES exercises(id),
-  harder_id   INTEGER REFERENCES exercises(id)
-)
-
-session_exercises (
-  id         INTEGER PRIMARY KEY AUTOINCREMENT,
-  session_id INTEGER REFERENCES sessions(id) ON DELETE CASCADE,
-  ex_id      INTEGER REFERENCES exercises(id),
-  block      TEXT,                -- letra/número del bloque: "A", "1"...
-  block_type TEXT,                -- "circuit", "super_series", "tabata"...
-  set_number INTEGER,
-  ex_order   INTEGER,
-  reps       TEXT,                -- ej: "15", "6"
-  tiempo_ej  TEXT                 -- ej: "40''", "1'"
-)
-
-energy_levels (
-  id    INTEGER PRIMARY KEY,
-  code  TEXT NOT NULL UNIQUE,
-  label TEXT NOT NULL,
-  pct   REAL NOT NULL
-)
-
-feeling_levels (
-  id    INTEGER PRIMARY KEY,
-  score INTEGER NOT NULL UNIQUE,
-  label TEXT NOT NULL
-)
-
-workout_logs (
-  id               INTEGER PRIMARY KEY AUTOINCREMENT,
-  session_id       INTEGER REFERENCES sessions(id),
-  user_id          INTEGER REFERENCES users(id),
-  energy_level_id  INTEGER REFERENCES energy_levels(id),
-  feeling_level_id INTEGER REFERENCES feeling_levels(id),
-  duration         INTEGER,
-  completed_at     TEXT,
-  created_at       TEXT DEFAULT (datetime('now'))
-)
-
-workout_sets (
-  id             INTEGER PRIMARY KEY AUTOINCREMENT,
-  workout_log_id INTEGER REFERENCES workout_logs(id) ON DELETE CASCADE,
-  exercise_id    INTEGER REFERENCES exercises(id),
-  reps_done      INTEGER,
-  weight         REAL,
-  time_taken     INTEGER
-)
+users (id, name, email UNIQUE, role, status)
+programs (id, name UNIQUE, description, image_url)
+user_programs (user_id, program_id)
+sessions (id, session_code UNIQUE, name, description, program_id)
+exercises (id, name, video_url, video_url_yt, description, muscles, joints, easier_id, harder_id)
+session_exercises (id, session_id, ex_id, block, block_type, set_number, ex_order, reps, tiempo_ej)
+energy_levels (id, code, label, pct)
+feeling_levels (id, score, label)
+workout_logs (id, session_id, user_id, energy_level_id, feeling_level_id, duration, completed_at, created_at)
+workout_sets (id, workout_log_id, exercise_id, reps_done, weight, time_taken)
 ```
 
-### Programas disponibles
+### Programas disponibles (seed)
 
-| ID | Nombre |
-|---|---|
-| 1 | Unbreakable |
-| 2 | Elite |
-| 3 | Primal |
+| ID | Nombre | Sesiones |
+|---|---|---|
+| 1 | Unbreakable | 50 |
+| 23 | Elite | 69 |
+| 84 | Primal | 20 |
+| 87 | Ring Master | 40 |
+| 88 | Aurum | 12 |
+| 311 | Vital | 30 |
+
+Los IDs de ejercicios van de 5216 a 7020.
 
 ---
 
@@ -220,39 +162,37 @@ workout_sets (
 
 ```
 LoginSelector (email)
-  └─► ProgramSelector (lista de programas del usuario)
-        ├─► [Admin] Panel de administración
-        └─► HomeClient (lista de sesiones del programa)
-              └─► SessionClient (resumen + selector de energía)
-                    └─► WorkoutTracker (entrenamiento activo)
-                          └─► Pantalla de valoración + fin
+  └─► ProgramSelector (/programs)
+        ├─► [Admin] /admin
+        │     ├─► /admin/users        — gestión de usuarios
+        │     ├─► /admin/programs     — gestión de programas
+        │     ├─► /admin/exercises    — gestión de ejercicios
+        │     └─► /admin/maintenance  — backup / restore
+        └─► Home (/?programId=X)      — lista de sesiones del programa
+              └─► /session/[id]       — resumen + selector de energía
+                    └─► /workflow/[id] — entrenamiento activo
+                          └─► valoración + fin → vuelve a /session/[id]
 ```
+
+> La home **requiere** `?programId=X`. Sin él redirige a `/programs` para evitar mezclar sesiones de distintos programas.
 
 ---
 
 ## Autenticación y roles
 
-### Login
-- El usuario introduce su email en `LoginSelector`.
-- `POST /api/auth/login` busca el usuario por email.
-- El usuario se guarda en `localStorage` como JSON `{ id, name, email, role }`.
-- Al recargar, `GET /api/auth/validate` verifica que el usuario sigue existiendo en la DB.
-
-### Roles
+- Login por email en `LoginSelector` → `POST /api/auth/login`.
+- Usuario guardado en `localStorage` como `{ id, name, email, role }`.
+- Al recargar, `GET /api/auth/validate` verifica que el usuario existe en DB.
 - `user` — acceso solo a sus programas asignados.
 - `admin` — acceso a todos los programas + panel de administración.
-
-### Panel de administración
-- Accesible desde `ProgramSelector` si el usuario tiene rol `admin`.
-- Permite cambiar rol y estado de cualquier usuario.
-- Permite asignar/desasignar programas a cada usuario.
-- Las rutas `/api/admin/*` están protegidas con `requireAdmin()` que verifica el header `x-user-id`.
+- Rutas `/api/admin/*` protegidas con `requireAdmin()` (header `x-user-id`).
+- Registro de nuevos usuarios: quedan en estado `pending` hasta que un admin los aprueba.
 
 ---
 
 ## Funcionalidades
 
-### Nivel de energía
+### Selector de energía
 
 | Nivel | % aplicado |
 |---|---|
@@ -261,21 +201,34 @@ LoginSelector (email)
 | Cansado | 50% |
 | Muy Cansado | 25% |
 
-El porcentaje escala reps y número de sets en el workflow.
+Escala reps y número de sets antes de iniciar el entrenamiento.
 
 ### Entrenamiento activo (WorkoutTracker)
-- Cuenta atrás de 5s con círculo SVG animado y pitidos.
+- Cuenta atrás de 5s con círculo SVG animado y pitidos (Web Audio API).
 - Vídeo a pantalla completa con todos los iframes pre-renderizados.
 - Timer con barra de progreso para ejercicios con tiempo.
 - Pitidos de aviso en los últimos 5 segundos.
 - Botones Anterior / Completar y Siguiente.
-- Pantalla de valoración al finalizar.
+- Pantalla de valoración (feeling) al finalizar.
+- Guardado de progreso en `localStorage` para reanudar sesiones interrumpidas.
+
+### Lista de sesiones (HomeClient)
+- Todas las sesiones del programa en orden, sin paginación.
+- Sesiones completadas marcadas con ✓ verde y fondo más oscuro.
+- Botón 🔄 en cada sesión completada para desmarcarla (borra el `workout_log`).
+- Auto-scroll a la primera sesión pendiente al cargar.
+
+### Gestión de programas (admin)
+- Wizard de 4 pasos para crear y editar programas (nombre/desc, sesiones, ejercicios por sesión, asignación de usuarios).
+- Exportar programa a Excel (4 hojas: `Programa`, `Sesiones`, `Ejercicios`, `Session_Exercises`).
+- Importar programa desde Excel con validación y modal de conflicto de nombre (renombrar o sobreescribir con backup automático).
+- `block_type` acepta valores legacy: `normal`, `circuit`, `superset`, `super_series`, `tabata`, `interval_repetitions`, etc.
 
 ### Otras
 - Caché de vídeos en IndexedDB (`VideoPrefetcher`).
-- Wake Lock global para evitar que el móvil se bloquee.
-- Registro de entrenamientos en `workout_logs` y `workout_sets`.
-- Vista de calendario desde el home.
+- Wake Lock global para evitar que el móvil se bloquee durante el entrenamiento.
+- Vista de calendario de entrenamientos desde el home.
+- Backup y restauración de la DB desde el panel de mantenimiento.
 
 ---
 
@@ -321,5 +274,5 @@ Requieren: `pip install pandas openpyxl`
 - Componentes interactivos son Client Components (`"use client"`).
 - Las páginas son Server Components que hacen fetch y pasan props a los Client Components.
 - `params` y `searchParams` son Promises en Next.js 15+ y deben awaitearse.
-- No se usa `useEffect` para fetch de datos — todo el fetching es server-side.
+- No se usa `useEffect` para fetch de datos — todo el fetching es server-side en las páginas.
 - El idioma de la UI es **español**.
