@@ -60,7 +60,8 @@ export default function AdminMaintenance() {
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.875rem', fontSize: '0.9rem', fontWeight: 700, width: '100%' }}>
             <Download size={18} /> Descargar copia de seguridad
           </button>
-          <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.875rem', fontSize: '0.9rem', fontWeight: 700, width: '100%', background: 'transparent', border: '2px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', color: restoring ? 'var(--text-secondary)' : 'var(--text-primary)', cursor: restoring ? 'not-allowed' : 'pointer', fontFamily: 'inherit', boxSizing: 'border-box' as const }}>
+          <label className="btn-primary"
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.875rem', fontSize: '0.9rem', fontWeight: 700, width: '100%', cursor: restoring ? 'not-allowed' : 'pointer', opacity: restoring ? 0.6 : 1, boxSizing: 'border-box' as const }}>
             <Download size={18} style={{ transform: 'rotate(180deg)' }} />
             {restoring ? 'Restaurando...' : 'Restaurar desde copia de seguridad'}
             <input type="file" accept=".db" onChange={handleRestore} disabled={restoring} style={{ display: 'none' }} />
