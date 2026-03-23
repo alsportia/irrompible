@@ -129,7 +129,38 @@ export async function runMigrations(): Promise<void> {
     )
   `);
 
-  // 12. Assign Unbreakable to existing users without any program
+  // 12. New block model: sets table
+  await DB.run(`
+    CREATE TABLE IF NOT EXISTS sets (
+      set_id      INTEGER PRIMARY KEY AUTOINCREMENT,
+      session_id  INTEGER NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+      description TEXT,
+      block_label TEXT,
+      block_type  TEXT,
+      num_sets    INTEGER NOT NULL DEFAULT 1,
+      block_order INTEGER NOT NULL
+    )
+  `);
+  await DB.run(`
+    CREATE INDEX IF NOT EXISTS idx_sets_session_order ON sets (session_id, block_order)
+  `);
+
+  // 13. New block model: set_exercises table
+  await DB.run(`
+    CREATE TABLE IF NOT EXISTS set_exercises (
+      set_exercise_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      set_id          INTEGER NOT NULL REFERENCES sets(set_id) ON DELETE CASCADE,
+      ex_id           INTEGER NOT NULL REFERENCES exercises(id),
+      ex_order        INTEGER NOT NULL,
+      reps            TEXT,
+      tiempo_ej       TEXT
+    )
+  `);
+
+  // 14. Add video_url_yt to exercises if missing (legacy DBs)
+  await addColumnIfNotExists('exercises', 'video_url_yt', 'TEXT');
+
+  // 15. Assign Unbreakable to existing users without any program
   await DB.run(`
     INSERT OR IGNORE INTO user_programs (user_id, program_id)
     SELECT u.id, p.id

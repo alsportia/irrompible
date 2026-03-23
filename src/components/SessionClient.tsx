@@ -8,6 +8,7 @@ import { getExerciseById } from "@/app/actions";
 import CachedVideo from "./CachedVideo";
 
 interface ExerciseRow {
+  set_id: number;
   block: string;
   block_type: string | null;
   set_number: number;
@@ -30,6 +31,7 @@ interface ExerciseRow {
 type ExerciseDetail = NonNullable<Awaited<ReturnType<typeof getExerciseById>>>;
 
 interface BlockGroup {
+  key: string;   // set_id as string
   block: string;
   block_type: string | null;
   totalSets: number;
@@ -75,16 +77,19 @@ function applyEnergy(exercises: ExerciseRow[], pct: number): ExerciseRow[] {
 }
 
 function groupByBlock(exercises: ExerciseRow[]): BlockGroup[] {
+  const order: string[] = [];
   const map = new Map<string, BlockGroup>();
   for (const ex of exercises) {
-    if (!map.has(ex.block)) {
-      map.set(ex.block, { block: ex.block, block_type: ex.block_type, totalSets: 0, exercises: [] });
+    const key = String(ex.set_id);
+    if (!map.has(key)) {
+      order.push(key);
+      map.set(key, { key, block: ex.block, block_type: ex.block_type, totalSets: 0, exercises: [] });
     }
-    const group = map.get(ex.block)!;
+    const group = map.get(key)!;
     group.exercises.push(ex);
     group.totalSets = Math.max(group.totalSets, ex.set_number);
   }
-  return Array.from(map.values());
+  return order.map(k => map.get(k)!);
 }
 
 function getUniqueExercisesInBlock(group: BlockGroup): ExerciseRow[] {
@@ -135,15 +140,15 @@ export default function SessionClient({
   const totalExercises = new Set(adaptedExercises.map(e => e.ex_id)).size;
 
   useEffect(() => {
-    setExpandedBlocks(new Set(blocks.map(b => b.block)));
+    setExpandedBlocks(new Set(blocks.map(b => b.key)));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId, view]);
 
-  const toggleBlock = (block: string) => {
+  const toggleBlock = (key: string) => {
     setExpandedBlocks(prev => {
       const next = new Set(prev);
-      if (next.has(block)) next.delete(block);
-      else next.add(block);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
       return next;
     });
   };
@@ -305,13 +310,13 @@ export default function SessionClient({
       <div style={{ flex: 1, overflowY: "auto", padding: "1rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
         {blocks.map((group) => {
           const uniqueExs = getUniqueExercisesInBlock(group);
-          const isExpanded = expandedBlocks.has(group.block);
+          const isExpanded = expandedBlocks.has(group.key);
           const isCircuit = group.block_type === "circuit";
 
           return (
-            <div key={group.block} style={{ background: "var(--glass-bg)", border: "1px solid var(--glass-border)", borderRadius: "var(--radius-md)", overflow: "hidden" }}>
+            <div key={group.key} style={{ background: "var(--glass-bg)", border: "1px solid var(--glass-border)", borderRadius: "var(--radius-md)", overflow: "hidden" }}>
               <button
-                onClick={() => toggleBlock(group.block)}
+                onClick={() => toggleBlock(group.key)}
                 style={{ width: "100%", display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.875rem 1rem", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}
               >
                 <div style={{ flex: 1 }}>

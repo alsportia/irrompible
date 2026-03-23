@@ -3,6 +3,8 @@ import { requireAdmin } from '@/lib/adminAuth';
 import { DB } from '@/lib/db';
 import { generateBackupExcel } from '@/lib/programImporter';
 
+const VALID_BLOCK_TYPES = ['normal', 'circuit', 'superset', 'super_series', 'tabata', 'interval_repetitions_with_pause', 'interval_repetitions', 'to_the_one', 'spartan_race', 'paleo_run'];
+
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAdmin(req);
   if (auth instanceof NextResponse) return auth;
@@ -16,21 +18,38 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     [id]
   );
 
-  const sessionsWithExercises = await Promise.all(
+  const sessionsWithBlocks = await Promise.all(
     sessions.map(async (s, i) => {
       const match = s.session_code?.match(/_s(\d+)(_\d+)?$/);
       const numero_sesion = match ? parseInt(match[1]) : i + 1;
-      const exercises = await DB.query(
-        `SELECT se.id, se.block, se.block_type, se.set_number, se.ex_id, se.ex_order, se.reps, se.tiempo_ej, e.name as ex_name
-         FROM session_exercises se JOIN exercises e ON se.ex_id = e.id
-         WHERE se.session_id = ? ORDER BY se.ex_order`,
+
+      const blocks = await DB.query<{
+        set_id: number; block_label: string | null; block_type: string | null;
+        num_sets: number; description: string | null; block_order: number;
+      }>(
+        'SELECT set_id, block_label, block_type, num_sets, description, block_order FROM sets WHERE session_id = ? ORDER BY block_order',
         [s.id]
       );
-      return { ...s, numero_sesion, exercises };
+
+      const blocksWithExercises = await Promise.all(
+        blocks.map(async (b) => {
+          const exercises = await DB.query<{
+            set_exercise_id: number; ex_id: number; ex_name: string; ex_order: number; reps: string | null; tiempo_ej: string | null;
+          }>(
+            `SELECT se.set_exercise_id, se.ex_id, e.name as ex_name, se.ex_order, se.reps, se.tiempo_ej
+             FROM set_exercises se JOIN exercises e ON se.ex_id = e.id
+             WHERE se.set_id = ? ORDER BY se.ex_order`,
+            [b.set_id]
+          );
+          return { ...b, exercises };
+        })
+      );
+
+      return { ...s, numero_sesion, blocks: blocksWithExercises };
     })
   );
 
-  return NextResponse.json({ ...program, sessions: sessionsWithExercises });
+  return NextResponse.json({ ...program, sessions: sessionsWithBlocks });
 }
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -46,18 +65,27 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const { name, description, image_url, sessions } = body;
     if (!name?.trim()) return NextResponse.json({ error: 'Nombre obligatorio' }, { status: 400 });
 
+    // Validate blocks
+    if (Array.isArray(sessions)) {
+      for (const ses of sessions) {
+        for (const block of (ses.blocks ?? [])) {
+          if (!Number.isInteger(block.num_sets) || block.num_sets < 1) {
+            return NextResponse.json({ error: 'num_sets debe ser un entero >= 1' }, { status: 400 });
+          }
+          if (block.block_type && !VALID_BLOCK_TYPES.includes(block.block_type)) {
+            return NextResponse.json({ error: `block_type inválido. Valores aceptados: ${VALID_BLOCK_TYPES.join(', ')}` }, { status: 400 });
+          }
+        }
+      }
+    }
+
     // Generate backup before modifying
     const backupBuffer = await generateBackupExcel(Number(id));
     const backupBase64 = backupBuffer.toString('base64');
 
     const slug = name.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
 
-    // Delete existing sessions/exercises
-    const existingSessions = await DB.query<{ id: number }>('SELECT id FROM sessions WHERE program_id = ?', [id]);
-    const sesIds = existingSessions.map(s => s.id);
-    if (sesIds.length) {
-      await DB.run(`DELETE FROM session_exercises WHERE session_id IN (${sesIds.map(() => '?').join(',')})`, sesIds);
-    }
+    // Delete existing sessions (cascade deletes sets → set_exercises)
     await DB.run('DELETE FROM sessions WHERE program_id = ?', [id]);
     await DB.run('UPDATE programs SET name=?, description=?, image_url=? WHERE id=?', [name.trim(), description || null, image_url || null, id]);
 
@@ -69,12 +97,22 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         if (existingCode) sessionCode = `${slug}_s${num}_${id}`;
         const sesResult = await DB.run('INSERT INTO sessions (session_code, name, program_id) VALUES (?,?,?)', [sessionCode, ses.nombre_sesion || null, Number(id)]);
         const sessionId = sesResult.id;
-        if (Array.isArray(ses.exercises)) {
-          for (const ex of ses.exercises) {
-            await DB.run(
-              'INSERT INTO session_exercises (session_id, block, block_type, set_number, ex_id, ex_order, reps, tiempo_ej) VALUES (?,?,?,?,?,?,?,?)',
-              [sessionId, ex.bloque || null, ex.tipo_bloque || 'normal', ex.set_number || 1, ex.ex_id, ex.ex_order || 1, ex.reps || null, ex.tiempo_ej || null]
+
+        if (Array.isArray(ses.blocks)) {
+          for (const block of ses.blocks) {
+            const setResult = await DB.run(
+              'INSERT INTO sets (session_id, description, block_label, block_type, num_sets, block_order) VALUES (?,?,?,?,?,?)',
+              [sessionId, block.description || null, block.block_label || null, block.block_type || 'normal', block.num_sets || 1, block.block_order || 1]
             );
+            const setId = setResult.id;
+            if (Array.isArray(block.exercises)) {
+              for (const ex of block.exercises) {
+                await DB.run(
+                  'INSERT INTO set_exercises (set_id, ex_id, ex_order, reps, tiempo_ej) VALUES (?,?,?,?,?)',
+                  [setId, ex.ex_id, ex.ex_order || 1, ex.reps || null, ex.tiempo_ej || null]
+                );
+              }
+            }
           }
         }
       }
@@ -95,11 +133,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const existing = await DB.get('SELECT id FROM programs WHERE id = ?', [id]);
   if (!existing) return NextResponse.json({ error: 'Programa no encontrado' }, { status: 404 });
 
-  const sessions = await DB.query<{ id: number }>('SELECT id FROM sessions WHERE program_id = ?', [id]);
-  const sesIds = sessions.map(s => s.id);
-  if (sesIds.length) {
-    await DB.run(`DELETE FROM session_exercises WHERE session_id IN (${sesIds.map(() => '?').join(',')})`, sesIds);
-  }
+  // Cascade deletes sessions → sets → set_exercises
   await DB.run('DELETE FROM sessions WHERE program_id = ?', [id]);
   await DB.run('DELETE FROM programs WHERE id = ?', [id]);
 

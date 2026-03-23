@@ -15,18 +15,20 @@ interface Session {
 async function getSessions(programId?: string): Promise<Session[]> {
   if (programId) {
     return DB.query<Session>(`
-      SELECT s.id, s.session_code, s.name, s.description, COUNT(se.id) as exerciseCount
+      SELECT s.id, s.session_code, s.name, s.description,
+             COALESCE(SUM(st.num_sets), 0) as exerciseCount
       FROM sessions s
-      LEFT JOIN session_exercises se ON s.id = se.session_id
+      LEFT JOIN sets st ON s.id = st.session_id
       WHERE s.program_id = ?
       GROUP BY s.id
       ORDER BY s.id ASC
     `, [programId]);
   }
   return DB.query<Session>(`
-    SELECT s.id, s.session_code, s.name, s.description, COUNT(se.id) as exerciseCount
+    SELECT s.id, s.session_code, s.name, s.description,
+           COALESCE(SUM(st.num_sets), 0) as exerciseCount
     FROM sessions s
-    LEFT JOIN session_exercises se ON s.id = se.session_id
+    LEFT JOIN sets st ON s.id = st.session_id
     GROUP BY s.id
     ORDER BY s.id ASC
   `);

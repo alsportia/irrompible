@@ -44,6 +44,44 @@ export interface ExerciseRow {
 }
 
 // Wizard types
+export type BlockType =
+  | 'normal' | 'circuit' | 'superset' | 'super_series'
+  | 'tabata' | 'interval_repetitions' | 'interval_repetitions_with_pause'
+  | 'to_the_one' | 'spartan_race' | 'paleo_run';
+
+export interface WizardBlockExercise {
+  tempId: string;
+  ex_id: number;
+  ex_name: string;
+  ex_order: number;
+  reps: string;
+  tiempo_ej: string;
+}
+
+export interface WizardBlock {
+  tempId: string;
+  block_label: string;   // 1 carácter, p.ej. "A"
+  block_type: BlockType;
+  num_sets: number;      // >= 1
+  description: string;   // opcional, visible en wizard
+  block_order: number;
+  exercises: WizardBlockExercise[];
+}
+
+export interface WizardSession {
+  tempId: string;
+  numero_sesion: number;
+  nombre_sesion: string;
+  blocks: WizardBlock[];
+}
+
+export interface WizardState {
+  program: { name: string; description: string; image_url: string };
+  sessions: WizardSession[];
+  activeSessionIndex: number;
+}
+
+// Legacy wizard types (kept for reference during migration)
 export interface WizardExercise {
   tempId: string;
   ex_id: number;
@@ -54,19 +92,6 @@ export interface WizardExercise {
   ex_order: number;
   reps: string;
   tiempo_ej: string;
-}
-
-export interface WizardSession {
-  tempId: string;
-  numero_sesion: number;
-  nombre_sesion: string;
-  exercises: WizardExercise[];
-}
-
-export interface WizardState {
-  program: { name: string; description: string; image_url: string };
-  sessions: WizardSession[];
-  activeSessionIndex: number;
 }
 
 // Importer types
@@ -82,15 +107,30 @@ export interface ImportConflict {
   existingName: string;
 }
 
-// Full program with sessions for wizard/edit
+// Full program with sessions for wizard/edit (new block model)
 export interface ProgramFull extends Program {
   sessions: SessionFull[];
 }
 
 export interface SessionFull extends Session {
-  exercises: SessionExerciseFull[];
+  blocks: BlockFull[];
 }
 
-export interface SessionExerciseFull extends SessionExercise {
-  ex_name?: string;
+export interface BlockFull {
+  set_id: number;
+  block_label: string;
+  block_type: string;
+  num_sets: number;
+  description: string | null;
+  block_order: number;
+  exercises: BlockExerciseFull[];
+}
+
+export interface BlockExerciseFull {
+  set_exercise_id: number;
+  ex_id: number;
+  ex_name: string;
+  ex_order: number;
+  reps: string | null;
+  tiempo_ej: string | null;
 }
