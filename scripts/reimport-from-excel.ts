@@ -119,13 +119,13 @@ async function main() {
       description TEXT,
       block_label TEXT,
       block_type  TEXT,
-      num_sets    INTEGER NOT NULL DEFAULT 1,
       block_order INTEGER NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_sets_session_order ON sets (session_id, block_order);
     CREATE TABLE set_exercises (
       set_exercise_id INTEGER PRIMARY KEY AUTOINCREMENT,
       set_id          INTEGER NOT NULL REFERENCES sets(set_id) ON DELETE CASCADE,
+      set_number      INTEGER NOT NULL,
       ex_id           INTEGER NOT NULL REFERENCES exercises(id),
       ex_order        INTEGER NOT NULL,
       reps            TEXT,
@@ -219,40 +219,25 @@ async function main() {
         const groupRows = blockGroups.get(blockKey)!;
         const blockType = blockTypes.get(blockKey) || 'normal';
 
-        // num_sets = MAX(set_number) in this block
-        const numSets = Math.max(...groupRows.map(r => r.set_number));
-
-        // Insert set
+        // Insert set (no num_sets — rows in set_exercises carry set_number)
         const setResult = await dbRun(db,
-          'INSERT INTO sets (session_id, block_label, block_type, num_sets, block_order) VALUES (?,?,?,?,?)',
-          [sessionId, blockKey, blockType, numSets, bOrder]);
+          'INSERT INTO sets (session_id, block_label, block_type, block_order) VALUES (?,?,?,?)',
+          [sessionId, blockKey, blockType, bOrder]);
         const setId = setResult.lastID;
         totalBlocks++;
 
-        // Get unique exercises from set_number=1 (or min set_number)
-        const minSet = Math.min(...groupRows.map(r => r.set_number));
-        const refRows = groupRows.filter(r => r.set_number === minSet);
-        const seenExIds = new Set<number>();
-        const uniqueExs = refRows.filter(r => {
-          if (seenExIds.has(r.ex_id)) return false;
-          seenExIds.add(r.ex_id);
-          return true;
-        }).sort((a, b) => a.ex_order - b.ex_order);
-
-        let exOrder = 1;
-        for (const ex of uniqueExs) {
-          // Verify exercise exists
-          const exExists = await dbGet<{ id: number }>(db, 'SELECT id FROM exercises WHERE id = ?', [ex.ex_id]);
+        // Insert all distinct (set_number, ex_id, ex_order) rows
+        for (const row of groupRows) {
+          const exExists = await dbGet<{ id: number }>(db, 'SELECT id FROM exercises WHERE id = ?', [row.ex_id]);
           if (!exExists) {
-            console.warn(`  [WARN] ${sheetName} bloque ${blockKey}: ex_id=${ex.ex_id} no existe, se omite`);
+            console.warn(`  [WARN] ${sheetName} bloque ${blockKey}: ex_id=${row.ex_id} no existe, se omite`);
             continue;
           }
-          const tiempoVal = ex.tiempo_ej !== '' && Number(ex.tiempo_ej) !== 0 ? String(ex.tiempo_ej) : null;
-          const repsVal   = ex.reps !== '' && ex.reps !== 0 && ex.reps !== '0' ? String(ex.reps) : null;
+          const tiempoVal = row.tiempo_ej !== '' && Number(row.tiempo_ej) !== 0 ? String(row.tiempo_ej) : null;
+          const repsVal   = row.reps !== '' && row.reps !== 0 && row.reps !== '0' ? String(row.reps) : null;
           await dbRun(db,
-            'INSERT INTO set_exercises (set_id, ex_id, ex_order, reps, tiempo_ej) VALUES (?,?,?,?,?)',
-            [setId, ex.ex_id, exOrder, repsVal, tiempoVal]);
-          exOrder++;
+            'INSERT INTO set_exercises (set_id, set_number, ex_id, ex_order, reps, tiempo_ej) VALUES (?,?,?,?,?,?)',
+            [setId, row.set_number, row.ex_id, row.ex_order, repsVal, tiempoVal]);
           totalExercises++;
         }
 

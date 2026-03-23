@@ -57,22 +57,21 @@ type EnergyLevel = typeof ENERGY_LEVELS[number];
 // Mirror of the server-side applyEnergy in workflow/[id]/page.tsx
 function applyEnergy(exercises: ExerciseRow[], pct: number): ExerciseRow[] {
   if (pct >= 1) return exercises;
-  const maxSetPerBlock = new Map<string, number>();
+  const maxSetPerBlock = new Map<number, number>();
   exercises.forEach(e => {
-    maxSetPerBlock.set(e.block, Math.max(maxSetPerBlock.get(e.block) ?? 0, e.set_number));
+    maxSetPerBlock.set(e.set_id, Math.max(maxSetPerBlock.get(e.set_id) ?? 0, e.set_number));
   });
   return exercises
+    .filter(ex => {
+      const maxSet = maxSetPerBlock.get(ex.set_id) ?? 1;
+      return ex.set_number <= Math.max(1, Math.round(maxSet * pct));
+    })
     .map(ex => {
       if (ex.reps && ex.reps !== "0") {
         const n = parseInt(ex.reps);
         if (!isNaN(n) && n > 1) return { ...ex, reps: String(Math.max(1, Math.round(n * pct))) };
       }
       return ex;
-    })
-    .filter(ex => {
-      const maxSet = maxSetPerBlock.get(ex.block) ?? 1;
-      if (maxSet <= 1) return true;
-      return ex.set_number <= Math.max(1, Math.round(maxSet * pct));
     });
 }
 
@@ -309,9 +308,19 @@ export default function SessionClient({
       {/* Blocks list */}
       <div style={{ flex: 1, overflowY: "auto", padding: "1rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
         {blocks.map((group) => {
-          const uniqueExs = getUniqueExercisesInBlock(group);
           const isExpanded = expandedBlocks.has(group.key);
           const isCircuit = group.block_type === "circuit";
+          // num_sets = MAX(set_number) across all rows in this block
+          const numSets = Math.max(...group.exercises.map(e => e.set_number));
+          // unique exercises = all distinct ex_ids in the block, ordered by first appearance
+          const seenIds = new Set<number>();
+          const uniqueExs: ExerciseRow[] = [];
+          for (const ex of [...group.exercises].sort((a, b) => a.set_number !== b.set_number ? a.set_number - b.set_number : a.ex_order - b.ex_order)) {
+            if (!seenIds.has(ex.ex_id)) {
+              seenIds.add(ex.ex_id);
+              uniqueExs.push(ex);
+            }
+          }
 
           return (
             <div key={group.key} style={{ background: "var(--glass-bg)", border: "1px solid var(--glass-border)", borderRadius: "var(--radius-md)", overflow: "hidden" }}>
@@ -331,7 +340,7 @@ export default function SessionClient({
                     )}
                   </div>
                   <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
-                    {uniqueExs.length} ejercicio{uniqueExs.length !== 1 ? "s" : ""} &middot; {group.totalSets} set{group.totalSets !== 1 ? "s" : ""}
+                    {numSets} set{numSets !== 1 ? "s" : ""} &middot; {uniqueExs.length} ejercicio{uniqueExs.length !== 1 ? "s" : ""}
                   </span>
                 </div>
                 {isExpanded ? <ChevronUp size={18} color="var(--text-secondary)" /> : <ChevronDown size={18} color="var(--text-secondary)" />}
@@ -365,7 +374,7 @@ export default function SessionClient({
                             )}
                             {ex.tiempo_ej && (
                               <span style={{ fontSize: "0.7rem", color: "var(--text-secondary)", background: "var(--bg-tertiary)", padding: "0.1rem 0.4rem", borderRadius: "4px" }}>
-                                {ex.tiempo_ej}
+                                {ex.tiempo_ej}s
                               </span>
                             )}
                           </div>

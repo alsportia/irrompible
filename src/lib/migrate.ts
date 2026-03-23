@@ -137,7 +137,6 @@ export async function runMigrations(): Promise<void> {
       description TEXT,
       block_label TEXT,
       block_type  TEXT,
-      num_sets    INTEGER NOT NULL DEFAULT 1,
       block_order INTEGER NOT NULL
     )
   `);
@@ -150,6 +149,7 @@ export async function runMigrations(): Promise<void> {
     CREATE TABLE IF NOT EXISTS set_exercises (
       set_exercise_id INTEGER PRIMARY KEY AUTOINCREMENT,
       set_id          INTEGER NOT NULL REFERENCES sets(set_id) ON DELETE CASCADE,
+      set_number      INTEGER NOT NULL,
       ex_id           INTEGER NOT NULL REFERENCES exercises(id),
       ex_order        INTEGER NOT NULL,
       reps            TEXT,

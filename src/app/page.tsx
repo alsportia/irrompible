@@ -16,9 +16,13 @@ async function getSessions(programId?: string): Promise<Session[]> {
   if (programId) {
     return DB.query<Session>(`
       SELECT s.id, s.session_code, s.name, s.description,
-             COALESCE(SUM(st.num_sets), 0) as exerciseCount
+             COALESCE((
+               SELECT SUM(block_sets)
+               FROM (SELECT MAX(se.set_number) as block_sets
+                     FROM sets st JOIN set_exercises se ON se.set_id = st.set_id
+                     WHERE st.session_id = s.id GROUP BY st.set_id)
+             ), 0) as exerciseCount
       FROM sessions s
-      LEFT JOIN sets st ON s.id = st.session_id
       WHERE s.program_id = ?
       GROUP BY s.id
       ORDER BY s.id ASC
@@ -26,9 +30,13 @@ async function getSessions(programId?: string): Promise<Session[]> {
   }
   return DB.query<Session>(`
     SELECT s.id, s.session_code, s.name, s.description,
-           COALESCE(SUM(st.num_sets), 0) as exerciseCount
+           COALESCE((
+             SELECT SUM(block_sets)
+             FROM (SELECT MAX(se.set_number) as block_sets
+                   FROM sets st JOIN set_exercises se ON se.set_id = st.set_id
+                   WHERE st.session_id = s.id GROUP BY st.set_id)
+           ), 0) as exerciseCount
     FROM sessions s
-    LEFT JOIN sets st ON s.id = st.session_id
     GROUP BY s.id
     ORDER BY s.id ASC
   `);
