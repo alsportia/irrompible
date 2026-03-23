@@ -97,12 +97,12 @@ export default function AdminMaintenance() {
 
         {/* Danger zone */}
         <div style={{ marginTop: '2rem', border: '1px solid rgba(239,68,68,0.4)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
-          <div style={{ background: 'rgba(239,68,68,0.1)', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div style={{ background: 'rgba(239,68,68,0.15)', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <AlertTriangle size={16} color="#ef4444" />
             <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: '#ef4444' }}>Zona de peligro</span>
           </div>
-          <div style={{ padding: '1rem' }}>
-            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: '0 0 1rem', lineHeight: 1.5 }}>
+          <div style={{ padding: '1rem', background: 'var(--glass-bg)', backdropFilter: 'blur(12px)' }}>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-primary)', margin: '0 0 1rem', lineHeight: 1.5 }}>
               Reinicia la base de datos al estado inicial del <code>seed.db</code>. Se perderán todos los usuarios, entrenamientos y datos registrados.
             </p>
             {resetStep === 'idle' && (
