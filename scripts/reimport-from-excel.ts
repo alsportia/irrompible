@@ -87,8 +87,8 @@ function parseSessionSheet(ws: XLSX.WorkSheet): ExcelRow[] {
       set_number: Number(r[setCol]) || 1,
       ex_id:      Number(r[exIdCol]),
       ex_order:   Number(r[exOrderCol]) || 1,
-      tiempo_ej:  r[tiempoCol] ?? '',
-      reps:       r[repsCol] ?? '',
+      tiempo_ej:  r[tiempoCol] as string | number ?? '',
+      reps:       r[repsCol] as string | number ?? '',
       video_url_yt: String(r[videoCol] ?? '').trim(),
     }));
 }
