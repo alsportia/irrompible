@@ -97,7 +97,7 @@ export default function AdminMaintenance() {
 
         {/* Danger zone */}
         <div style={{ marginTop: '2rem', border: '1px solid rgba(239,68,68,0.4)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
-          <div style={{ background: 'rgba(239,68,68,0.15)', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div style={{ background: 'rgba(239,68,68,0.25)', backdropFilter: 'blur(12px)', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <AlertTriangle size={16} color="#ef4444" />
             <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: '#ef4444' }}>Zona de peligro</span>
           </div>
