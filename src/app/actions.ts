@@ -48,7 +48,7 @@ export async function getLastWeight(userId: number, exerciseId: number): Promise
     `SELECT ws.weight FROM workout_sets ws
      JOIN workout_logs wl ON ws.workout_log_id = wl.id
      WHERE wl.user_id = ? AND ws.exercise_id = ? AND ws.weight IS NOT NULL AND ws.weight > 0
-     ORDER BY wl.created_at DESC, ws.id DESC
+     ORDER BY wl.date DESC, ws.id DESC
      LIMIT 1`,
     [userId, exerciseId]
   );
