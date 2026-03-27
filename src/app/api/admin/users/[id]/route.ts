@@ -14,7 +14,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   const conflict = await DB.get(
-    'SELECT id FROM users WHERE email = ? AND id != ?',
+    'SELECT users_id FROM users WHERE email = ? AND users_id != ?',
     [email.trim().toLowerCase(), id]
   );
   if (conflict) {
@@ -22,10 +22,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   await DB.run(
-    'UPDATE users SET name = ?, email = ? WHERE id = ?',
+    'UPDATE users SET name = ?, email = ? WHERE users_id = ?',
     [name.trim(), email.trim().toLowerCase(), id]
   );
-  const user = await DB.get('SELECT id, name, email, role FROM users WHERE id = ?', [id]);
+  const user = await DB.get('SELECT users_id as id, name, email, role FROM users WHERE users_id = ?', [id]);
   return NextResponse.json(user);
 }
 
@@ -41,6 +41,6 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     return NextResponse.json({ error: 'No puedes eliminar tu propio usuario' }, { status: 400 });
   }
 
-  await DB.run('DELETE FROM users WHERE id = ?', [id]);
+  await DB.run('DELETE FROM users WHERE users_id = ?', [id]);
   return NextResponse.json({ ok: true });
 }

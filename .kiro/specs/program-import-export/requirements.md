@@ -13,10 +13,10 @@ El objetivo es eliminar la dependencia de scripts Python externos para cargar pr
 - **Program**: Programa de entrenamiento. Entidad raíz que agrupa sesiones. Tabla `programs`.
 - **Session**: Sesión de entrenamiento perteneciente a un programa. Tabla `sessions`.
 - **Exercise**: Ejercicio del catálogo global. Tabla `exercises`.
-- **SessionExercise**: Asignación de un ejercicio a una sesión con sus parámetros. Tabla `session_exercises`.
+- **SessionExercise**: Asignación de un ejercicio a una sesión con sus parámetros. Tablas `sets` y `set_exercises`.
 - **Block**: Letra que agrupa ejercicios dentro de una sesión (A, B, C, D…).
 - **BlockType**: Tipo de agrupación del bloque. Valores permitidos: `normal`, `circuit`, `superset`.
-- **ExcelTemplate**: Archivo `.xlsx` con cuatro hojas: `Programa`, `Sesiones`, `Ejercicios` y `Session_Exercises`.
+- **ExcelTemplate**: Archivo `.xlsx` con cinco hojas: `Programa`, `Sesiones`, `Ejercicios`, `Sets` y `Set_Exercises`.
 - **Importer**: Módulo del sistema que procesa un ExcelTemplate y persiste los datos en la base de datos.
 - **Exporter**: Módulo del sistema que lee un programa de la base de datos y genera un ExcelTemplate.
 - **ProgramWizard**: Interfaz visual para crear y editar programas completos sin usar Excel.
@@ -33,15 +33,15 @@ El objetivo es eliminar la dependencia de scripts Python externos para cargar pr
 
 #### Criterios de aceptación
 
-1. THE ExcelTemplate SHALL contener exactamente cuatro hojas con los nombres `Programa`, `Sesiones`, `Ejercicios` y `Session_Exercises`.
+1. THE ExcelTemplate SHALL contener exactamente cinco hojas con los nombres `Programa`, `Sesiones`, `Ejercicios`, `Sets` y `Set_Exercises`.
 2. THE ExcelTemplate SHALL definir en la hoja `Programa` las columnas: `nombre` (obligatorio), `descripcion` (opcional) e `imagen_url` (opcional).
-3. THE ExcelTemplate SHALL definir en la hoja `Sesiones` las columnas: `id_sesion` (identificador interno para relacionar con Session_Exercises), `numero_sesion` (obligatorio) y `nombre_sesion` (opcional).
-4. THE ExcelTemplate SHALL definir en la hoja `Ejercicios` las columnas: `id_ejercicio` (identificador interno para relacionar con Session_Exercises), `nombre` (obligatorio), `musculos` (opcional), `articulaciones` (opcional), `descripcion` (opcional), `video_url` (opcional) y `video_url_yt` (opcional).
-5. THE ExcelTemplate SHALL definir en la hoja `Session_Exercises` las columnas: `id_sesion` (obligatorio, referencia a hoja Sesiones), `id_ejercicio` (obligatorio, referencia a hoja Ejercicios), `bloque` (obligatorio), `tipo_bloque` (obligatorio), `numero_serie` (obligatorio), `orden_ejercicio` (obligatorio), `repeticiones` (opcional) y `tiempo` (opcional).
-6. WHEN el campo `tipo_bloque` de la hoja `Session_Exercises` contiene un valor, THE ExcelTemplate SHALL aceptar únicamente los valores `normal`, `circuit` o `superset`.
-7. WHEN el campo `bloque` de la hoja `Session_Exercises` contiene un valor, THE ExcelTemplate SHALL aceptar únicamente letras mayúsculas (A, B, C, D…).
-8. THE ExcelTemplate SHALL requerir que el valor del campo `id_ejercicio` en la hoja `Session_Exercises` coincida con un `id_ejercicio` existente en la hoja `Ejercicios`.
-9. THE ExcelTemplate SHALL requerir que el valor del campo `id_sesion` en la hoja `Session_Exercises` coincida con un `id_sesion` existente en la hoja `Sesiones`.
+3. THE ExcelTemplate SHALL definir en la hoja `Sesiones` las columnas: `id_sesion` (identificador interno para relacionar con Set_Exercises), `numero_sesion` (obligatorio) y `nombre_sesion` (opcional).
+4. THE ExcelTemplate SHALL definir en la hoja `Ejercicios` las columnas: `id_ejercicio` (identificador interno para relacionar con Set_Exercises), `nombre` (obligatorio), `musculos` (opcional), `articulaciones` (opcional), `descripcion` (opcional), `video_url` (opcional) y `video_url_yt` (opcional).
+5. THE ExcelTemplate SHALL definir en la hoja `Set_Exercises` las columnas: `id_sesion` (obligatorio, referencia a hoja Sesiones), `id_ejercicio` (obligatorio, referencia a hoja Ejercicios), `bloque` (obligatorio), `tipo_bloque` (obligatorio), `numero_serie` (obligatorio), `orden_ejercicio` (obligatorio), `repeticiones` (opcional) y `tiempo` (opcional).
+6. WHEN el campo `tipo_bloque` de la hoja `Set_Exercises` contiene un valor, THE ExcelTemplate SHALL aceptar únicamente los valores `normal`, `circuit` o `superset`.
+7. WHEN el campo `bloque` de la hoja `Set_Exercises` contiene un valor, THE ExcelTemplate SHALL aceptar únicamente letras mayúsculas (A, B, C, D…).
+8. THE ExcelTemplate SHALL requerir que el valor del campo `id_ejercicio` en la hoja `Set_Exercises` coincida con un `id_ejercicio` existente en la hoja `Ejercicios`.
+9. THE ExcelTemplate SHALL requerir que el valor del campo `id_sesion` en la hoja `Set_Exercises` coincida con un `id_sesion` existente en la hoja `Sesiones`.
 
 ---
 
@@ -51,8 +51,8 @@ El objetivo es eliminar la dependencia de scripts Python externos para cargar pr
 
 #### Criterios de aceptación
 
-1. WHEN el Admin solicita la plantilla, THE Exporter SHALL generar un ExcelTemplate con la hoja `Programa` vacía, la hoja `Sesiones` vacía, la hoja `Session_Exercises` vacía y la hoja `Ejercicios` con todos los ejercicios existentes en la base de datos.
-2. WHEN el Admin solicita la plantilla, THE Exporter SHALL completar la hoja `Ejercicios` con los campos `id_ejercicio`, `nombre`, `musculos`, `articulaciones`, `descripcion`, `video_url` y `video_url_yt` de cada ejercicio, usando el `id` de la DB como `id_ejercicio`.
+1. WHEN el Admin solicita la plantilla, THE Exporter SHALL generar un ExcelTemplate con la hoja `Programa` vacía, la hoja `Sesiones` vacía, la hoja `Set_Exercises` vacía y la hoja `Ejercicios` con todos los ejercicios existentes en la base de datos.
+2. WHEN el Admin solicita la plantilla, THE Exporter SHALL completar la hoja `Ejercicios` con los campos `id_ejercicio`, `nombre`, `musculos`, `articulaciones`, `descripcion`, `video_url` y `video_url_yt` de cada ejercicio, usando el `exercises_id` de la DB como `id_ejercicio`.
 3. THE Exporter SHALL devolver el archivo con el nombre `plantilla_programa.xlsx`.
 4. THE Exporter SHALL completar la hoja `Ejercicios` con los datos actuales de la base de datos en el momento de la descarga.
 
@@ -64,8 +64,8 @@ El objetivo es eliminar la dependencia de scripts Python externos para cargar pr
 
 #### Criterios de aceptación
 
-1. WHEN el Admin selecciona un programa para exportar, THE Exporter SHALL generar un ExcelTemplate con los datos del programa en la hoja `Programa`, sus sesiones en la hoja `Sesiones`, todos los ejercicios del catálogo en la hoja `Ejercicios` y las relaciones sesión-ejercicio en la hoja `Session_Exercises`.
-2. WHEN el Admin selecciona un programa para exportar, THE Exporter SHALL incluir en la hoja `Session_Exercises` una fila por cada SessionExercise del programa, con todos sus campos.
+1. WHEN el Admin selecciona un programa para exportar, THE Exporter SHALL generar un ExcelTemplate con los datos del programa en la hoja `Programa`, sus sesiones en la hoja `Sesiones`, todos los ejercicios del catálogo en la hoja `Ejercicios` y las relaciones sesión-ejercicio en las hojas `Sets` y `Set_Exercises`.
+2. WHEN el Admin selecciona un programa para exportar, THE Exporter SHALL incluir en la hoja `Set_Exercises` una fila por cada ejercicio de bloque del programa, con todos sus campos.
 3. THE Exporter SHALL devolver el archivo con el nombre `{nombre_programa}.xlsx` (nombre del programa en minúsculas con guiones en lugar de espacios).
 4. FOR ALL programas exportados e importados sin modificaciones, THE Importer SHALL producir un programa equivalente al original (propiedad de ida y vuelta).
 
@@ -79,14 +79,14 @@ El objetivo es eliminar la dependencia de scripts Python externos para cargar pr
 
 1. WHEN el Admin sube un archivo Excel válido, THE Importer SHALL crear un registro en `programs` con los datos de la hoja `Programa`.
 2. WHEN el Admin sube un archivo Excel válido, THE Importer SHALL crear los registros en `sessions` con los datos de la hoja `Sesiones`.
-3. WHEN el Admin sube un archivo Excel válido, THE Importer SHALL crear los registros en `session_exercises` con los datos de la hoja `Session_Exercises`, resolviendo los `id_sesion` e `id_ejercicio` del Excel a los IDs reales de la DB.
-4. WHEN la hoja `Ejercicios` contiene un ejercicio cuyo nombre no existe en la base de datos, THE Importer SHALL crear el ejercicio nuevo antes de procesar la hoja `Session_Exercises`.
+3. WHEN el Admin sube un archivo Excel válido, THE Importer SHALL crear los registros en `sets` y `set_exercises` con los datos de la hoja `Set_Exercises`, resolviendo los `id_sesion` e `id_ejercicio` del Excel a los IDs reales de la DB.
+4. WHEN la hoja `Ejercicios` contiene un ejercicio cuyo nombre no existe en la base de datos, THE Importer SHALL crear el ejercicio nuevo antes de procesar la hoja `Set_Exercises`.
 5. WHEN la hoja `Ejercicios` contiene un ejercicio cuyo nombre ya existe en la base de datos, THE Importer SHALL utilizar el ejercicio existente sin modificarlo.
 6. WHEN el archivo Excel contiene un programa cuyo nombre ya existe en la base de datos, THE Importer SHALL preguntar al Admin si desea crear un programa nuevo con nombre modificado o sobreescribir el existente.
 7. WHEN el Admin elige sobreescribir un programa existente, THE Importer SHALL generar automáticamente un Backup del programa original antes de realizar cualquier modificación.
 8. WHEN el Admin elige sobreescribir un programa existente, THE Backup SHALL ser un ExcelTemplate descargable con todos los datos del programa original, nombrado `{nombre_programa}_backup_{timestamp}.xlsx`.
 9. IF el archivo subido no tiene el formato ExcelTemplate esperado (hojas incorrectas, columnas faltantes), THEN THE Importer SHALL retornar un error descriptivo indicando qué parte del formato es incorrecta, sin crear ningún registro parcial.
-10. IF una fila de la hoja `Session_Exercises` referencia un `id_ejercicio` que no existe en la hoja `Ejercicios`, THEN THE Importer SHALL retornar un error descriptivo indicando la fila y el id no encontrado, sin crear ningún registro parcial.
+10. IF una fila de la hoja `Set_Exercises` referencia un `id_ejercicio` que no existe en la hoja `Ejercicios`, THEN THE Importer SHALL retornar un error descriptivo indicando la fila y el id no encontrado, sin crear ningún registro parcial.
 11. IF el campo `tipo_bloque` de una fila contiene un valor no permitido, THEN THE Importer SHALL retornar un error descriptivo indicando la fila y el valor inválido, sin crear ningún registro parcial.
 12. THE Importer SHALL ejecutar toda la importación dentro de una transacción de base de datos, de forma que un error en cualquier paso revierta todos los cambios.
 
@@ -108,7 +108,7 @@ El objetivo es eliminar la dependencia de scripts Python externos para cargar pr
 8. THE ProgramWizard SHALL permitir al Admin cargar un programa existente para editarlo, mostrando todos sus datos actuales precargados en el formulario.
 9. WHEN el Admin guarda cambios sobre un programa existente, THE ProgramWizard SHALL generar automáticamente un Backup del programa original antes de aplicar los cambios.
 10. IF el nombre del programa nuevo ya existe en la base de datos, THEN THE ProgramWizard SHALL mostrar un mensaje de error sin guardar el programa.
-11. WHEN el Admin guarda el programa correctamente, THE ProgramWizard SHALL crear o actualizar los registros en `programs`, `sessions` y `session_exercises` en una única transacción.
+11. WHEN el Admin guarda el programa correctamente, THE ProgramWizard SHALL crear o actualizar los registros en `programs`, `sessions`, `sets` y `set_exercises` en una única transacción.
 
 ---
 

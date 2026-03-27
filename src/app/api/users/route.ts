@@ -2,7 +2,7 @@ import { DB } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
-  const users = await DB.query("SELECT id, name, email, role FROM users ORDER BY name ASC");
+  const users = await DB.query("SELECT users_id as id, name, email, role FROM users ORDER BY name ASC");
   return NextResponse.json(users);
 }
 

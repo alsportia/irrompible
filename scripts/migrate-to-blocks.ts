@@ -106,18 +106,18 @@ async function main() {
     DROP TABLE IF EXISTS sets;
     CREATE TABLE sets (
       set_id      INTEGER PRIMARY KEY AUTOINCREMENT,
-      session_id  INTEGER NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+      sessions_id INTEGER NOT NULL REFERENCES sessions(sessions_id) ON DELETE CASCADE,
       description TEXT,
       block_label TEXT,
       block_type  TEXT,
       num_sets    INTEGER NOT NULL DEFAULT 1,
       block_order INTEGER NOT NULL
     );
-    CREATE INDEX IF NOT EXISTS idx_sets_session_order ON sets (session_id, block_order);
+    CREATE INDEX IF NOT EXISTS idx_sets_session_order ON sets (sessions_id, block_order);
     CREATE TABLE set_exercises (
       set_exercise_id INTEGER PRIMARY KEY AUTOINCREMENT,
       set_id          INTEGER NOT NULL REFERENCES sets(set_id) ON DELETE CASCADE,
-      ex_id           INTEGER NOT NULL REFERENCES exercises(id),
+      exercises_id    INTEGER NOT NULL REFERENCES exercises(exercises_id),
       ex_order        INTEGER NOT NULL,
       reps            TEXT,
       tiempo_ej       TEXT
@@ -130,8 +130,8 @@ async function main() {
   log(`  → ${videoUrlMap.size} entradas de video_url_yt encontradas`);
 
   // Restore video_url_yt for exercises with local video_url and missing video_url_yt
-  const exercisesNeedingYt = await dbAll<{ id: number; name: string }>(db, `
-    SELECT id, name FROM exercises
+  const exercisesNeedingYt = await dbAll<{ exercises_id: number; name: string }>(db, `
+    SELECT exercises_id, name FROM exercises
     WHERE video_url IS NOT NULL AND video_url != ''
       AND (video_url_yt IS NULL OR video_url_yt = '')
   `);
@@ -140,7 +140,7 @@ async function main() {
   for (const ex of exercisesNeedingYt) {
     const ytUrl = videoUrlMap.get(ex.name.toLowerCase());
     if (ytUrl) {
-      await dbRun(db, 'UPDATE exercises SET video_url_yt = ? WHERE id = ?', [ytUrl, ex.id]);
+      await dbRun(db, 'UPDATE exercises SET video_url_yt = ? WHERE exercises_id = ?', [ytUrl, ex.exercises_id]);
       ytRestored++;
     }
   }
@@ -150,7 +150,6 @@ async function main() {
   const sessions = await dbAll<{ session_id: number }>(db, `
     SELECT DISTINCT session_id FROM session_exercises ORDER BY session_id
   `);
-
   log(`\nMigrando ${sessions.length} sesiones...`);
 
   let sessionsProcessed = 0;
@@ -161,7 +160,7 @@ async function main() {
   for (const { session_id } of sessions) {
     try {
       // Check idempotency
-      const existing = await dbGet<{ cnt: number }>(db, 'SELECT COUNT(*) as cnt FROM sets WHERE session_id = ?', [session_id]);
+      const existing = await dbGet<{ cnt: number }>(db, 'SELECT COUNT(*) as cnt FROM sets WHERE sessions_id = ?', [session_id]);
       if (existing && existing.cnt > 0) {
         skip(`session_id=${session_id} ya tiene datos en sets`);
         sessionsSkipped++;
@@ -169,7 +168,7 @@ async function main() {
       }
 
       // Skip if session doesn't exist in sessions table (orphan data)
-      const sessionExists = await dbGet<{ id: number }>(db, 'SELECT id FROM sessions WHERE id = ?', [session_id]);
+      const sessionExists = await dbGet<{ sessions_id: number }>(db, 'SELECT sessions_id FROM sessions WHERE sessions_id = ?', [session_id]);
       if (!sessionExists) {
         skip(`session_id=${session_id} no existe en la tabla sessions (dato huérfano)`);
         sessionsSkipped++;
@@ -217,7 +216,7 @@ async function main() {
 
         // Insert set
         const setResult = await dbRun(db, `
-          INSERT INTO sets (session_id, block_label, block_type, num_sets, block_order)
+          INSERT INTO sets (sessions_id, block_label, block_type, num_sets, block_order)
           VALUES (?, ?, ?, ?, ?)
         `, [session_id, key || null, blockType, numSets, blockOrder]);
         const setId = setResult.lastID;
@@ -239,13 +238,13 @@ async function main() {
         let exOrder = 1;
         for (const ex of uniqueExercises) {
           // Skip if exercise doesn't exist in exercises table
-          const exExists = await dbGet<{ id: number }>(db, 'SELECT id FROM exercises WHERE id = ?', [ex.ex_id]);
+          const exExists = await dbGet<{ exercises_id: number }>(db, 'SELECT exercises_id FROM exercises WHERE exercises_id = ?', [ex.ex_id]);
           if (!exExists) {
             warn(`session_id=${session_id} bloque ${key}: ex_id=${ex.ex_id} no existe en exercises, se omite`);
             continue;
           }
           await dbRun(db, `
-            INSERT INTO set_exercises (set_id, ex_id, ex_order, reps, tiempo_ej)
+            INSERT INTO set_exercises (set_id, exercises_id, ex_order, reps, tiempo_ej)
             VALUES (?, ?, ?, ?, ?)
           `, [setId, ex.ex_id, exOrder, ex.reps ?? null, ex.tiempo_ej ?? null]);
           exOrder++;

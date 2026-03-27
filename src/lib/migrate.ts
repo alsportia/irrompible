@@ -8,6 +8,14 @@ async function addColumnIfNotExists(table: string, column: string, definition: s
   }
 }
 
+async function renameColumnIfExists(table: string, oldName: string, newName: string): Promise<void> {
+  const columns = await DB.query<{ name: string }>(`PRAGMA table_info(${table})`);
+  const exists = columns.some((col) => col.name === oldName);
+  if (exists) {
+    await DB.run(`ALTER TABLE ${table} RENAME COLUMN ${oldName} TO ${newName}`);
+  }
+}
+
 export async function runMigrations(): Promise<void> {
   // 1. Users: email, role, status
   await addColumnIfNotExists('users', 'email', 'TEXT');
@@ -17,7 +25,7 @@ export async function runMigrations(): Promise<void> {
   // 2. Programs table
   await DB.run(`
     CREATE TABLE IF NOT EXISTS programs (
-      id   INTEGER PRIMARY KEY AUTOINCREMENT,
+      programs_id   INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL UNIQUE,
       description TEXT,
       image_url TEXT
@@ -30,34 +38,34 @@ export async function runMigrations(): Promise<void> {
   // 4. User-programs join table
   await DB.run(`
     CREATE TABLE IF NOT EXISTS user_programs (
-      user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      program_id INTEGER NOT NULL REFERENCES programs(id) ON DELETE CASCADE,
-      PRIMARY KEY (user_id, program_id)
+      users_id    INTEGER NOT NULL REFERENCES users(users_id) ON DELETE CASCADE,
+      programs_id INTEGER NOT NULL REFERENCES programs(programs_id) ON DELETE CASCADE,
+      PRIMARY KEY (users_id, programs_id)
     )
   `);
 
-  // 5. Sessions table (new schema: integer PK + session_code + program_id)
+  // 5. Sessions table
   await DB.run(`
     CREATE TABLE IF NOT EXISTS sessions (
-      id           INTEGER PRIMARY KEY AUTOINCREMENT,
+      sessions_id  INTEGER PRIMARY KEY AUTOINCREMENT,
       session_code TEXT UNIQUE,
       name         TEXT,
       description  TEXT,
-      program_id   INTEGER REFERENCES programs(id) ON DELETE SET NULL
+      programs_id  INTEGER REFERENCES programs(programs_id) ON DELETE SET NULL
     )
   `);
 
-  // 6. Exercises table (integer PK)
+  // 6. Exercises table
   await DB.run(`
     CREATE TABLE IF NOT EXISTS exercises (
-      id          INTEGER PRIMARY KEY,
-      name        TEXT NOT NULL,
-      video_url   TEXT,
-      description TEXT,
-      muscles     TEXT,
-      joints      TEXT,
-      easier_id   INTEGER REFERENCES exercises(id),
-      harder_id   INTEGER REFERENCES exercises(id)
+      exercises_id          INTEGER PRIMARY KEY,
+      name                  TEXT NOT NULL,
+      video_url             TEXT,
+      description           TEXT,
+      muscles               TEXT,
+      joints                TEXT,
+      easier_exercises_id   INTEGER REFERENCES exercises(exercises_id),
+      harder_exercises_id   INTEGER REFERENCES exercises(exercises_id)
     )
   `);
 
@@ -66,7 +74,7 @@ export async function runMigrations(): Promise<void> {
   // 8. Energy levels lookup table
   await DB.run(`
     CREATE TABLE IF NOT EXISTS energy_levels (
-      id    INTEGER PRIMARY KEY AUTOINCREMENT,
+      energy_levels_id INTEGER PRIMARY KEY AUTOINCREMENT,
       label TEXT NOT NULL UNIQUE,
       pct   REAL NOT NULL
     )
@@ -79,7 +87,7 @@ export async function runMigrations(): Promise<void> {
   // 9. Feeling levels lookup table
   await DB.run(`
     CREATE TABLE IF NOT EXISTS feeling_levels (
-      id    INTEGER PRIMARY KEY AUTOINCREMENT,
+      feeling_levels_id INTEGER PRIMARY KEY AUTOINCREMENT,
       label TEXT NOT NULL UNIQUE,
       score INTEGER NOT NULL
     )
@@ -93,26 +101,26 @@ export async function runMigrations(): Promise<void> {
   // 10. Workout logs
   await DB.run(`
     CREATE TABLE IF NOT EXISTS workout_logs (
-      id              INTEGER PRIMARY KEY AUTOINCREMENT,
-      session_id      INTEGER NOT NULL REFERENCES sessions(id),
-      user_id         INTEGER NOT NULL REFERENCES users(id),
-      energy_level_id INTEGER REFERENCES energy_levels(id),
-      feeling_level_id INTEGER REFERENCES feeling_levels(id),
-      duration        INTEGER,
-      completed_at    TEXT,
-      created_at      TEXT DEFAULT (datetime('now'))
+      workout_logs_id  INTEGER PRIMARY KEY AUTOINCREMENT,
+      sessions_id      INTEGER NOT NULL REFERENCES sessions(sessions_id),
+      users_id         INTEGER NOT NULL REFERENCES users(users_id),
+      energy_levels_id INTEGER REFERENCES energy_levels(energy_levels_id),
+      feeling_levels_id INTEGER REFERENCES feeling_levels(feeling_levels_id),
+      duration         INTEGER,
+      completed_at     TEXT,
+      created_at       TEXT DEFAULT (datetime('now'))
     )
   `);
 
   // 11. Workout sets
   await DB.run(`
     CREATE TABLE IF NOT EXISTS workout_sets (
-      id             INTEGER PRIMARY KEY AUTOINCREMENT,
-      workout_log_id INTEGER NOT NULL REFERENCES workout_logs(id) ON DELETE CASCADE,
-      exercise_id    INTEGER NOT NULL REFERENCES exercises(id),
-      reps_done      INTEGER,
-      weight         REAL,
-      time_taken     INTEGER
+      workout_sets_id  INTEGER PRIMARY KEY AUTOINCREMENT,
+      workout_logs_id  INTEGER NOT NULL REFERENCES workout_logs(workout_logs_id) ON DELETE CASCADE,
+      exercises_id     INTEGER NOT NULL REFERENCES exercises(exercises_id),
+      reps_done        INTEGER,
+      weight           REAL,
+      time_taken       INTEGER
     )
   `);
 
@@ -120,7 +128,7 @@ export async function runMigrations(): Promise<void> {
   await DB.run(`
     CREATE TABLE IF NOT EXISTS sets (
       set_id      INTEGER PRIMARY KEY AUTOINCREMENT,
-      session_id  INTEGER NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+      sessions_id INTEGER NOT NULL REFERENCES sessions(sessions_id) ON DELETE CASCADE,
       description TEXT,
       block_label TEXT,
       block_type  TEXT,
@@ -128,7 +136,7 @@ export async function runMigrations(): Promise<void> {
     )
   `);
   await DB.run(`
-    CREATE INDEX IF NOT EXISTS idx_sets_session_order ON sets (session_id, block_order)
+    CREATE INDEX IF NOT EXISTS idx_sets_session_order ON sets (sessions_id, block_order)
   `);
 
   // 13. New block model: set_exercises table
@@ -137,7 +145,7 @@ export async function runMigrations(): Promise<void> {
       set_exercise_id INTEGER PRIMARY KEY AUTOINCREMENT,
       set_id          INTEGER NOT NULL REFERENCES sets(set_id) ON DELETE CASCADE,
       set_number      INTEGER NOT NULL,
-      ex_id           INTEGER NOT NULL REFERENCES exercises(id),
+      exercises_id    INTEGER NOT NULL REFERENCES exercises(exercises_id),
       ex_order        INTEGER NOT NULL,
       reps            TEXT,
       tiempo_ej       TEXT
@@ -154,14 +162,62 @@ export async function runMigrations(): Promise<void> {
   await addColumnIfNotExists('workout_sets', 'set_number', 'INTEGER');
 
   // 15. Assign Unbreakable to existing users without any program
+  // (runs after rename migration below, so uses new column names)
+
+  // ── 18. Rename PK columns (idempotent via renameColumnIfExists) ──────────
+
+  // users
+  await renameColumnIfExists('users', 'id', 'users_id');
+
+  // programs
+  await renameColumnIfExists('programs', 'id', 'programs_id');
+
+  // sessions
+  await renameColumnIfExists('sessions', 'id', 'sessions_id');
+  await renameColumnIfExists('sessions', 'program_id', 'programs_id');
+
+  // exercises
+  await renameColumnIfExists('exercises', 'id', 'exercises_id');
+  await renameColumnIfExists('exercises', 'easier_id', 'easier_exercises_id');
+  await renameColumnIfExists('exercises', 'harder_id', 'harder_exercises_id');
+
+  // energy_levels
+  await renameColumnIfExists('energy_levels', 'id', 'energy_levels_id');
+
+  // feeling_levels
+  await renameColumnIfExists('feeling_levels', 'id', 'feeling_levels_id');
+
+  // workout_logs
+  await renameColumnIfExists('workout_logs', 'id', 'workout_logs_id');
+  await renameColumnIfExists('workout_logs', 'session_id', 'sessions_id');
+  await renameColumnIfExists('workout_logs', 'user_id', 'users_id');
+  await renameColumnIfExists('workout_logs', 'energy_level_id', 'energy_levels_id');
+  await renameColumnIfExists('workout_logs', 'feeling_level_id', 'feeling_levels_id');
+
+  // workout_sets
+  await renameColumnIfExists('workout_sets', 'id', 'workout_sets_id');
+  await renameColumnIfExists('workout_sets', 'workout_log_id', 'workout_logs_id');
+  await renameColumnIfExists('workout_sets', 'exercise_id', 'exercises_id');
+
+  // user_programs
+  await renameColumnIfExists('user_programs', 'user_id', 'users_id');
+  await renameColumnIfExists('user_programs', 'program_id', 'programs_id');
+
+  // sets
+  await renameColumnIfExists('sets', 'session_id', 'sessions_id');
+
+  // set_exercises
+  await renameColumnIfExists('set_exercises', 'ex_id', 'exercises_id');
+
+  // ── 19. Assign Unbreakable to existing users without any program ──────────
   await DB.run(`
-    INSERT OR IGNORE INTO user_programs (user_id, program_id)
-    SELECT u.id, p.id
+    INSERT OR IGNORE INTO user_programs (users_id, programs_id)
+    SELECT u.users_id, p.programs_id
     FROM users u
     CROSS JOIN programs p
     WHERE p.name = 'Unbreakable'
       AND NOT EXISTS (
-        SELECT 1 FROM user_programs up WHERE up.user_id = u.id
+        SELECT 1 FROM user_programs up WHERE up.users_id = u.users_id
       )
   `);
 }

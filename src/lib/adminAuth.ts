@@ -15,7 +15,7 @@ export async function requireAdmin(
     return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
   }
 
-  const user = await DB.get<UserRow>('SELECT id, role FROM users WHERE id = ?', [userId]);
+  const user = await DB.get<UserRow>('SELECT users_id as id, role FROM users WHERE users_id = ?', [userId]);
 
   if (!user) {
     return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 401 });

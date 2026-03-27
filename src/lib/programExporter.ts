@@ -4,7 +4,7 @@ import { DB } from './db';
 interface ProgramRow { id: number; name: string; description: string | null; image_url: string | null; }
 interface SessionRow { id: number; numero_sesion: number; name: string | null; }
 interface SetRow {
-  set_id: number; session_id: number; description: string | null;
+  set_id: number; sessions_id: number; description: string | null;
   block_label: string | null; block_type: string | null; num_sets: number; block_order: number;
 }
 interface SetExRow {
@@ -54,7 +54,7 @@ function buildWorkbook(
   // Sheet 4: Sets
   const setsData = sets.map(s => ({
     set_id: s.set_id,
-    id_sesion: s.session_id,
+    id_sesion: s.sessions_id,
     description: s.description ?? '',
     block_label: s.block_label ?? '',
     block_type: s.block_type ?? 'normal',
@@ -78,11 +78,11 @@ function buildWorkbook(
 }
 
 export async function exportProgramToExcel(programId: number): Promise<Buffer> {
-  const program = await DB.get<ProgramRow>('SELECT id, name, description, image_url FROM programs WHERE id = ?', [programId]);
+  const program = await DB.get<ProgramRow>('SELECT programs_id as id, name, description, image_url FROM programs WHERE programs_id = ?', [programId]);
   if (!program) throw new Error(`Programa con id ${programId} no encontrado`);
 
   const sessions = await DB.query<SessionRow & { session_code: string }>(
-    'SELECT id, name, session_code FROM sessions WHERE program_id = ? ORDER BY id',
+    'SELECT sessions_id as id, name, session_code FROM sessions WHERE programs_id = ? ORDER BY sessions_id',
     [programId]
   );
   const sessionsWithNum: SessionRow[] = sessions.map((s, i) => {
@@ -94,9 +94,9 @@ export async function exportProgramToExcel(programId: number): Promise<Buffer> {
 
   const sets = sessionIds.length
     ? await DB.query<SetRow>(
-        `SELECT set_id, session_id, description, block_label, block_type, num_sets, block_order
-         FROM sets WHERE session_id IN (${sessionIds.map(() => '?').join(',')})
-         ORDER BY session_id, block_order`,
+        `SELECT set_id, sessions_id, description, block_label, block_type, num_sets, block_order
+         FROM sets WHERE sessions_id IN (${sessionIds.map(() => '?').join(',')})
+         ORDER BY sessions_id, block_order`,
         sessionIds
       )
     : [];
@@ -104,7 +104,7 @@ export async function exportProgramToExcel(programId: number): Promise<Buffer> {
   const setIds = sets.map(s => s.set_id);
   const setExercises = setIds.length
     ? await DB.query<SetExRow>(
-        `SELECT set_exercise_id, set_id, ex_id, ex_order, reps, tiempo_ej
+        `SELECT set_exercise_id, set_id, exercises_id as ex_id, ex_order, reps, tiempo_ej
          FROM set_exercises WHERE set_id IN (${setIds.map(() => '?').join(',')})
          ORDER BY set_id, ex_order`,
         setIds
@@ -112,7 +112,7 @@ export async function exportProgramToExcel(programId: number): Promise<Buffer> {
     : [];
 
   const exercises = await DB.query<ExRow>(
-    'SELECT id, name, muscles, joints, description, video_url, video_url_yt FROM exercises ORDER BY name'
+    'SELECT exercises_id as id, name, muscles, joints, description, video_url, video_url_yt FROM exercises ORDER BY name'
   );
 
   const wb = buildWorkbook(program, sessionsWithNum, exercises, sets, setExercises);
@@ -121,7 +121,7 @@ export async function exportProgramToExcel(programId: number): Promise<Buffer> {
 
 export async function generateTemplateExcel(): Promise<Buffer> {
   const exercises = await DB.query<ExRow>(
-    'SELECT id, name, muscles, joints, description, video_url, video_url_yt FROM exercises ORDER BY name'
+    'SELECT exercises_id as id, name, muscles, joints, description, video_url, video_url_yt FROM exercises ORDER BY name'
   );
   const wb = buildWorkbook(null, [], exercises, [], []);
   return Buffer.from(XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }));

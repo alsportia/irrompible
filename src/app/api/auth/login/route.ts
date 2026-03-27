@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
   }
 
   const user = await DB.get<{ id: number; name: string; email: string; role: string; status: string }>(
-    'SELECT id, name, email, role, status FROM users WHERE email = ?',
+    'SELECT users_id as id, name, email, role, status FROM users WHERE email = ?',
     [email.trim()]
   );
 

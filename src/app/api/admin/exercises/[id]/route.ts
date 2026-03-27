@@ -16,8 +16,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!name?.trim()) return NextResponse.json({ error: "El nombre es obligatorio" }, { status: 400 });
 
   await DB.run(
-    `UPDATE exercises SET name=?, video_url=?, video_url_yt=?, description=?, muscles=?, joints=?, easier_id=?, harder_id=?
-     WHERE id=?`,
+    `UPDATE exercises SET name=?, video_url=?, video_url_yt=?, description=?, muscles=?, joints=?, easier_exercises_id=?, harder_exercises_id=?
+     WHERE exercises_id=?`,
     [name.trim(), video_url || null, video_url_yt || null, description || null,
      muscles || null, joints || null, easier_id || null, harder_id || null, id]
   );
@@ -34,7 +34,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
   // Check if used in any session
   const [usage] = await DB.query<{ count: number }>(
-    "SELECT COUNT(*) as count FROM set_exercises WHERE ex_id = ?", [id]
+    "SELECT COUNT(*) as count FROM set_exercises WHERE exercises_id = ?", [id]
   );
   if (usage.count > 0) {
     return NextResponse.json(
@@ -43,6 +43,6 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     );
   }
 
-  await DB.run("DELETE FROM exercises WHERE id = ?", [id]);
+  await DB.run("DELETE FROM exercises WHERE exercises_id = ?", [id]);
   return NextResponse.json({ ok: true });
 }

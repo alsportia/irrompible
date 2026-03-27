@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Nombre y email son obligatorios' }, { status: 400 });
   }
 
-  const existing = await DB.get('SELECT id, status FROM users WHERE email = ?', [email.trim().toLowerCase()]);
+  const existing = await DB.get('SELECT users_id, status FROM users WHERE email = ?', [email.trim().toLowerCase()]);
   if (existing) {
     const msg = (existing as { status: string }).status === 'pending'
       ? 'Ya existe una solicitud pendiente con ese email'
@@ -21,8 +21,8 @@ export async function POST(req: NextRequest) {
     [name.trim(), email.trim().toLowerCase()]
   );
 
-  const user = await DB.get<{ id: number }>(
-    'SELECT id FROM users WHERE email = ?',
+  const user = await DB.get<{ users_id: number }>(
+    'SELECT users_id FROM users WHERE email = ?',
     [email.trim().toLowerCase()]
   );
 
@@ -30,8 +30,8 @@ export async function POST(req: NextRequest) {
   if (user && Array.isArray(programIds) && programIds.length > 0) {
     for (const pid of programIds) {
       await DB.run(
-        'INSERT OR IGNORE INTO user_programs (user_id, program_id) VALUES (?, ?)',
-        [user.id, pid]
+        'INSERT OR IGNORE INTO user_programs (users_id, programs_id) VALUES (?, ?)',
+        [user.users_id, pid]
       );
     }
   }

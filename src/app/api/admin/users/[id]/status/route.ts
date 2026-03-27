@@ -15,11 +15,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   if (status === 'rejected') {
     // Remove program assignments and delete user
-    await DB.run('DELETE FROM user_programs WHERE user_id = ?', [id]);
-    await DB.run('DELETE FROM users WHERE id = ?', [id]);
+    await DB.run('DELETE FROM user_programs WHERE users_id = ?', [id]);
+    await DB.run('DELETE FROM users WHERE users_id = ?', [id]);
     return NextResponse.json({ ok: true, deleted: true });
   }
 
-  await DB.run("UPDATE users SET status = 'active' WHERE id = ?", [id]);
+  await DB.run("UPDATE users SET status = 'active' WHERE users_id = ?", [id]);
   return NextResponse.json({ ok: true });
 }

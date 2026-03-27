@@ -6,9 +6,9 @@
 
 Añadir al sistema de migraciones las dos nuevas tablas y el índice:
 
-- `sets` (set_id, session_id, description, block_label, block_type, num_sets, block_order) con FK a `sessions.id ON DELETE CASCADE` y CHECK `length(block_label) <= 1`.
-- `set_exercises` (set_exercise_id, set_id, ex_id, ex_order, reps, tiempo_ej) con FK a `sets.set_id ON DELETE CASCADE` y FK a `exercises.id`.
-- Índice `idx_sets_session_order` sobre `(session_id, block_order)`.
+- `sets` (set_id, sessions_id, description, block_label, block_type, num_sets, block_order) con FK a `sessions.sessions_id ON DELETE CASCADE` y CHECK `length(block_label) <= 1`.
+- `set_exercises` (set_exercise_id, set_id, exercises_id, ex_order, reps, tiempo_ej) con FK a `sets.set_id ON DELETE CASCADE` y FK a `exercises.exercises_id`.
+- Índice `idx_sets_session_order` sobre `(sessions_id, block_order)`.
 
 La migración debe ser idempotente (`CREATE TABLE IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`).
 
@@ -85,7 +85,7 @@ Modificar el handler PUT para:
 - Reemplazar la consulta a `session_exercises` por una consulta a `sets` + `set_exercises`.
 - Implementar `expandBlocks(blocks)`: genera una fila por cada par `(ejercicio × serie)` ordenada por `block_order → set_number → ex_order`.
 - Adaptar `applyEnergy` para escalar `num_sets` y `reps` sobre los bloques antes de la expansión.
-- Pasar la lista expandida al `WorkoutTracker` con la misma forma de datos actual (`block`, `block_type`, `set_number`, `ex_id`, `ex_order`, `tiempo_ej`, `reps`, `name`, `video_url`, `video_url_yt`).
+- Pasar la lista expandida al `WorkoutTracker` con la misma forma de datos actual (`block`, `block_type`, `set_number`, `exercises_id`, `ex_order`, `tiempo_ej`, `reps`, `name`, `video_url`, `video_url_yt`).
 - `WorkoutTracker` no requiere cambios internos.
 
 **Requisitos**: 5.1 – 5.5

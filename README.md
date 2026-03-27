@@ -131,16 +131,17 @@ git push
 ### Esquema actual
 
 ```sql
-users (id, name, email UNIQUE, role, status)
-programs (id, name UNIQUE, description, image_url)
-user_programs (user_id, program_id)
-sessions (id, session_code UNIQUE, name, description, program_id)
-exercises (id, name, video_url, video_url_yt, description, muscles, joints, easier_id, harder_id)
-session_exercises (id, session_id, ex_id, block, block_type, set_number, ex_order, reps, tiempo_ej)
-energy_levels (id, code, label, pct)
-feeling_levels (id, score, label)
-workout_logs (id, session_id, user_id, energy_level_id, feeling_level_id, duration, completed_at, created_at)
-workout_sets (id, workout_log_id, exercise_id, reps_done, weight, time_taken)
+users (users_id, name, email UNIQUE, role, status)
+programs (programs_id, name UNIQUE, description, image_url)
+user_programs (users_id, programs_id)
+sessions (sessions_id, session_code UNIQUE, name, description, programs_id)
+exercises (exercises_id, name, video_url, video_url_yt, description, muscles, joints, easier_exercises_id, harder_exercises_id)
+energy_levels (energy_levels_id, code, label, pct)
+feeling_levels (feeling_levels_id, score, label)
+workout_logs (workout_logs_id, sessions_id, users_id, energy_levels_id, feeling_levels_id, duration, completed_at, created_at)
+workout_sets (workout_sets_id, workout_logs_id, exercises_id, set_number, reps_done, weight, time_taken)
+sets (set_id, sessions_id, description, block_label, block_type, block_order)
+set_exercises (set_exercise_id, set_id, set_number, exercises_id, ex_order, reps, tiempo_ej)
 ```
 
 ### Programas disponibles (seed)

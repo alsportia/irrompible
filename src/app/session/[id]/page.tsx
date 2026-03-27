@@ -37,7 +37,7 @@ export default async function SessionPage({ params }: { params: Promise<{ id: st
   const { id } = await params;
 
   const [session] = await DB.query<SessionDetail>(
-    "SELECT id, session_code, name, description, program_id FROM sessions WHERE id = ?",
+    "SELECT sessions_id as id, session_code, name, description, programs_id as program_id FROM sessions WHERE sessions_id = ?",
     [id]
   );
 
@@ -48,16 +48,16 @@ export default async function SessionPage({ params }: { params: Promise<{ id: st
   // Load all rows directly — already expanded by (set_number, ex_order)
   const exercisesRaw = await DB.query<ExerciseRow>(
     `SELECT st.set_id, st.block_label as block, st.block_type,
-            se.set_number, se.ex_id, se.ex_order, se.reps, se.tiempo_ej,
+            se.set_number, se.exercises_id as ex_id, se.ex_order, se.reps, se.tiempo_ej,
             e.name, e.video_url, e.video_url_yt, e.description, e.muscles, e.joints,
-            e.easier_id, easy.name as easier_name,
-            e.harder_id, hard.name as harder_name
+            e.easier_exercises_id as easier_id, easy.name as easier_name,
+            e.harder_exercises_id as harder_id, hard.name as harder_name
      FROM sets st
      JOIN set_exercises se ON se.set_id = st.set_id
-     JOIN exercises e ON se.ex_id = e.id
-     LEFT JOIN exercises easy ON e.easier_id = easy.id
-     LEFT JOIN exercises hard ON e.harder_id = hard.id
-     WHERE st.session_id = ?
+     JOIN exercises e ON se.exercises_id = e.exercises_id
+     LEFT JOIN exercises easy ON e.easier_exercises_id = easy.exercises_id
+     LEFT JOIN exercises hard ON e.harder_exercises_id = hard.exercises_id
+     WHERE st.sessions_id = ?
      ORDER BY st.block_order, se.set_number, se.ex_order`,
     [id]
   );

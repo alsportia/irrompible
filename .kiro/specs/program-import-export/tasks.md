@@ -3,8 +3,8 @@
 ## Task 1: Instalar dependencia xlsx y crear módulo exportador
 - [x] Instalar `xlsx` (SheetJS): `npm install xlsx`
 - [x] Crear `src/lib/programExporter.ts` con funciones `exportProgramToExcel(programId)` y `generateTemplateExcel()`
-- [x] Consultas DB: programs + sessions + session_exercises JOIN exercises
-- [x] Construir workbook con 4 hojas: Programa, Sesiones, Ejercicios, Session_Exercises
+- [x] Consultas DB: programs + sessions + sets + set_exercises JOIN exercises
+- [x] Construir workbook con 5 hojas: Programa, Sesiones, Ejercicios, Sets, Set_Exercises
 - [x] Devolver `Buffer` del archivo
 
 ## Task 2: Crear módulo importador

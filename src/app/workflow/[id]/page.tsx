@@ -22,7 +22,6 @@ export interface ExerciseRow {
 function applyEnergy(exercises: ExerciseRow[], pct: number): ExerciseRow[] {
   if (pct >= 1) return exercises;
 
-  // Per block: keep only first ceil(maxSet * pct) set_numbers
   const maxSetPerBlock = new Map<number, number>();
   for (const ex of exercises) {
     maxSetPerBlock.set(ex.set_id, Math.max(maxSetPerBlock.get(ex.set_id) ?? 0, ex.set_number));
@@ -55,15 +54,14 @@ export default async function WorkflowPage({
   const userIdNum = parseInt(userId ?? "0") || 0;
   const energyLabelStr = energyLabel ? decodeURIComponent(energyLabel) : "¡A tope!";
 
-  // Load all rows directly — already expanded by (set_number, ex_order)
   const rawExercises = await DB.query<ExerciseRow>(
     `SELECT st.set_id, st.block_label as block, st.block_type,
-            se.set_number, se.ex_id, se.ex_order, se.reps, se.tiempo_ej,
+            se.set_number, se.exercises_id as ex_id, se.ex_order, se.reps, se.tiempo_ej,
             e.name, e.video_url, e.video_url_yt
      FROM sets st
      JOIN set_exercises se ON se.set_id = st.set_id
-     JOIN exercises e ON se.ex_id = e.id
-     WHERE st.session_id = ?
+     JOIN exercises e ON se.exercises_id = e.exercises_id
+     WHERE st.sessions_id = ?
      ORDER BY st.block_order, se.set_number, se.ex_order`,
     [id]
   );

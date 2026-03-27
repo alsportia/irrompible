@@ -110,7 +110,7 @@ La ruta `/admin` (page.tsx) redirige al servidor si el usuario no es admin, usan
 export async function requireAdmin(req: NextRequest): Promise<{ id: number; role: string } | NextResponse> {
   const userId = req.headers.get('x-user-id');
   if (!userId) return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
-  const user = await DB.get('SELECT id, role FROM users WHERE id = ?', [userId]);
+  const user = await DB.get('SELECT users_id as id, role FROM users WHERE users_id = ?', [userId]);
   if (!user) return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 401 });
   if (user.role !== 'admin') return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 });
   return user;
@@ -134,10 +134,10 @@ Schema final:
 
 ```sql
 CREATE TABLE users (
-  id    INTEGER PRIMARY KEY AUTOINCREMENT,
-  name  TEXT    NOT NULL,
-  email TEXT    UNIQUE,
-  role  TEXT    NOT NULL DEFAULT 'user'
+  users_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name     TEXT    NOT NULL,
+  email    TEXT    UNIQUE,
+  role     TEXT    NOT NULL DEFAULT 'user'
 );
 ```
 
@@ -145,8 +145,8 @@ CREATE TABLE users (
 
 ```sql
 CREATE TABLE IF NOT EXISTS programs (
-  id   INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT    NOT NULL UNIQUE
+  programs_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name        TEXT    NOT NULL UNIQUE
 );
 ```
 
@@ -154,9 +154,9 @@ CREATE TABLE IF NOT EXISTS programs (
 
 ```sql
 CREATE TABLE IF NOT EXISTS user_programs (
-  user_id    INTEGER NOT NULL REFERENCES users(id)    ON DELETE CASCADE,
-  program_id INTEGER NOT NULL REFERENCES programs(id) ON DELETE CASCADE,
-  PRIMARY KEY (user_id, program_id)
+  users_id    INTEGER NOT NULL REFERENCES users(users_id)       ON DELETE CASCADE,
+  programs_id INTEGER NOT NULL REFERENCES programs(programs_id) ON DELETE CASCADE,
+  PRIMARY KEY (users_id, programs_id)
 );
 ```
 
@@ -195,8 +195,8 @@ await DB.run(`CREATE TABLE IF NOT EXISTS user_programs (...)`);
 await DB.run(`INSERT OR IGNORE INTO programs (name) VALUES ('Unbreakable')`);
 // Asignar Unbreakable a todos los usuarios que no tengan ningún programa
 await DB.run(`
-  INSERT OR IGNORE INTO user_programs (user_id, program_id)
-  SELECT u.id, p.id FROM users u, programs p WHERE p.name = 'Unbreakable'
+  INSERT OR IGNORE INTO user_programs (users_id, programs_id)
+  SELECT u.users_id, p.programs_id FROM users u, programs p WHERE p.name = 'Unbreakable'
 `);
 ```
 

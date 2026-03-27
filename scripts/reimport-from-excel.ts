@@ -138,18 +138,18 @@ async function main() {
     DROP TABLE IF EXISTS sets;
     CREATE TABLE sets (
       set_id      INTEGER PRIMARY KEY AUTOINCREMENT,
-      session_id  INTEGER NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+      sessions_id INTEGER NOT NULL REFERENCES sessions(sessions_id) ON DELETE CASCADE,
       description TEXT,
       block_label TEXT,
       block_type  TEXT,
       block_order INTEGER NOT NULL
     );
-    CREATE INDEX IF NOT EXISTS idx_sets_session_order ON sets (session_id, block_order);
+    CREATE INDEX IF NOT EXISTS idx_sets_session_order ON sets (sessions_id, block_order);
     CREATE TABLE set_exercises (
       set_exercise_id INTEGER PRIMARY KEY AUTOINCREMENT,
       set_id          INTEGER NOT NULL REFERENCES sets(set_id) ON DELETE CASCADE,
       set_number      INTEGER NOT NULL,
-      ex_id           INTEGER NOT NULL REFERENCES exercises(id),
+      exercises_id    INTEGER NOT NULL REFERENCES exercises(exercises_id),
       ex_order        INTEGER NOT NULL,
       reps            TEXT,
       tiempo_ej       TEXT
@@ -167,13 +167,13 @@ async function main() {
       continue;
     }
 
-    const program = await dbGet<{ id: number }>(db, 'SELECT id FROM programs WHERE name = ?', [programName]);
+    const program = await dbGet<{ programs_id: number }>(db, 'SELECT programs_id FROM programs WHERE name = ?', [programName]);
     if (!program) {
       console.warn(`[WARN] Programa "${programName}" no encontrado en DB, se omite`);
       continue;
     }
 
-    console.log(`\nProcesando ${file} (program_id=${program.id})...`);
+    console.log(`\nProcesando ${file} (programs_id=${program.programs_id})...`);
 
     const wb = XLSX.readFile(filePath);
     const sessionSheets = wb.SheetNames.filter(n =>
@@ -182,12 +182,12 @@ async function main() {
 
     // Delete existing sessions for this program
     // Must delete dependent rows first (workout_logs don't have CASCADE)
-    const existingSessions = await dbAll<{ id: number }>(db, 'SELECT id FROM sessions WHERE program_id = ?', [program.id]);
+    const existingSessions = await dbAll<{ sessions_id: number }>(db, 'SELECT sessions_id FROM sessions WHERE programs_id = ?', [program.programs_id]);
     for (const s of existingSessions) {
-      await dbRun(db, 'DELETE FROM workout_sets WHERE workout_log_id IN (SELECT id FROM workout_logs WHERE session_id = ?)', [s.id]).catch(() => {});
-      await dbRun(db, 'DELETE FROM workout_logs WHERE session_id = ?', [s.id]).catch(() => {});
+      await dbRun(db, 'DELETE FROM workout_sets WHERE workout_logs_id IN (SELECT workout_logs_id FROM workout_logs WHERE sessions_id = ?)', [s.sessions_id]).catch(() => {});
+      await dbRun(db, 'DELETE FROM workout_logs WHERE sessions_id = ?', [s.sessions_id]).catch(() => {});
     }
-    await dbRun(db, 'DELETE FROM sessions WHERE program_id = ?', [program.id]);
+    await dbRun(db, 'DELETE FROM sessions WHERE programs_id = ?', [program.programs_id]);
 
     const slug = slugify(programName);
 
@@ -204,8 +204,8 @@ async function main() {
 
       // Create session
       const sessionCode = `${slug}_s${sessionNum}`;
-      const sesResult = await dbRun(db, 'INSERT INTO sessions (session_code, name, description, program_id) VALUES (?,?,?,?)',
-        [sessionCode, sheetName, description, program.id]);
+      const sesResult = await dbRun(db, 'INSERT INTO sessions (session_code, name, description, programs_id) VALUES (?,?,?,?)',
+        [sessionCode, sheetName, description, program.programs_id]);
       const sessionId = sesResult.lastID;
 
       // Update video_url_yt for exercises that have it in the Excel
@@ -242,14 +242,14 @@ async function main() {
 
         // Insert set (no num_sets — rows in set_exercises carry set_number)
         const setResult = await dbRun(db,
-          'INSERT INTO sets (session_id, block_label, block_type, block_order) VALUES (?,?,?,?)',
+          'INSERT INTO sets (sessions_id, block_label, block_type, block_order) VALUES (?,?,?,?)',
           [sessionId, blockKey, blockType, bOrder]);
         const setId = setResult.lastID;
         totalBlocks++;
 
         // Insert all distinct (set_number, ex_id, ex_order) rows
         for (const row of groupRows) {
-          const exExists = await dbGet<{ id: number }>(db, 'SELECT id FROM exercises WHERE id = ?', [row.ex_id]);
+          const exExists = await dbGet<{ exercises_id: number }>(db, 'SELECT exercises_id FROM exercises WHERE exercises_id = ?', [row.ex_id]);
           if (!exExists) {
             console.warn(`  [WARN] ${sheetName} bloque ${blockKey}: ex_id=${row.ex_id} no existe, se omite`);
             continue;
@@ -257,7 +257,7 @@ async function main() {
           const tiempoVal = row.tiempo_ej !== '' && Number(row.tiempo_ej) !== 0 ? String(row.tiempo_ej) : null;
           const repsVal   = row.reps !== '' && row.reps !== 0 && row.reps !== '0' ? String(row.reps) : null;
           await dbRun(db,
-            'INSERT INTO set_exercises (set_id, set_number, ex_id, ex_order, reps, tiempo_ej) VALUES (?,?,?,?,?,?)',
+            'INSERT INTO set_exercises (set_id, set_number, exercises_id, ex_order, reps, tiempo_ej) VALUES (?,?,?,?,?,?)',
             [setId, row.set_number, row.ex_id, row.ex_order, repsVal, tiempoVal]);
           totalExercises++;
         }

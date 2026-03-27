@@ -37,13 +37,13 @@ El alcance incluye: migración de datos, nuevas tablas `sets` y `set_exercises`,
 
 #### Criterios de aceptación
 
-1. THE Sistema SHALL crear la tabla `sets` con las columnas: `set_id INTEGER PRIMARY KEY`, `session_id INTEGER NOT NULL`, `description TEXT`, `block_label TEXT`, `block_type TEXT`, `num_sets INTEGER NOT NULL DEFAULT 1`, `block_order INTEGER NOT NULL`.
-2. THE Sistema SHALL crear la tabla `set_exercises` con las columnas: `set_exercise_id INTEGER PRIMARY KEY`, `set_id INTEGER NOT NULL`, `ex_id INTEGER NOT NULL`, `ex_order INTEGER NOT NULL`, `reps TEXT`, `tiempo_ej TEXT`.
-3. THE Sistema SHALL definir una clave foránea de `sets.session_id` hacia `sessions.id` con `ON DELETE CASCADE`.
+1. THE Sistema SHALL crear la tabla `sets` con las columnas: `set_id INTEGER PRIMARY KEY`, `sessions_id INTEGER NOT NULL`, `description TEXT`, `block_label TEXT`, `block_type TEXT`, `num_sets INTEGER NOT NULL DEFAULT 1`, `block_order INTEGER NOT NULL`.
+2. THE Sistema SHALL crear la tabla `set_exercises` con las columnas: `set_exercise_id INTEGER PRIMARY KEY`, `set_id INTEGER NOT NULL`, `exercises_id INTEGER NOT NULL`, `ex_order INTEGER NOT NULL`, `reps TEXT`, `tiempo_ej TEXT`.
+3. THE Sistema SHALL definir una clave foránea de `sets.sessions_id` hacia `sessions.sessions_id` con `ON DELETE CASCADE`.
 4. THE Sistema SHALL definir una clave foránea de `set_exercises.set_id` hacia `sets.set_id` con `ON DELETE CASCADE`.
-5. THE Sistema SHALL definir una clave foránea de `set_exercises.ex_id` hacia `exercises.id`.
+5. THE Sistema SHALL definir una clave foránea de `set_exercises.exercises_id` hacia `exercises.exercises_id`.
 6. THE Sistema SHALL usar el mismo nombre de campo para PKs y FKs en todas las tablas (p. ej. `set_id` se llama `set_id` tanto en `sets` como en `set_exercises`).
-7. WHEN se crea la tabla `sets`, THE Sistema SHALL crear un índice sobre `(session_id, block_order)` para optimizar las consultas de sesión.
+7. WHEN se crea la tabla `sets`, THE Sistema SHALL crear un índice sobre `(sessions_id, block_order)` para optimizar las consultas de sesión.
 
 ---
 
@@ -109,7 +109,7 @@ El alcance incluye: migración de datos, nuevas tablas `sets` y `set_exercises`,
 
 1. WHEN se carga la página `workflow/[id]`, THE Servidor SHALL consultar `sets` y `set_exercises` para obtener los bloques de la sesión.
 2. WHEN se obtienen los bloques, THE Servidor SHALL expandir cada bloque en memoria generando una entrada por cada par `(ejercicio × número de serie)`, ordenadas por `block_order`, `set_number` (1..`num_sets`), `ex_order`.
-3. THE Servidor SHALL pasar la lista expandida al `WorkoutTracker` con la misma forma de datos que actualmente (`block`, `block_type`, `set_number`, `ex_id`, `ex_order`, `tiempo_ej`, `reps`, `name`, `video_url`, `video_url_yt`).
+3. THE Servidor SHALL pasar la lista expandida al `WorkoutTracker` con la misma forma de datos que actualmente (`block`, `block_type`, `set_number`, `exercises_id`, `ex_order`, `tiempo_ej`, `reps`, `name`, `video_url`, `video_url_yt`).
 4. WHEN se aplica el nivel de energía, THE Servidor SHALL escalar `num_sets` y `reps` antes de la expansión en memoria, de modo que la expansión ya refleje los valores ajustados.
 5. THE WorkoutTracker NO SHALL requerir cambios en su lógica interna de navegación como resultado de esta feature.
 

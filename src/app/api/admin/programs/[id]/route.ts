@@ -10,11 +10,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   if (auth instanceof NextResponse) return auth;
 
   const { id } = await params;
-  const program = await DB.get('SELECT id, name, description, image_url FROM programs WHERE id = ?', [id]);
+  const program = await DB.get('SELECT programs_id as id, name, description, image_url FROM programs WHERE programs_id = ?', [id]);
   if (!program) return NextResponse.json({ error: 'Programa no encontrado' }, { status: 404 });
 
   const sessions = await DB.query<{ id: number; session_code: string; name: string | null }>(
-    'SELECT id, session_code, name FROM sessions WHERE program_id = ? ORDER BY id',
+    'SELECT sessions_id as id, session_code, name FROM sessions WHERE programs_id = ? ORDER BY sessions_id',
     [id]
   );
 
@@ -27,7 +27,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         set_id: number; block_label: string | null; block_type: string | null;
         num_sets: number; description: string | null; block_order: number;
       }>(
-        'SELECT set_id, block_label, block_type, num_sets, description, block_order FROM sets WHERE session_id = ? ORDER BY block_order',
+        'SELECT set_id, block_label, block_type, num_sets, description, block_order FROM sets WHERE sessions_id = ? ORDER BY block_order',
         [s.id]
       );
 
@@ -36,8 +36,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
           const exercises = await DB.query<{
             set_exercise_id: number; ex_id: number; ex_name: string; ex_order: number; reps: string | null; tiempo_ej: string | null;
           }>(
-            `SELECT se.set_exercise_id, se.ex_id, e.name as ex_name, se.ex_order, se.reps, se.tiempo_ej
-             FROM set_exercises se JOIN exercises e ON se.ex_id = e.id
+            `SELECT se.set_exercise_id, se.exercises_id as ex_id, e.name as ex_name, se.ex_order, se.reps, se.tiempo_ej
+             FROM set_exercises se JOIN exercises e ON se.exercises_id = e.exercises_id
              WHERE se.set_id = ? ORDER BY se.ex_order`,
             [b.set_id]
           );
@@ -57,7 +57,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (auth instanceof NextResponse) return auth;
 
   const { id } = await params;
-  const existing = await DB.get<{ id: number }>('SELECT id FROM programs WHERE id = ?', [id]);
+  const existing = await DB.get<{ programs_id: number }>('SELECT programs_id FROM programs WHERE programs_id = ?', [id]);
   if (!existing) return NextResponse.json({ error: 'Programa no encontrado' }, { status: 404 });
 
   try {
@@ -86,29 +86,29 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const slug = name.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
 
     // Delete existing sessions (cascade deletes sets → set_exercises)
-    await DB.run('DELETE FROM sessions WHERE program_id = ?', [id]);
-    await DB.run('UPDATE programs SET name=?, description=?, image_url=? WHERE id=?', [name.trim(), description || null, image_url || null, id]);
+    await DB.run('DELETE FROM sessions WHERE programs_id = ?', [id]);
+    await DB.run('UPDATE programs SET name=?, description=?, image_url=? WHERE programs_id=?', [name.trim(), description || null, image_url || null, id]);
 
     if (Array.isArray(sessions)) {
       for (const ses of sessions) {
         const num = ses.numero_sesion || 1;
         let sessionCode = `${slug}_s${num}`;
-        const existingCode = await DB.get('SELECT id FROM sessions WHERE session_code = ?', [sessionCode]);
+        const existingCode = await DB.get('SELECT sessions_id FROM sessions WHERE session_code = ?', [sessionCode]);
         if (existingCode) sessionCode = `${slug}_s${num}_${id}`;
-        const sesResult = await DB.run('INSERT INTO sessions (session_code, name, program_id) VALUES (?,?,?)', [sessionCode, ses.nombre_sesion || null, Number(id)]);
+        const sesResult = await DB.run('INSERT INTO sessions (session_code, name, programs_id) VALUES (?,?,?)', [sessionCode, ses.nombre_sesion || null, Number(id)]);
         const sessionId = sesResult.id;
 
         if (Array.isArray(ses.blocks)) {
           for (const block of ses.blocks) {
             const setResult = await DB.run(
-              'INSERT INTO sets (session_id, description, block_label, block_type, num_sets, block_order) VALUES (?,?,?,?,?,?)',
+              'INSERT INTO sets (sessions_id, description, block_label, block_type, num_sets, block_order) VALUES (?,?,?,?,?,?)',
               [sessionId, block.description || null, block.block_label || null, block.block_type || 'normal', block.num_sets || 1, block.block_order || 1]
             );
             const setId = setResult.id;
             if (Array.isArray(block.exercises)) {
               for (const ex of block.exercises) {
                 await DB.run(
-                  'INSERT INTO set_exercises (set_id, ex_id, ex_order, reps, tiempo_ej) VALUES (?,?,?,?,?)',
+                  'INSERT INTO set_exercises (set_id, exercises_id, ex_order, reps, tiempo_ej) VALUES (?,?,?,?,?)',
                   [setId, ex.ex_id, ex.ex_order || 1, ex.reps || null, ex.tiempo_ej || null]
                 );
               }
@@ -130,12 +130,12 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   if (auth instanceof NextResponse) return auth;
 
   const { id } = await params;
-  const existing = await DB.get('SELECT id FROM programs WHERE id = ?', [id]);
+  const existing = await DB.get('SELECT programs_id FROM programs WHERE programs_id = ?', [id]);
   if (!existing) return NextResponse.json({ error: 'Programa no encontrado' }, { status: 404 });
 
   // Cascade deletes sessions → sets → set_exercises
-  await DB.run('DELETE FROM sessions WHERE program_id = ?', [id]);
-  await DB.run('DELETE FROM programs WHERE id = ?', [id]);
+  await DB.run('DELETE FROM sessions WHERE programs_id = ?', [id]);
+  await DB.run('DELETE FROM programs WHERE programs_id = ?', [id]);
 
   return NextResponse.json({ success: true });
 }

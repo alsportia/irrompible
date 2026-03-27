@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ valid: false }, { status: 401 });
   }
 
-  const user = await DB.get<{ id: number }>('SELECT id FROM users WHERE id = ?', [userId]);
+  const user = await DB.get<{ users_id: number }>('SELECT users_id FROM users WHERE users_id = ?', [userId]);
 
   if (user) {
     return NextResponse.json({ valid: true }, { status: 200 });

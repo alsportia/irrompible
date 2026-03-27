@@ -49,8 +49,8 @@ async function main() {
 
   for (const [exId, entries] of byId) {
     const correctEntry = entries.find(e => e.correct);
-    const ex = await dbGet<{ id: number; name: string; video_url_yt: string | null }>(
-      db, 'SELECT id, name, video_url_yt FROM exercises WHERE id = ?', [exId]
+    const ex = await dbGet<{ exercises_id: number; name: string; video_url_yt: string | null }>(
+      db, 'SELECT exercises_id, name, video_url_yt FROM exercises WHERE exercises_id = ?', [exId]
     );
 
     if (!ex) {
@@ -60,11 +60,11 @@ async function main() {
     }
 
     if (correctEntry) {
-      await dbRun(db, 'UPDATE exercises SET video_url_yt = ? WHERE id = ?', [correctEntry.url, exId]);
+      await dbRun(db, 'UPDATE exercises SET video_url_yt = ? WHERE exercises_id = ?', [correctEntry.url, exId]);
       console.log(`[UPDATE] ${exId} "${ex.name}"\n  ${ex.video_url_yt ?? '(vacío)'} → ${correctEntry.url}`);
       updated++;
     } else {
-      await dbRun(db, 'UPDATE exercises SET video_url_yt = NULL WHERE id = ?', [exId]);
+      await dbRun(db, 'UPDATE exercises SET video_url_yt = NULL WHERE exercises_id = ?', [exId]);
       console.log(`[CLEAR]  ${exId} "${ex.name}" → NULL (ninguna URL correcta)`);
       cleared++;
     }

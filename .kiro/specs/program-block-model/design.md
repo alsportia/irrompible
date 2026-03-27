@@ -161,7 +161,7 @@ function expandBlocks(blocks: BlockRow[]): ExerciseRow[] {
           block: block.block_label,
           block_type: block.block_type,
           set_number: s,
-          ex_id: ex.ex_id,
+          exercises_id: ex.exercises_id,
           ex_order: ex.ex_order,
           tiempo_ej: ex.tiempo_ej,
           reps: ex.reps,
@@ -210,7 +210,7 @@ Script Node/TypeScript independiente (no parte del servidor Next.js):
 ```sql
 CREATE TABLE IF NOT EXISTS sets (
   set_id      INTEGER PRIMARY KEY AUTOINCREMENT,
-  session_id  INTEGER NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+  sessions_id INTEGER NOT NULL REFERENCES sessions(sessions_id) ON DELETE CASCADE,
   description TEXT,
   block_label TEXT,
   block_type  TEXT,
@@ -219,7 +219,7 @@ CREATE TABLE IF NOT EXISTS sets (
 );
 
 CREATE INDEX IF NOT EXISTS idx_sets_session_order
-  ON sets (session_id, block_order);
+  ON sets (sessions_id, block_order);
 ```
 
 ### Tabla `set_exercises` (nueva)
@@ -228,7 +228,7 @@ CREATE INDEX IF NOT EXISTS idx_sets_session_order
 CREATE TABLE IF NOT EXISTS set_exercises (
   set_exercise_id INTEGER PRIMARY KEY AUTOINCREMENT,
   set_id          INTEGER NOT NULL REFERENCES sets(set_id) ON DELETE CASCADE,
-  ex_id           INTEGER NOT NULL REFERENCES exercises(id),
+  exercises_id    INTEGER NOT NULL REFERENCES exercises(exercises_id),
   ex_order        INTEGER NOT NULL,
   reps            TEXT,
   tiempo_ej       TEXT
@@ -244,14 +244,14 @@ Permanece en la BD sin modificaciones. Ningún código nuevo escribe en ella. Se
 ```mermaid
 erDiagram
     sessions {
-        int id PK
+        int sessions_id PK
         text session_code
         text name
-        int program_id FK
+        int programs_id FK
     }
     sets {
         int set_id PK
-        int session_id FK
+        int sessions_id FK
         text description
         text block_label
         text block_type
@@ -261,13 +261,13 @@ erDiagram
     set_exercises {
         int set_exercise_id PK
         int set_id FK
-        int ex_id FK
+        int exercises_id FK
         int ex_order
         text reps
         text tiempo_ej
     }
     exercises {
-        int id PK
+        int exercises_id PK
         text name
         text video_url
         text video_url_yt
@@ -281,11 +281,11 @@ erDiagram
 
 ```json
 {
-  "id": 1,
+  "programs_id": 1,
   "name": "Unbreakable",
   "sessions": [
     {
-      "id": 10,
+      "sessions_id": 10,
       "numero_sesion": 1,
       "nombre_sesion": "Sesión 1",
       "blocks": [
@@ -297,7 +297,7 @@ erDiagram
           "description": "Calentamiento",
           "block_order": 1,
           "exercises": [
-            { "set_exercise_id": 200, "ex_id": 5216, "ex_name": "Sentadilla", "ex_order": 1, "reps": "10", "tiempo_ej": "" }
+            { "set_exercise_id": 200, "exercises_id": 5216, "ex_name": "Sentadilla", "ex_order": 1, "reps": "10", "tiempo_ej": "" }
           ]
         }
       ]

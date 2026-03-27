@@ -71,16 +71,16 @@ src/
 | 1 | 1 | Sesión 1 |
 | 2 | 2 | Sesión 2 |
 
-`id_sesion` es un identificador interno del Excel (no el ID de la DB). Permite que `Session_Exercises` referencie sesiones sin depender de IDs de DB.
+`id_sesion` es un identificador interno del Excel (no el ID de la DB). Permite que `Set_Exercises` referencie sesiones sin depender de IDs de DB.
 
 ### Hoja `Ejercicios`
 | id_ejercicio | nombre | musculos | articulaciones | descripcion | video_url | video_url_yt |
 |---|---|---|---|---|---|---|
 | 1 | Sentadilla | Cuádriceps | Rodilla | ... | /videos/... | https://yt... |
 
-`id_ejercicio` es el ID real de la DB cuando se exporta, o un ID temporal cuando se añaden ejercicios nuevos en la plantilla.
+`id_ejercicio` es el `exercises_id` real de la DB cuando se exporta, o un ID temporal cuando se añaden ejercicios nuevos en la plantilla.
 
-### Hoja `Session_Exercises`
+### Hoja `Set_Exercises`
 | id_sesion | id_ejercicio | bloque | tipo_bloque | numero_serie | orden_ejercicio | repeticiones | tiempo |
 |---|---|---|---|---|---|---|---|
 | 1 | 42 | A | normal | 1 | 1 | 10 | |
@@ -111,13 +111,13 @@ Recibe un archivo Excel via `multipart/form-data`.
 - Respuesta error: `{ error: string, details?: string }`
 
 ### `GET /api/admin/programs/[id]`
-Devuelve un programa con todas sus sesiones y session_exercises.
+Devuelve un programa con todas sus sesiones, sets y set_exercises.
 
 ### `PUT /api/admin/programs/[id]`
 Actualiza un programa existente. Genera backup automático antes de modificar.
 
 ### `DELETE /api/admin/programs/[id]`
-Elimina un programa y todas sus sesiones/session_exercises en cascada.
+Elimina un programa y todas sus sesiones/sets/set_exercises en cascada.
 
 ---
 
@@ -129,8 +129,8 @@ export async function generateTemplateExcel(): Promise<Buffer>
 ```
 
 Internamente:
-1. Consulta `programs`, `sessions`, `session_exercises` JOIN `exercises`
-2. Construye el workbook con las 4 hojas usando SheetJS
+1. Consulta `programs`, `sessions`, `sets` + `set_exercises` JOIN `exercises`
+2. Construye el workbook con las 5 hojas usando SheetJS
 3. Devuelve el buffer del archivo
 
 ---
@@ -167,7 +167,7 @@ Flujo interno:
    a. Crear ejercicios nuevos (los que no existen por nombre)
    b. Crear el programa
    c. Crear sesiones (generando `session_code` automático)
-   d. Crear `session_exercises` resolviendo IDs del Excel a IDs reales de DB
+   d. Crear `sets` y `set_exercises` resolviendo IDs del Excel a IDs reales de DB
 
 ---
 

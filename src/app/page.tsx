@@ -15,37 +15,37 @@ interface Session {
 async function getSessions(programId?: string): Promise<Session[]> {
   if (programId) {
     return DB.query<Session>(`
-      SELECT s.id, s.session_code, s.name, s.description,
+      SELECT s.sessions_id as id, s.session_code, s.name, s.description,
              COALESCE((
                SELECT SUM(block_sets)
                FROM (SELECT MAX(se.set_number) as block_sets
                      FROM sets st JOIN set_exercises se ON se.set_id = st.set_id
-                     WHERE st.session_id = s.id GROUP BY st.set_id)
+                     WHERE st.sessions_id = s.sessions_id GROUP BY st.set_id)
              ), 0) as exerciseCount
       FROM sessions s
-      WHERE s.program_id = ?
-      GROUP BY s.id
-      ORDER BY s.id ASC
+      WHERE s.programs_id = ?
+      GROUP BY s.sessions_id
+      ORDER BY s.sessions_id ASC
     `, [programId]);
   }
   return DB.query<Session>(`
-    SELECT s.id, s.session_code, s.name, s.description,
+    SELECT s.sessions_id as id, s.session_code, s.name, s.description,
            COALESCE((
              SELECT SUM(block_sets)
              FROM (SELECT MAX(se.set_number) as block_sets
                    FROM sets st JOIN set_exercises se ON se.set_id = st.set_id
-                   WHERE st.session_id = s.id GROUP BY st.set_id)
+                   WHERE st.sessions_id = s.sessions_id GROUP BY st.set_id)
            ), 0) as exerciseCount
     FROM sessions s
-    GROUP BY s.id
-    ORDER BY s.id ASC
+    GROUP BY s.sessions_id
+    ORDER BY s.sessions_id ASC
   `);
 }
 
 async function getProgramName(programId?: string): Promise<string> {
   if (!programId) return "Unbreakable";
   const [prog] = await DB.query<{ name: string }>(
-    "SELECT name FROM programs WHERE id = ?",
+    "SELECT name FROM programs WHERE programs_id = ?",
     [programId]
   );
   return prog?.name ?? "Programa";
