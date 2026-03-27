@@ -64,9 +64,14 @@ interface ExcelRow {
   video_url_yt: string;
 }
 
-function parseSessionSheet(ws: XLSX.WorkSheet): ExcelRow[] {
+interface ParsedSession {
+  rows: ExcelRow[];
+  description: string | null;
+}
+
+function parseSessionSheet(ws: XLSX.WorkSheet): ParsedSession {
   const rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: '' });
-  if (rawRows.length === 0) return [];
+  if (rawRows.length === 0) return { rows: [], description: null };
 
   // Detect column name variants (Aurum uses Bloque/Bloque_type)
   const first = rawRows[0];
@@ -79,7 +84,23 @@ function parseSessionSheet(ws: XLSX.WorkSheet): ExcelRow[] {
   const repsCol    = 'reps';
   const videoCol   = 'Vídeo' in first ? 'Vídeo' : ('vídeo' in first ? 'vídeo' : ('Video' in first ? 'Video' : 'Vídeos'));
 
-  return rawRows
+  // The session description is a long text stored in one of the unnamed/extra columns.
+  // We scan all rows and all non-standard columns to find the longest text value.
+  const standardCols = new Set([blockCol, btCol, setCol, 'Ejercicio', exIdCol, exOrderCol, tiempoCol, repsCol, videoCol]);
+  let description: string | null = null;
+  let maxLen = 10; // minimum length to consider
+  for (const r of rawRows) {
+    for (const [key, val] of Object.entries(r)) {
+      if (standardCols.has(key)) continue;
+      const str = String(val ?? '').trim();
+      if (str.length > maxLen) {
+        maxLen = str.length;
+        description = str;
+      }
+    }
+  }
+
+  const rows = rawRows
     .filter(r => r[exIdCol] && Number(r[exIdCol]) > 0)
     .map(r => ({
       block:      String(r[blockCol] ?? ''),
@@ -91,6 +112,8 @@ function parseSessionSheet(ws: XLSX.WorkSheet): ExcelRow[] {
       reps:       r[repsCol] as string | number ?? '',
       video_url_yt: String(r[videoCol] ?? '').trim(),
     }));
+
+  return { rows, description };
 }
 
 // ─── Main ────────────────────────────────────────────────────────────────────
@@ -158,13 +181,11 @@ async function main() {
     );
 
     // Delete existing sessions for this program
-    // Must delete dependent rows first (workout_logs, session_exercises don't have CASCADE)
+    // Must delete dependent rows first (workout_logs don't have CASCADE)
     const existingSessions = await dbAll<{ id: number }>(db, 'SELECT id FROM sessions WHERE program_id = ?', [program.id]);
     for (const s of existingSessions) {
-      await dbRun(db, 'DELETE FROM workout_sets WHERE workout_log_id IN (SELECT id FROM workout_logs WHERE session_id = ?)', [s.id]);
-      await dbRun(db, 'DELETE FROM workout_logs WHERE session_id = ?', [s.id]);
-      await dbRun(db, 'DELETE FROM session_exercises WHERE session_id = ?', [s.id]);
-      await dbRun(db, 'DELETE FROM program_sessions WHERE session_id = ?', [s.id]);
+      await dbRun(db, 'DELETE FROM workout_sets WHERE workout_log_id IN (SELECT id FROM workout_logs WHERE session_id = ?)', [s.id]).catch(() => {});
+      await dbRun(db, 'DELETE FROM workout_logs WHERE session_id = ?', [s.id]).catch(() => {});
     }
     await dbRun(db, 'DELETE FROM sessions WHERE program_id = ?', [program.id]);
 
@@ -174,7 +195,7 @@ async function main() {
       const sheetName = sessionSheets[i];
       const sessionNum = i + 1;
       const ws = wb.Sheets[sheetName];
-      const rows = parseSessionSheet(ws);
+      const { rows, description } = parseSessionSheet(ws);
 
       if (rows.length === 0) {
         console.log(`  [SKIP] ${sheetName}: sin datos`);
@@ -183,8 +204,8 @@ async function main() {
 
       // Create session
       const sessionCode = `${slug}_s${sessionNum}`;
-      const sesResult = await dbRun(db, 'INSERT INTO sessions (session_code, name, program_id) VALUES (?,?,?)',
-        [sessionCode, sheetName, program.id]);
+      const sesResult = await dbRun(db, 'INSERT INTO sessions (session_code, name, description, program_id) VALUES (?,?,?,?)',
+        [sessionCode, sheetName, description, program.id]);
       const sessionId = sesResult.lastID;
 
       // Update video_url_yt for exercises that have it in the Excel
