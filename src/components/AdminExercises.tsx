@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, Plus, Pencil, Trash2, Check, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Plus, Pencil, Trash2, Check, X, ChevronLeft, ChevronRight, Play } from "lucide-react";
+import CachedVideo from "./CachedVideo";
 
 type ExRow = {
   id: number; name: string;
@@ -11,7 +12,7 @@ type ExRow = {
   harder_id: number | null; harder_name: string | null;
 };
 
-type ModalState = { type: 'create' } | { type: 'edit'; ex: ExRow } | { type: 'delete'; ex: ExRow } | null;
+type ModalState = { type: 'create' } | { type: 'edit'; ex: ExRow } | { type: 'delete'; ex: ExRow } | { type: 'video'; ex: ExRow; source: 'local' | 'yt' } | null;
 
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: '0.625rem 0.75rem',
@@ -145,6 +146,16 @@ export default function AdminExercises({ headers }: Props) {
                   {ex.muscles ? ` · ${ex.muscles}` : ''}
                 </p>
               </div>
+              {ex.video_url && (
+                <button onClick={() => setModal({ type: 'video', ex, source: 'local' })} title="Ver vídeo local" style={{ padding: '0.35rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent-primary)', display: 'flex', fontSize: '0.75rem' }}>
+                  📁
+                </button>
+              )}
+              {ex.video_url_yt && (
+                <button onClick={() => setModal({ type: 'video', ex, source: 'yt' })} title="Ver vídeo YouTube" style={{ padding: '0.35rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent-primary)', display: 'flex' }}>
+                  <Play size={15} />
+                </button>
+              )}
               <button onClick={() => openEdit(ex)} style={{ padding: '0.35rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex' }}>
                 <Pencil size={15} />
               </button>
@@ -172,8 +183,27 @@ export default function AdminExercises({ headers }: Props) {
       {/* Modal */}
       {modal && (
         <div onClick={() => setModal(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.25rem' }}>
-          <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: '28rem', background: 'var(--bg-secondary)', borderRadius: '1rem', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.875rem', maxHeight: '90dvh', overflowY: 'auto' }}>
-            {modal.type === 'delete' ? (
+          <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: modal.type === 'video' ? '36rem' : '28rem', background: 'var(--bg-secondary)', borderRadius: '1rem', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.875rem', maxHeight: '90dvh', overflowY: 'auto' }}>
+            {modal.type === 'video' ? (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <h2 style={{ fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '1.1rem', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, marginRight: '1rem' }}>
+                    {modal.ex.name} {modal.source === 'local' ? '· 📁 Local' : '· ▶ YouTube'}
+                  </h2>
+                  <button onClick={() => setModal(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', flexShrink: 0 }}><X size={20} /></button>
+                </div>
+                <div style={{ width: '100%', aspectRatio: '9/16', maxHeight: '60dvh', borderRadius: 'var(--radius-md)', overflow: 'hidden', background: 'var(--bg-tertiary)' }}>
+                  <CachedVideo
+                    videoUrl={modal.source === 'local' ? modal.ex.video_url : null}
+                    videoUrlYt={modal.source === 'yt' ? modal.ex.video_url_yt : null}
+                    exerciseName={modal.ex.name}
+                  />
+                </div>
+                <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)', textAlign: 'center' }}>
+                  {modal.source === 'local' ? modal.ex.video_url : modal.ex.video_url_yt}
+                </p>
+              </>
+            ) : modal.type === 'delete' ? (
               <>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <h2 style={{ fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '1.1rem', margin: 0 }}>Eliminar ejercicio</h2>
