@@ -34,7 +34,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
   // Check if used in any session
   const [usage] = await DB.query<{ count: number }>(
-    "SELECT COUNT(*) as count FROM session_exercises WHERE ex_id = ?", [id]
+    "SELECT COUNT(*) as count FROM set_exercises WHERE ex_id = ?", [id]
   );
   if (usage.count > 0) {
     return NextResponse.json(

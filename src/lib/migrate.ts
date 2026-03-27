@@ -61,20 +61,7 @@ export async function runMigrations(): Promise<void> {
     )
   `);
 
-  // 7. Session-exercises join table
-  await DB.run(`
-    CREATE TABLE IF NOT EXISTS session_exercises (
-      id         INTEGER PRIMARY KEY AUTOINCREMENT,
-      session_id INTEGER NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
-      ex_id      INTEGER NOT NULL REFERENCES exercises(id),
-      block      TEXT,
-      block_type TEXT,
-      set_number INTEGER,
-      ex_order   INTEGER,
-      reps       TEXT,
-      tiempo_ej  TEXT
-    )
-  `);
+  // 7. (legacy: session_exercises removed — data migrated to sets/set_exercises)
 
   // 8. Energy levels lookup table
   await DB.run(`
