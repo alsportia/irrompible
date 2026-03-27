@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Check, X, Timer as TimerIcon, Play, Pause, ChevronLeft, StopCircle } from "lucide-react";
-import { finishWorkoutLog, saveWorkoutSet } from "@/app/actions";
+import { finishWorkoutLog, saveWorkoutSet, getLastWeight } from "@/app/actions";
 import CachedVideo from "./CachedVideo";
 import { useBeep } from "@/lib/useBeep";
 
@@ -23,6 +23,7 @@ interface ExerciseRow {
 interface WorkoutTrackerProps {
   sessionId: string;
   logId: number;
+  userId: number;
   exercises: ExerciseRow[];
   initialIndex?: number;
 }
@@ -105,7 +106,7 @@ function ProgressDots({ total, current }: { total: number; current: number }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export default function WorkoutTracker({ sessionId, logId, exercises, initialIndex = 0 }: WorkoutTrackerProps) {
+export default function WorkoutTracker({ sessionId, logId, userId, exercises, initialIndex = 0 }: WorkoutTrackerProps) {
   const router = useRouter();
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [timeElapsed, setTimeElapsed] = useState(0);
@@ -116,14 +117,29 @@ export default function WorkoutTracker({ sessionId, logId, exercises, initialInd
   const [feelingStep, setFeelingStep] = useState(false);
   const [selectedFeeling, setSelectedFeeling] = useState<typeof FEELINGS[number] | null>(null);
   const [saving, setSaving] = useState(false);
-
-  const { playCountdownBeep, playWarningBeep, playFinalBeep } = useBeep();
-  const startTime = useRef<number>(Date.now());
+  const [pesoMap, setPesoMap] = useState<Record<number, number>>({});
 
   const currentEx = exercises[currentIndex];
   const isFinished = currentIndex >= exercises.length;
   const targetTime = currentEx ? parseTimeToSeconds(currentEx.tiempo_ej) : 0;
   const hasTimer = targetTime > 0;
+
+  const peso = currentEx ? (pesoMap[currentEx.ex_id] ?? 0) : 0;
+  const setPeso = (val: number) => {
+    if (!currentEx) return;
+    setPesoMap(prev => ({ ...prev, [currentEx.ex_id]: val }));
+  };
+
+  const { playCountdownBeep, playWarningBeep, playFinalBeep } = useBeep();
+  const startTime = useRef<number>(Date.now());
+
+  // Load last used weight for each exercise on first encounter
+  useEffect(() => {
+    if (!currentEx || pesoMap[currentEx.ex_id] !== undefined) return;
+    getLastWeight(userId, currentEx.ex_id).then(w => {
+      setPesoMap(prev => ({ ...prev, [currentEx.ex_id]: w }));
+    });
+  }, [currentEx?.ex_id]);
 
   useEffect(() => {
     if (isFinished) return;
@@ -181,7 +197,7 @@ export default function WorkoutTracker({ sessionId, logId, exercises, initialInd
     if (!ex) return;
     setIsActive(false);
     const timeToSave = hasTimer ? targetTime : timeElapsedRef.current;
-    await saveWorkoutSet(logId, ex.ex_id, null, null, timeToSave);
+    await saveWorkoutSet(logId, ex.ex_id, ex.set_number, null, pesoMap[ex.ex_id] ?? 0, timeToSave);
     if (currentIndexRef.current + 1 >= exercises.length) {
       const totalDuration = Math.floor((Date.now() - startTime.current) / 1000);
       await finishWorkoutLog(logId, totalDuration, 0, '');
@@ -356,6 +372,17 @@ export default function WorkoutTracker({ sessionId, logId, exercises, initialInd
           </div>
 
           <div style={{ display: 'flex', alignItems: 'stretch', gap: '0.75rem' }}>
+            <div style={{ ...S.statCard, flex: 1 }}>
+              <span style={S.statLabel}>Peso (kg)</span>
+              <input
+                type="number"
+                min={0}
+                step={0.5}
+                value={peso}
+                onChange={e => setPeso(parseFloat(e.target.value) || 0)}
+                style={{ fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '1.5rem', width: '100%', textAlign: 'center', background: 'transparent', border: 'none', color: 'var(--text-primary)', outline: 'none', padding: 0 }}
+              />
+            </div>
             {currentEx.reps && currentEx.reps !== '0' && (
               <div style={{ ...S.statCard, flex: 1 }}>
                 <span style={S.statLabel}>Reps</span>

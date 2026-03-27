@@ -160,6 +160,12 @@ export async function runMigrations(): Promise<void> {
   // 14. Add video_url_yt to exercises if missing (legacy DBs)
   await addColumnIfNotExists('exercises', 'video_url_yt', 'TEXT');
 
+  // 16. Add peso to set_exercises
+  await addColumnIfNotExists('set_exercises', 'peso', 'REAL NOT NULL DEFAULT 0');
+
+  // 17. Add set_number to workout_sets
+  await addColumnIfNotExists('workout_sets', 'set_number', 'INTEGER');
+
   // 15. Assign Unbreakable to existing users without any program
   await DB.run(`
     INSERT OR IGNORE INTO user_programs (user_id, program_id)

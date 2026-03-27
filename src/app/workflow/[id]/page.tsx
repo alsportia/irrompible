@@ -86,5 +86,5 @@ export default async function WorkflowPage({
 
   const initialIndex = startIndex ? Math.min(parseInt(startIndex) || 0, exercises.length - 1) : 0;
 
-  return <WorkoutTracker sessionId={id} logId={logId} exercises={exercises} initialIndex={initialIndex} />;
+  return <WorkoutTracker sessionId={id} logId={logId} userId={userIdNum} exercises={exercises} initialIndex={initialIndex} />;
 }

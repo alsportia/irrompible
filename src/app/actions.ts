@@ -32,14 +32,27 @@ export async function finishWorkoutLog(
 export async function saveWorkoutSet(
   logId: number,
   exerciseId: number,
+  setNumber: number,
   repsDone: number | null,
   weight: number | null,
   timeTaken: number
 ) {
   await DB.run(
-    "INSERT INTO workout_sets (workout_log_id, exercise_id, reps_done, weight, time_taken) VALUES (?, ?, ?, ?, ?)",
-    [logId, exerciseId, repsDone, weight, timeTaken]
+    "INSERT INTO workout_sets (workout_log_id, exercise_id, set_number, reps_done, weight, time_taken) VALUES (?, ?, ?, ?, ?, ?)",
+    [logId, exerciseId, setNumber, repsDone, weight, timeTaken]
   );
+}
+
+export async function getLastWeight(userId: number, exerciseId: number): Promise<number> {
+  const row = await DB.get<{ weight: number }>(
+    `SELECT ws.weight FROM workout_sets ws
+     JOIN workout_logs wl ON ws.workout_log_id = wl.id
+     WHERE wl.user_id = ? AND ws.exercise_id = ? AND ws.weight IS NOT NULL AND ws.weight > 0
+     ORDER BY wl.created_at DESC, ws.id DESC
+     LIMIT 1`,
+    [userId, exerciseId]
+  );
+  return row?.weight ?? 0;
 }
 
 export async function getCompletedSessionIds(userId: number): Promise<number[]> {
