@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useUser } from "@/lib/userContext";
 import { Dumbbell, Settings, LogOut, Info, X } from "lucide-react";
 import type { Program } from "@/types/index";
+import LoginSelector from "./LoginSelector";
 
 export default function ProgramSelector() {
   const { user, setUser } = useUser();
@@ -29,13 +30,9 @@ export default function ProgramSelector() {
 
   const handleLogout = () => {
     setUser(null);
-    router.push('/');
   };
 
-  if (!user) {
-    router.push('/');
-    return null;
-  }
+  if (!user) return <LoginSelector />;
 
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg-primary)', padding: '0 1.25rem' }}>
