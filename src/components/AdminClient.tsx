@@ -72,13 +72,9 @@ export default function AdminClient() {
             ← Volver
           </button>
           <h1 className="heading-display" style={{ fontSize: '1.5rem', margin: 0, flex: 1 }}>Panel de Administración</h1>
-          <button onClick={() => setShowStats(true)}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(232,245,233,0.08)', border: '1px solid rgba(232,245,233,0.2)', borderRadius: 'var(--radius-md)', color: 'var(--accent-primary)', fontSize: '0.8rem', fontWeight: 600, padding: '0.5rem 0.875rem', cursor: 'pointer', fontFamily: 'inherit' }}>
-            <BarChart2 size={15} /> Stats
-          </button>
         </div>
 
-        {/* Nav buttons — 2x2 grid */}
+        {/* Nav buttons — 2x2 grid + stats full-width */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '2rem' }}>
           {NAV_BUTTONS.map(({ label, icon: Icon, href }) => (
             <button key={href} onClick={() => router.push(href)}
@@ -92,6 +88,17 @@ export default function AdminClient() {
               <span style={{ fontSize: '0.85rem', fontWeight: 600, textAlign: 'center', lineHeight: 1.3 }}>{label}</span>
             </button>
           ))}
+          {/* Stats — ocupa las 2 columnas */}
+          <button onClick={() => setShowStats(true)}
+            style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', padding: '1.25rem 1rem', background: 'rgba(10, 25, 10, 0.85)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 'var(--radius-lg)', cursor: 'pointer', fontFamily: 'inherit', backdropFilter: 'blur(10px)', transition: 'border-color 0.15s ease', color: 'var(--text-primary)' }}
+            onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.35)')}
+            onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)')}
+          >
+            <div style={{ width: '3rem', height: '3rem', borderRadius: '50%', background: 'rgba(232,245,233,0.08)', border: '1px solid rgba(232,245,233,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-primary)' }}>
+              <BarChart2 size={22} />
+            </div>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, textAlign: 'center', lineHeight: 1.3 }}>Estadísticas Globales</span>
+          </button>
         </div>
 
         {/* Pending users */}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X, Flame, Clock, Dumbbell, TrendingUp, Calendar, Award, ChevronDown, ChevronUp } from "lucide-react";
+import CalendarView from "./CalendarView";
 
 interface StatsSummary {
   total_workouts: number;
@@ -85,6 +86,7 @@ export default function StatsView({ userId, userName, onClose }: { userId: numbe
   const [loading, setLoading] = useState(true);
   const [showAllWeights, setShowAllWeights] = useState(false);
   const [showAllHistory, setShowAllHistory] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
 
   useEffect(() => {
     fetch(`/api/stats/${userId}`)
@@ -111,6 +113,9 @@ export default function StatsView({ userId, userName, onClose }: { userId: numbe
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(10,26,10,0.97)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', display: 'flex', flexDirection: 'column', maxWidth: '28rem', margin: '0 auto', overflowY: 'auto' }} className="animate-fade-in">
 
+      {/* Calendar overlay — rendered on top */}
+      {showCalendar && <CalendarView userId={userId} onClose={() => setShowCalendar(false)} />}
+
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.875rem 1rem', background: 'rgba(5,15,5,0.9)', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0, position: 'sticky', top: 0, zIndex: 10 }}>
         <button onClick={onClose} style={{ padding: '0.5rem', color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}>
@@ -120,12 +125,20 @@ export default function StatsView({ userId, userName, onClose }: { userId: numbe
           <div style={{ fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '1.05rem' }}>
             {userName ? `Stats de ${userName}` : 'Mis Estadísticas'}
           </div>
-          {s?.first_workout && (
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-              Desde {fmtDate(s.first_workout)}
+          {/* Programa(s) activos */}
+          {data && data.byProgram.length > 0 && (
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.1rem' }}>
+              {data.byProgram.map(p => p.program_name).join(' · ')}
+              {s?.first_workout && ` · desde ${fmtDate(s.first_workout)}`}
             </div>
           )}
         </div>
+        {/* Botón calendario */}
+        <button onClick={() => setShowCalendar(true)}
+          style={{ padding: '0.5rem', color: 'var(--accent-primary)', background: 'rgba(232,245,233,0.08)', border: '1px solid rgba(232,245,233,0.15)', borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex' }}
+          title="Ver calendario">
+          <Calendar size={18} />
+        </button>
         {data && data.streak > 1 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(251,146,60,0.15)', border: '1px solid rgba(251,146,60,0.3)', borderRadius: 'var(--radius-sm)', padding: '0.3rem 0.6rem' }}>
             <Flame size={14} color="#fb923c" />
