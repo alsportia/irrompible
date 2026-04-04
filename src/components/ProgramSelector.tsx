@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/lib/userContext";
-import { Dumbbell, Settings, LogOut, Info, X } from "lucide-react";
+import { Dumbbell, Settings, LogOut, Info, X, PlusCircle, Check } from "lucide-react";
 import type { Program } from "@/types/index";
 import LoginSelector from "./LoginSelector";
 
@@ -11,28 +11,49 @@ export default function ProgramSelector() {
   const { user, setUser } = useUser();
   const router = useRouter();
   const [programs, setPrograms] = useState<Program[]>([]);
+  const [allPrograms, setAllPrograms] = useState<Program[]>([]);
   const [loading, setLoading] = useState(true);
   const [infoProgram, setInfoProgram] = useState<Program | null>(null);
+  const [showRequest, setShowRequest] = useState(false);
+  const [requesting, setRequesting] = useState<number | null>(null);
+  const [requested, setRequested] = useState<Set<number>>(new Set());
 
   useEffect(() => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-    fetch('/api/programs', {
-      headers: { 'x-user-id': String(user.id) },
-    })
-      .then(res => res.json())
-      .then(data => setPrograms(Array.isArray(data) ? data : []))
-      .catch(() => setPrograms([]))
+    if (!user) { setLoading(false); return; }
+
+    Promise.all([
+      fetch('/api/programs', { headers: { 'x-user-id': String(user.id) } }).then(r => r.json()),
+      fetch('/api/public/programs').then(r => r.json()),
+    ])
+      .then(([mine, all]) => {
+        setPrograms(Array.isArray(mine) ? mine : []);
+        setAllPrograms(Array.isArray(all) ? all : []);
+      })
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, [user]);
 
-  const handleLogout = () => {
-    setUser(null);
+  const handleLogout = () => setUser(null);
+
+  const handleRequest = async (programId: number) => {
+    if (!user || requesting) return;
+    setRequesting(programId);
+    try {
+      const res = await fetch('/api/programs/request', {
+        method: 'POST',
+        headers: { 'x-user-id': String(user.id), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ programId }),
+      });
+      if (res.ok) setRequested(prev => new Set(prev).add(programId));
+    } finally {
+      setRequesting(null);
+    }
   };
 
   if (!user) return <LoginSelector />;
+
+  const assignedIds = new Set(programs.map(p => p.id));
+  const unassigned = allPrograms.filter(p => !assignedIds.has(p.id));
 
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg-primary)', padding: '0 1.25rem' }}>
@@ -95,6 +116,17 @@ export default function ProgramSelector() {
             ))
           )}
 
+          {/* Request more programs */}
+          {!loading && unassigned.length > 0 && (
+            <button
+              onClick={() => setShowRequest(true)}
+              style={{ width: '100%', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'inherit', backdropFilter: 'blur(8px)' }}
+            >
+              <PlusCircle size={15} />
+              Solicitar acceso a otro programa
+            </button>
+          )}
+
           {/* Logout */}
           <button
             onClick={handleLogout}
@@ -105,6 +137,43 @@ export default function ProgramSelector() {
           </button>
         </div>
       </div>
+
+      {/* Request program modal */}
+      {showRequest && (
+        <div onClick={() => setShowRequest(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 50, display: 'flex', alignItems: 'flex-end' }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: '100%', background: 'var(--bg-secondary)', borderRadius: '1.25rem 1.25rem 0 0', padding: '1.5rem 1.25rem', paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+              <h2 style={{ fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '1.1rem', margin: 0 }}>Solicitar programa</h2>
+              <button onClick={() => setShowRequest(false)} style={{ padding: '0.25rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}>
+                <X size={20} />
+              </button>
+            </div>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+              El administrador recibirá tu solicitud y te asignará el programa si lo aprueba.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {unassigned.map(p => {
+                const done = requested.has(p.id);
+                return (
+                  <button key={p.id} onClick={() => !done && handleRequest(p.id)} disabled={done || requesting === p.id}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.875rem 1rem', background: done ? 'rgba(102,187,106,0.08)' : 'rgba(255,255,255,0.04)', border: `1px solid ${done ? 'rgba(102,187,106,0.3)' : 'rgba(255,255,255,0.12)'}`, borderRadius: 'var(--radius-md)', cursor: done ? 'default' : 'pointer', fontFamily: 'inherit', color: 'var(--text-primary)', opacity: requesting && requesting !== p.id ? 0.5 : 1, transition: 'all 0.15s' }}>
+                    <div style={{ width: '2rem', height: '2rem', borderRadius: '50%', background: done ? 'rgba(102,187,106,0.15)' : 'rgba(255,255,255,0.06)', border: `1px solid ${done ? '#66bb6a' : 'rgba(255,255,255,0.15)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      {done ? <Check size={14} color="#66bb6a" /> : <Dumbbell size={14} color="var(--text-secondary)" />}
+                    </div>
+                    <span style={{ flex: 1, textAlign: 'left', fontSize: '0.9rem', fontWeight: 600 }}>{p.name}</span>
+                    {done
+                      ? <span style={{ fontSize: '0.72rem', color: '#66bb6a', fontWeight: 600 }}>Solicitado</span>
+                      : requesting === p.id
+                        ? <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Enviando...</span>
+                        : <PlusCircle size={16} color="var(--text-secondary)" />
+                    }
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Program info modal */}
       {infoProgram && (
