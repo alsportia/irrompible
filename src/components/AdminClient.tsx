@@ -3,17 +3,18 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/lib/userContext";
-import { Users, Dumbbell, Wrench, BookOpen, UserCheck, UserX } from "lucide-react";
+import { Users, Dumbbell, Wrench, BookOpen, UserCheck, UserX, BarChart2 } from "lucide-react";
 import type { Program } from "@/types/index";
+import AdminStatsView from "./AdminStatsView";
 
 type UserRow = { id: number; name: string; email: string; role: 'admin' | 'user'; status: 'active' | 'pending' };
 type UserWithPrograms = UserRow & { programs: Program[] };
 
 const NAV_BUTTONS = [
-  { label: 'Gestión de Usuarios',   icon: Users,    href: '/admin/users'       },
-  { label: 'Gestión de Programas',  icon: Dumbbell, href: '/admin/programs'    },
-  { label: 'Gestión de Ejercicios', icon: BookOpen, href: '/admin/exercises'   },
-  { label: 'Mantenimiento',         icon: Wrench,   href: '/admin/maintenance' },
+  { label: 'Gestión de Usuarios',   icon: Users,      href: '/admin/users'       },
+  { label: 'Gestión de Programas',  icon: Dumbbell,   href: '/admin/programs'    },
+  { label: 'Gestión de Ejercicios', icon: BookOpen,   href: '/admin/exercises'   },
+  { label: 'Mantenimiento',         icon: Wrench,     href: '/admin/maintenance' },
 ];
 
 export default function AdminClient() {
@@ -21,6 +22,7 @@ export default function AdminClient() {
   const router = useRouter();
   const [pendingUsers, setPendingUsers] = useState<UserWithPrograms[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showStats, setShowStats] = useState(false);
 
   const headers = { 'x-user-id': String(user?.id ?? 0) };
 
@@ -59,6 +61,7 @@ export default function AdminClient() {
 
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--bg-primary)', padding: '1.5rem 1.25rem' }}>
+      {showStats && <AdminStatsView onClose={() => setShowStats(false)} />}
       <div style={{ position: 'fixed', top: '-100px', left: '-50px', width: '16rem', height: '16rem', background: 'var(--accent-glow)', borderRadius: '50%', filter: 'blur(80px)', opacity: 0.6, pointerEvents: 'none' }} />
 
       <div style={{ maxWidth: '48rem', margin: '0 auto', position: 'relative', zIndex: 10 }}>
@@ -68,7 +71,11 @@ export default function AdminClient() {
             style={{ background: 'transparent', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)', fontSize: '0.875rem', padding: '0.5rem 1rem', cursor: 'pointer', fontFamily: 'inherit' }}>
             ← Volver
           </button>
-          <h1 className="heading-display" style={{ fontSize: '1.5rem', margin: 0 }}>Panel de Administración</h1>
+          <h1 className="heading-display" style={{ fontSize: '1.5rem', margin: 0, flex: 1 }}>Panel de Administración</h1>
+          <button onClick={() => setShowStats(true)}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(232,245,233,0.08)', border: '1px solid rgba(232,245,233,0.2)', borderRadius: 'var(--radius-md)', color: 'var(--accent-primary)', fontSize: '0.8rem', fontWeight: 600, padding: '0.5rem 0.875rem', cursor: 'pointer', fontFamily: 'inherit' }}>
+            <BarChart2 size={15} /> Stats
+          </button>
         </div>
 
         {/* Nav buttons — 2x2 grid */}

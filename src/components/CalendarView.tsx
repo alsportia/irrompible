@@ -60,7 +60,7 @@ export default function CalendarView({ onClose }: { onClose: () => void }) {
   const todayKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'var(--bg-primary)', display: 'flex', flexDirection: 'column', maxWidth: '28rem', margin: '0 auto' }} className="animate-fade-in">
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(10, 26, 10, 0.97)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', display: 'flex', flexDirection: 'column', maxWidth: '28rem', margin: '0 auto' }} className="animate-fade-in">
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.875rem 1rem', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0 }}>
         <button onClick={onClose} style={{ padding: '0.5rem', color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}>

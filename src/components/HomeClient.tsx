@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { CalendarDays, ChevronRight, User, Dumbbell, ChevronLeft, RotateCcw } from "lucide-react";
+import { CalendarDays, ChevronRight, User, Dumbbell, ChevronLeft, RotateCcw, BarChart2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/lib/userContext";
 import LoginSelector from "./LoginSelector";
 import CalendarView from "./CalendarView";
+import StatsView from "./StatsView";
 import { getCompletedSessionIds, unmarkSessionCompleted } from "@/app/actions";
 
 interface Session {
@@ -20,6 +21,7 @@ export default function HomeClient({ sessions, programId, programName }: { sessi
   const { user, setUser } = useUser();
   const router = useRouter();
   const [showCalendar, setShowCalendar] = useState(false);
+  const [showStats, setShowStats] = useState(false);
   const [completedIds, setCompletedIds] = useState<number[]>([]);
   const nextRef = useRef<HTMLDivElement>(null);
 
@@ -52,6 +54,7 @@ export default function HomeClient({ sessions, programId, programName }: { sessi
   return (
     <>
       {showCalendar && <CalendarView onClose={() => setShowCalendar(false)} />}
+      {showStats && user && <StatsView userId={user.id} onClose={() => setShowStats(false)} />}
 
       <main style={{ height: '100dvh', display: 'flex', flexDirection: 'column', maxWidth: '28rem', margin: '0 auto', position: 'relative', overflow: 'hidden' }} className="animate-fade-in">
         <div style={{ position: 'absolute', top: '-100px', left: '-50px', width: '16rem', height: '16rem', background: 'var(--accent-glow)', borderRadius: '50%', filter: 'blur(80px)', opacity: 0.6, pointerEvents: 'none', zIndex: 0 }} />
@@ -73,6 +76,10 @@ export default function HomeClient({ sessions, programId, programName }: { sessi
             <button onClick={() => setShowCalendar(true)}
               style={{ width: '3rem', height: '3rem', borderRadius: '50%', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-primary)', backdropFilter: 'blur(12px)', cursor: 'pointer' }}>
               <CalendarDays size={20} />
+            </button>
+            <button onClick={() => setShowStats(true)}
+              style={{ width: '3rem', height: '3rem', borderRadius: '50%', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-primary)', backdropFilter: 'blur(12px)', cursor: 'pointer' }}>
+              <BarChart2 size={20} />
             </button>
             <button onClick={() => setUser(null)} title="Cambiar usuario"
               style={{ width: '3rem', height: '3rem', borderRadius: '50%', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', backdropFilter: 'blur(12px)', cursor: 'pointer' }}>
