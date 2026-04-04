@@ -22,6 +22,7 @@ export interface ExerciseRow {
 function applyEnergy(exercises: ExerciseRow[], pct: number): ExerciseRow[] {
   if (pct >= 1) return exercises;
 
+  // Per block: keep only first ceil(maxSet * pct) set_numbers
   const maxSetPerBlock = new Map<number, number>();
   for (const ex of exercises) {
     maxSetPerBlock.set(ex.set_id, Math.max(maxSetPerBlock.get(ex.set_id) ?? 0, ex.set_number));
