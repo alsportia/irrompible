@@ -56,7 +56,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     else localStorage.removeItem('ub_user');
   };
 
-  if (!loaded) return null;
+  if (!loaded) return <>{children}</>;
   return <UserContext.Provider value={{ user, setUser }}>{children}</UserContext.Provider>;
 }
 

@@ -14,7 +14,10 @@ export default function ProgramSelector() {
   const [infoProgram, setInfoProgram] = useState<Program | null>(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     fetch('/api/programs', {
       headers: { 'x-user-id': String(user.id) },
     })
@@ -28,6 +31,11 @@ export default function ProgramSelector() {
     setUser(null);
     router.push('/');
   };
+
+  if (!user) {
+    router.push('/');
+    return null;
+  }
 
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg-primary)', padding: '0 1.25rem' }}>

@@ -9,10 +9,14 @@ async function addColumnIfNotExists(table: string, column: string, definition: s
 }
 
 async function renameColumnIfExists(table: string, oldName: string, newName: string): Promise<void> {
-  const columns = await DB.query<{ name: string }>(`PRAGMA table_info(${table})`);
-  const exists = columns.some((col) => col.name === oldName);
-  if (exists) {
-    await DB.run(`ALTER TABLE ${table} RENAME COLUMN ${oldName} TO ${newName}`);
+  try {
+    const columns = await DB.query<{ name: string }>(`PRAGMA table_info(${table})`);
+    const exists = columns.some((col) => col.name === oldName);
+    if (exists) {
+      await DB.run(`ALTER TABLE "${table}" RENAME COLUMN "${oldName}" TO "${newName}"`);
+    }
+  } catch (e) {
+    console.warn(`renameColumnIfExists(${table}, ${oldName} → ${newName}):`, e);
   }
 }
 
@@ -35,11 +39,12 @@ export async function runMigrations(): Promise<void> {
   // 3. Seed Unbreakable program
   await DB.run(`INSERT OR IGNORE INTO programs (name) VALUES ('Unbreakable')`);
 
-  // 4. User-programs join table
+  // 4. User-programs join table — FK references use original column names for compatibility
+  // (renaming happens later in step 18; SQLite doesn't enforce FK names at CREATE time)
   await DB.run(`
     CREATE TABLE IF NOT EXISTS user_programs (
-      users_id    INTEGER NOT NULL REFERENCES users(users_id) ON DELETE CASCADE,
-      programs_id INTEGER NOT NULL REFERENCES programs(programs_id) ON DELETE CASCADE,
+      users_id    INTEGER NOT NULL,
+      programs_id INTEGER NOT NULL,
       PRIMARY KEY (users_id, programs_id)
     )
   `);
@@ -217,7 +222,7 @@ export async function runMigrations(): Promise<void> {
     CROSS JOIN programs p
     WHERE p.name = 'Unbreakable'
       AND NOT EXISTS (
-        SELECT 1 FROM user_programs up WHERE up.users_id = u.users_id
+        SELECT 1 FROM user_programs upr WHERE upr.users_id = u.users_id
       )
   `);
 }

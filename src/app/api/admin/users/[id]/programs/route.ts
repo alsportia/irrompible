@@ -9,8 +9,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const { id } = await params;
   const programs = await DB.query(
     `SELECT p.programs_id as id, p.name FROM programs p
-     INNER JOIN user_programs up ON up.programs_id = p.programs_id
-     WHERE up.users_id = ?
+     INNER JOIN user_programs upr ON upr.programs_id = p.programs_id
+     WHERE upr.users_id = ?
      ORDER BY p.name ASC`,
     [id]
   );
@@ -32,8 +32,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const programs = await DB.query(
     `SELECT p.programs_id as id, p.name FROM programs p
-     INNER JOIN user_programs up ON up.programs_id = p.programs_id
-     WHERE up.users_id = ?
+     INNER JOIN user_programs upr ON upr.programs_id = p.programs_id
+     WHERE upr.users_id = ?
      ORDER BY p.name ASC`,
     [id]
   );
