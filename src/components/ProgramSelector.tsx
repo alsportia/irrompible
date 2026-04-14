@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/lib/userContext";
-import { Dumbbell, Settings, LogOut, Info, X, PlusCircle, Check } from "lucide-react";
+import { Dumbbell, Settings, LogOut, Info, X, PlusCircle, Check, KeyRound } from "lucide-react";
 import type { Program } from "@/types/index";
 import LoginSelector from "./LoginSelector";
 
@@ -17,6 +17,13 @@ export default function ProgramSelector() {
   const [showRequest, setShowRequest] = useState(false);
   const [requesting, setRequesting] = useState<number | null>(null);
   const [requested, setRequested] = useState<Set<number>>(new Set());
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [cpCurrent, setCpCurrent] = useState('');
+  const [cpNew, setCpNew] = useState('');
+  const [cpConfirm, setCpConfirm] = useState('');
+  const [cpError, setCpError] = useState('');
+  const [cpSuccess, setCpSuccess] = useState(false);
+  const [cpSaving, setCpSaving] = useState(false);
 
   useEffect(() => {
     if (!user) { setLoading(false); return; }
@@ -34,6 +41,26 @@ export default function ProgramSelector() {
   }, [user]);
 
   const handleLogout = () => setUser(null);
+
+  const openChangePassword = () => {
+    setCpCurrent(''); setCpNew(''); setCpConfirm(''); setCpError(''); setCpSuccess(false);
+    setShowChangePassword(true);
+  };
+
+  const handleChangePassword = async () => {
+    if (!cpCurrent) { setCpError('Introduce tu contraseña actual'); return; }
+    if (cpNew !== cpConfirm) { setCpError('Las contraseñas no coinciden'); return; }
+    setCpSaving(true); setCpError('');
+    const res = await fetch('/api/auth/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-user-id': String(user?.id ?? 0) },
+      body: JSON.stringify({ currentPassword: cpCurrent, newPassword: cpNew }),
+    });
+    const data = await res.json();
+    setCpSaving(false);
+    if (!res.ok) { setCpError(data.error ?? 'Error al cambiar la contraseña'); return; }
+    setCpSuccess(true);
+  };
 
   const handleRequest = async (programId: number) => {
     if (!user || requesting) return;
@@ -127,16 +154,63 @@ export default function ProgramSelector() {
             </button>
           )}
 
-          {/* Logout */}
-          <button
-            onClick={handleLogout}
-            style={{ width: '100%', padding: '0.875rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 'var(--radius-md)', color: 'rgba(255,255,255,0.7)', fontSize: '0.875rem', cursor: 'pointer', fontFamily: 'inherit', backdropFilter: 'blur(8px)' }}
-          >
-            <LogOut size={16} />
-            Cerrar sesión
-          </button>
+          {/* Change password + Logout */}
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              onClick={openChangePassword}
+              title="Cambiar contraseña"
+              style={{ flexShrink: 0, width: '2.75rem', height: '2.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 'var(--radius-md)', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', backdropFilter: 'blur(8px)' }}
+            >
+              <KeyRound size={16} />
+            </button>
+            <button
+              onClick={handleLogout}
+              style={{ flex: 1, padding: '0.875rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 'var(--radius-md)', color: 'rgba(255,255,255,0.7)', fontSize: '0.875rem', cursor: 'pointer', fontFamily: 'inherit', backdropFilter: 'blur(8px)' }}
+            >
+              <LogOut size={16} />
+              Cerrar sesión
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Change password modal */}
+      {showChangePassword && (
+        <div onClick={() => setShowChangePassword(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.25rem' }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: '24rem', background: '#111', borderRadius: '1rem', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <h2 style={{ fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '1.1rem', margin: 0 }}>Cambiar contraseña</h2>
+              <button onClick={() => setShowChangePassword(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex' }}><X size={20} /></button>
+            </div>
+            {cpSuccess ? (
+              <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                <Check size={40} color="#66bb6a" style={{ margin: '0 auto 0.75rem' }} />
+                <p style={{ color: '#66bb6a', fontWeight: 600, margin: 0 }}>Contraseña actualizada</p>
+                <button onClick={() => setShowChangePassword(false)} className="btn-primary" style={{ marginTop: '1.25rem', width: '100%', padding: '0.875rem' }}>Cerrar</button>
+              </div>
+            ) : (
+              <>
+                {[
+                  { label: 'Contraseña actual', value: cpCurrent, set: setCpCurrent },
+                  { label: 'Nueva contraseña', value: cpNew, set: setCpNew },
+                  { label: 'Confirmar nueva contraseña', value: cpConfirm, set: setCpConfirm },
+                ].map(({ label, value, set }) => (
+                  <div key={label}>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>{label}</label>
+                    <input type="password" value={value} onChange={e => { set(e.target.value); setCpError(''); }}
+                      style={{ width: '100%', padding: '0.625rem 0.75rem', background: '#1a1a1a', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)', fontSize: '0.875rem', fontFamily: 'inherit', boxSizing: 'border-box' as const }} />
+                  </div>
+                ))}
+                {cpError && <p style={{ color: 'var(--danger)', fontSize: '0.8rem', margin: 0 }}>{cpError}</p>}
+                <button onClick={handleChangePassword} disabled={cpSaving} className="btn-primary"
+                  style={{ width: '100%', padding: '0.875rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontWeight: 700 }}>
+                  <KeyRound size={16} />{cpSaving ? 'Guardando...' : 'Cambiar contraseña'}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Request program modal */}
       {showRequest && (

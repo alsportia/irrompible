@@ -15,7 +15,6 @@ export default function LoginSelector() {
 
   const handleLogin = async () => {
     if (!email.trim()) { setError('Introduce tu email'); return; }
-    if (!password.trim()) { setError('Introduce tu contraseña'); return; }
     setLoading(true);
     setError('');
     try {

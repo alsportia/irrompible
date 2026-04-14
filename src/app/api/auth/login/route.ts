@@ -9,8 +9,8 @@ export async function POST(req: NextRequest) {
   if (!email || typeof email !== 'string' || email.trim() === '') {
     return NextResponse.json({ error: 'Introduce tu email' }, { status: 400 });
   }
-  if (!password || typeof password !== 'string' || password.trim() === '') {
-    return NextResponse.json({ error: 'Introduce tu contraseña' }, { status: 400 });
+  if (typeof password !== 'string') {
+    return NextResponse.json({ error: 'Contraseña inválida' }, { status: 400 });
   }
 
   const user = await DB.get<{ id: number; name: string; email: string; role: string; status: string; password_hash: string | null }>(
