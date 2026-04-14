@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react";
-import { X, Flame, Clock, Dumbbell, TrendingUp, Calendar, Award, ChevronDown, ChevronUp } from "lucide-react";
+import { X, Flame, Clock, Dumbbell, TrendingUp, Calendar, Award, ChevronDown, ChevronUp, Download } from "lucide-react";
+import { useUser } from "@/lib/userContext";
 import CalendarView from "./CalendarView";
 
 interface StatsSummary {
@@ -82,6 +83,7 @@ function StatCard({ icon, label, value, sub }: { icon: React.ReactNode; label: s
 }
 
 export default function StatsView({ userId, userName, onClose }: { userId: number; userName?: string; onClose: () => void }) {
+  const { user } = useUser();
   const [data, setData] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAllWeights, setShowAllWeights] = useState(false);
@@ -94,6 +96,23 @@ export default function StatsView({ userId, userName, onClose }: { userId: numbe
       .then(d => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, [userId]);
+
+  const handleExport = () => {
+    const a = document.createElement('a');
+    a.href = `/api/stats/${userId}/export`;
+    a.setAttribute('x-user-id', String(user?.id ?? 0));
+    // Use fetch to include auth header, then trigger download
+    fetch(`/api/stats/${userId}/export`, { headers: { 'x-user-id': String(user?.id ?? 0) } })
+      .then(r => r.blob())
+      .then(blob => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `stats_${userName ?? 'mis_stats'}_${new Date().toISOString().slice(0, 10)}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+      });
+  };
 
   const s = data?.summary;
   const totalHours = s ? (s.total_duration_s / 3600).toFixed(1) : '0';
@@ -138,6 +157,12 @@ export default function StatsView({ userId, userName, onClose }: { userId: numbe
           style={{ padding: '0.5rem', color: 'var(--accent-primary)', background: 'rgba(232,245,233,0.08)', border: '1px solid rgba(232,245,233,0.15)', borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex' }}
           title="Ver calendario">
           <Calendar size={18} />
+        </button>
+        {/* Botón exportar CSV */}
+        <button onClick={handleExport}
+          style={{ padding: '0.5rem', color: 'var(--accent-primary)', background: 'rgba(232,245,233,0.08)', border: '1px solid rgba(232,245,233,0.15)', borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex' }}
+          title="Exportar CSV">
+          <Download size={18} />
         </button>
         {data && data.streak > 1 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(251,146,60,0.15)', border: '1px solid rgba(251,146,60,0.3)', borderRadius: 'var(--radius-sm)', padding: '0.3rem 0.6rem' }}>
