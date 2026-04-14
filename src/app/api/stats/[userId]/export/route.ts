@@ -101,7 +101,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ user
     ].map(esc).join(','));
   }
 
-  const csv = '\uFEFF' + lines.join('\r\n'); // BOM for Excel UTF-8
+  const csv = '\uFEFF' + 'sep=,\r\n' + lines.join('\r\n'); // BOM for Excel UTF-8
   const filename = `stats_${(targetUser?.name ?? uid).toString().replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.csv`;
 
   return new NextResponse(csv, {
