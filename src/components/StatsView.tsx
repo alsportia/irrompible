@@ -63,11 +63,11 @@ function fmtShortDate(iso: string): string {
 }
 
 function getFeelingColor(score: number | null): string {
-  if (!score) return 'var(--text-secondary)';
-  if (score >= 80) return '#10b981';
-  if (score >= 60) return '#3b82f6';
-  if (score >= 40) return '#f59e0b';
-  return '#ef4444';
+  if (score === null || score === undefined) return 'var(--text-secondary)';
+  if (score >= 80) return '#10b981'; // verde  — Excelente / Bien
+  if (score >= 60) return '#3b82f6'; // azul   — Normal
+  if (score >= 40) return '#f59e0b'; // naranja — Duro
+  return '#ef4444';                  // rojo   — Muy Duro
 }
 
 function StatCard({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: string; sub?: string }) {
