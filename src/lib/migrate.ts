@@ -1,3 +1,4 @@
+import bcrypt from 'bcryptjs';
 import { DB } from './db';
 
 async function addColumnIfNotExists(table: string, column: string, definition: string): Promise<void> {
@@ -21,10 +22,11 @@ async function renameColumnIfExists(table: string, oldName: string, newName: str
 }
 
 export async function runMigrations(): Promise<void> {
-  // 1. Users: email, role, status
+  // 1. Users: email, role, status, password_hash
   await addColumnIfNotExists('users', 'email', 'TEXT');
   await addColumnIfNotExists('users', 'role', "TEXT NOT NULL DEFAULT 'user'");
   await addColumnIfNotExists('users', 'status', "TEXT NOT NULL DEFAULT 'active'");
+  await addColumnIfNotExists('users', 'password_hash', 'TEXT');
 
   // 2. Programs table
   await DB.run(`
@@ -226,11 +228,22 @@ export async function runMigrations(): Promise<void> {
       )
   `);
 
-  // ── 20. Ensure at least one admin user exists ─────────────────────────────
-  // Uses ADMIN_NAME / ADMIN_EMAIL env vars (fallback to defaults if not set).
-  // Safe to run on every boot: INSERT OR IGNORE won't duplicate if email exists.
+  // ── 20. Set default password (name) for users without password_hash ────────
+  const usersWithoutPassword = await DB.query<{ users_id: number; name: string }>(
+    `SELECT users_id, name FROM users WHERE password_hash IS NULL`
+  );
+  for (const u of usersWithoutPassword) {
+    const hash = await bcrypt.hash(u.name, 10);
+    await DB.run(`UPDATE users SET password_hash = ? WHERE users_id = ?`, [hash, u.users_id]);
+  }
+  if (usersWithoutPassword.length > 0) {
+    console.log(`[migrate] Set default password (name) for ${usersWithoutPassword.length} user(s)`);
+  }
+
+  // ── 21. Ensure at least one admin user exists ─────────────────────────────
   const adminName = process.env.ADMIN_NAME ?? 'Admin';
   const adminEmail = process.env.ADMIN_EMAIL ?? 'admin@unbreakable.app';
+  const adminPassword = process.env.ADMIN_PASSWORD ?? 'admin1234';
 
   const existingAdmin = await DB.get(
     `SELECT users_id FROM users WHERE role = 'admin' LIMIT 1`
@@ -238,10 +251,11 @@ export async function runMigrations(): Promise<void> {
 
   if (!existingAdmin) {
     console.log(`[migrate] No admin found — creating default admin (${adminEmail})`);
+    const hash = await bcrypt.hash(adminPassword, 10);
     const result = await DB.run(
-      `INSERT OR IGNORE INTO users (name, email, role, status) VALUES (?, ?, 'admin', 'active')`,
-      [adminName, adminEmail]
+      `INSERT OR IGNORE INTO users (name, email, role, status, password_hash) VALUES (?, ?, 'admin', 'active', ?)`,
+      [adminName, adminEmail, hash]
     );
-    console.log(`[migrate] Admin created with users_id=${result.id} — use this ID to log in`);
+    console.log(`[migrate] Admin created with users_id=${result.id}`);
   }
 }

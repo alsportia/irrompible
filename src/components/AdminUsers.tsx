@@ -25,6 +25,7 @@ export default function AdminUsers() {
   const [modal, setModal] = useState<ModalState>(null);
   const [formName, setFormName] = useState('');
   const [formEmail, setFormEmail] = useState('');
+  const [formPassword, setFormPassword] = useState('');
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -62,16 +63,18 @@ export default function AdminUsers() {
   const toggleExpand = (userId: number) =>
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, expanded: !u.expanded } : u));
 
-  const openCreate = () => { setFormName(''); setFormEmail(''); setFormError(''); setModal({ type: 'create' }); };
-  const openEdit = (u: UserRow) => { setFormName(u.name); setFormEmail(u.email); setFormError(''); setModal({ type: 'edit', user: u }); };
+  const openCreate = () => { setFormName(''); setFormEmail(''); setFormPassword(''); setFormError(''); setModal({ type: 'create' }); };
+  const openEdit = (u: UserRow) => { setFormName(u.name); setFormEmail(u.email); setFormPassword(''); setFormError(''); setModal({ type: 'edit', user: u }); };
   const openDelete = (u: UserRow) => { setFormError(''); setModal({ type: 'delete', user: u }); };
 
   const handleCreate = async () => {
     if (!formName.trim() || !formEmail.trim()) { setFormError('Nombre y email son obligatorios'); return; }
+    if (!formPassword.trim()) { setFormError('La contraseña es obligatoria'); return; }
+    if (formPassword.length < 6) { setFormError('La contraseña debe tener al menos 6 caracteres'); return; }
     setSaving(true); setFormError('');
     const res = await fetch('/api/admin/users', {
       method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: formName, email: formEmail }),
+      body: JSON.stringify({ name: formName, email: formEmail, password: formPassword }),
     });
     const data = await res.json();
     setSaving(false);
@@ -82,10 +85,11 @@ export default function AdminUsers() {
   const handleEdit = async () => {
     if (modal?.type !== 'edit') return;
     if (!formName.trim() || !formEmail.trim()) { setFormError('Nombre y email son obligatorios'); return; }
+    if (formPassword && formPassword.length < 6) { setFormError('La contraseña debe tener al menos 6 caracteres'); return; }
     setSaving(true); setFormError('');
     const res = await fetch(`/api/admin/users/${modal.user.id}`, {
       method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: formName, email: formEmail }),
+      body: JSON.stringify({ name: formName, email: formEmail, password: formPassword || undefined }),
     });
     const data = await res.json();
     setSaving(false);
@@ -225,6 +229,12 @@ export default function AdminUsers() {
                   <div>
                     <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>Email</label>
                     <input type="email" value={formEmail} onChange={e => setFormEmail(e.target.value)} placeholder="correo@ejemplo.com" style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.3rem' }}>
+                      {modal.type === 'create' ? 'Contraseña' : 'Nueva contraseña (dejar vacío para no cambiar)'}
+                    </label>
+                    <input type="password" value={formPassword} onChange={e => setFormPassword(e.target.value)} placeholder="Mínimo 6 caracteres" style={inputStyle} />
                   </div>
                 </div>
                 {formError && <p style={{ color: 'var(--danger)', fontSize: '0.8rem', margin: 0 }}>{formError}</p>}
