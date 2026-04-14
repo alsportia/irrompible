@@ -72,15 +72,15 @@ function createTursoClient(): DbClient {
 
   return {
     async query<T>(sql: string, params: unknown[] = []): Promise<T[]> {
-      const result = await client.execute({ sql, args: params });
+      const result = await client.execute({ sql, args: params as import('@libsql/client').InArgs });
       return result.rows as unknown as T[];
     },
     async get<T>(sql: string, params: unknown[] = []): Promise<T | undefined> {
-      const result = await client.execute({ sql, args: params });
+      const result = await client.execute({ sql, args: params as import('@libsql/client').InArgs });
       return (result.rows[0] ?? undefined) as unknown as T | undefined;
     },
     async run(sql: string, params: unknown[] = []): Promise<{ id: number; changes: number }> {
-      const result = await client.execute({ sql, args: params });
+      const result = await client.execute({ sql, args: params as import('@libsql/client').InArgs });
       return {
         id: Number(result.lastInsertRowid ?? 0),
         changes: result.rowsAffected,
