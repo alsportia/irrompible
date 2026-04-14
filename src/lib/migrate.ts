@@ -225,4 +225,23 @@ export async function runMigrations(): Promise<void> {
         SELECT 1 FROM user_programs upr WHERE upr.users_id = u.users_id
       )
   `);
+
+  // ── 20. Ensure at least one admin user exists ─────────────────────────────
+  // Uses ADMIN_NAME / ADMIN_EMAIL env vars (fallback to defaults if not set).
+  // Safe to run on every boot: INSERT OR IGNORE won't duplicate if email exists.
+  const adminName = process.env.ADMIN_NAME ?? 'Admin';
+  const adminEmail = process.env.ADMIN_EMAIL ?? 'admin@unbreakable.app';
+
+  const existingAdmin = await DB.get(
+    `SELECT users_id FROM users WHERE role = 'admin' LIMIT 1`
+  );
+
+  if (!existingAdmin) {
+    console.log(`[migrate] No admin found — creating default admin (${adminEmail})`);
+    const result = await DB.run(
+      `INSERT OR IGNORE INTO users (name, email, role, status) VALUES (?, ?, 'admin', 'active')`,
+      [adminName, adminEmail]
+    );
+    console.log(`[migrate] Admin created with users_id=${result.id} — use this ID to log in`);
+  }
 }
