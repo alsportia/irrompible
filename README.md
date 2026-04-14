@@ -168,7 +168,7 @@ Las migraciones usan `ALTER TABLE ... RENAME COLUMN` (idempotente) para renombra
 
 ```sql
 -- Usuarios
-users (users_id PK, name, email UNIQUE, role DEFAULT 'user', status DEFAULT 'active', created_at)
+users (users_id PK, name, email UNIQUE, role DEFAULT 'user', status DEFAULT 'active', password_hash, created_at)
 
 -- Programas y acceso
 programs (programs_id PK, name UNIQUE, description, image_url)
@@ -247,13 +247,36 @@ La home **requiere** `?programId=X`. Sin él redirige a `/programs`.
 
 ## Autenticación y roles
 
-- Login por email (sin contraseña) en `LoginSelector` → `POST /api/auth/login`.
+- Login por **email + contraseña** en `LoginSelector` → `POST /api/auth/login`.
+- Las contraseñas se almacenan hasheadas con **bcrypt** en el campo `password_hash` de `users`.
 - Usuario guardado en `localStorage` como `{ id, name, email, role }`.
 - Al recargar, `GET /api/auth/validate` (header `x-user-id`) verifica que el usuario existe en DB. Si no, limpia el contexto.
 - Registro: `POST /api/auth/register` → estado `pending`. Un admin debe aprobar desde `/admin`.
 - `user` — acceso solo a sus programas asignados.
 - `admin` — acceso a todos los programas + panel de administración.
 - Rutas `/api/admin/*` protegidas con `requireAdmin()` que verifica `role = 'admin'` en BD (nunca confía en el cliente).
+
+### Contraseñas por defecto
+
+Al arrancar, la migración asigna automáticamente contraseñas a los usuarios que no tienen ninguna:
+- **Usuarios existentes sin contraseña**: su `name` se usa como contraseña inicial.
+- **Admin seed** (si no existe ningún admin): se crea con email `admin@unbreakable.app` y contraseña `admin1234`, configurables via variables de entorno `ADMIN_EMAIL`, `ADMIN_NAME` y `ADMIN_PASSWORD`.
+
+### Cambio de contraseña
+
+- **Usuario**: botón con icono de llave junto a "Cerrar sesión" en la pantalla de programas. Requiere introducir la contraseña actual.
+- **Admin**: desde el panel de gestión de usuarios, editar usuario → campo "Nueva contraseña" (dejar vacío para no cambiar).
+- No hay restricción de longitud mínima — se permite contraseña vacía.
+
+### Variables de entorno relevantes
+
+| Variable | Descripción | Valor por defecto |
+|---|---|---|
+| `ADMIN_EMAIL` | Email del admin seed | `admin@unbreakable.app` |
+| `ADMIN_NAME` | Nombre del admin seed | `Admin` |
+| `ADMIN_PASSWORD` | Contraseña del admin seed | `admin1234` |
+| `TURSO_DATABASE_URL` | URL de la BD Turso (producción) | — |
+| `TURSO_AUTH_TOKEN` | Token de autenticación Turso | — |
 
 ### Estados de usuario
 
@@ -271,9 +294,10 @@ La home **requiere** `?programId=X`. Sin él redirige a `/programs`.
 
 | Método | Ruta | Descripción |
 |---|---|---|
-| POST | `/api/auth/login` | Body: `{email}`. Devuelve `{id, name, email, role}` o 404 |
+| POST | `/api/auth/login` | Body: `{email, password}`. Devuelve `{id, name, email, role}` |
 | POST | `/api/auth/register` | Body: `{name, email, programIds[]}`. Crea usuario en estado `pending` |
 | GET | `/api/auth/validate` | Header `x-user-id`. Devuelve `{valid: true/false}` |
+| POST | `/api/auth/change-password` | Header `x-user-id`. Body: `{currentPassword, newPassword}` |
 
 ### Programas (usuario)
 
@@ -287,8 +311,8 @@ La home **requiere** `?programId=X`. Sin él redirige a `/programs`.
 | Método | Ruta | Descripción |
 |---|---|---|
 | GET | `/api/admin/users` | Lista todos los usuarios |
-| POST | `/api/admin/users` | Crea usuario. Body: `{name, email}` |
-| PATCH | `/api/admin/users/[id]` | Edita nombre/email |
+| POST | `/api/admin/users` | Crea usuario. Body: `{name, email, password}` |
+| PATCH | `/api/admin/users/[id]` | Edita nombre, email y opcionalmente contraseña. Body: `{name, email, password?}` |
 | DELETE | `/api/admin/users/[id]` | Elimina usuario |
 | PATCH | `/api/admin/users/[id]/role` | Body: `{role: 'admin'|'user'}` |
 | PATCH | `/api/admin/users/[id]/status` | Body: `{status: 'active'|'rejected'}` |
@@ -493,6 +517,24 @@ git push origin main
 ```
 
 Railway usa `nixpacks.toml` para la configuración del build. La BD persiste en el volumen montado en `/app/data`.
+
+---
+
+### Estadísticas
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/stats/[userId]` | Estadísticas completas del usuario (resumen, historial, músculos, pesos) |
+| GET | `/api/stats/[userId]/export` | Descarga CSV con historial completo. Header `x-user-id` requerido. Solo el propio usuario o un admin |
+| GET | `/api/admin/stats` | Estadísticas globales: ranking de usuarios, programas más usados, actividad semanal |
+
+### Formato del CSV exportado
+
+Una fila por serie realizada, con estas columnas:
+
+`Programa | Fecha | Sesión | Set | Ejercicio | Duración sesión | Repeticiones | Kilos | Tiempo ejercicio (s) | Energía | Sensación`
+
+El archivo incluye BOM UTF-8 y la directiva `sep=,` para compatibilidad con Excel en español.
 
 ---
 

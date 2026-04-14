@@ -43,3 +43,6 @@ next-env.d.ts
 # local database (will use Railway volume)
 /data/
 
+
+# Admin recovery — never commit
+../ADMIN_RECOVERY.md
