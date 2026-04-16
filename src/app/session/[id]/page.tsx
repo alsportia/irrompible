@@ -50,8 +50,16 @@ function normalizeSetNumbers(exercises: ExerciseRow[]): ExerciseRow[] {
   });
 }
 
-export default async function SessionPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function SessionPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ view?: string }>;
+}) {
   const { id } = await params;
+  const { view } = await searchParams;
+  const initialView = view === 'summary' ? 'summary' : 'energy';
 
   const [session] = await DB.query<SessionDetail>(
     "SELECT sessions_id as id, session_code, name, description, programs_id as program_id FROM sessions WHERE sessions_id = ?",
@@ -90,6 +98,7 @@ export default async function SessionPage({ params }: { params: Promise<{ id: st
         sessionDescription={session.description}
         programId={session.program_id}
         exercisesRaw={exercisesNormalized}
+        initialView={initialView}
       />
       <VideoPrefetcher videoUrls={videoUrls} />
     </>

@@ -38,26 +38,48 @@ function normalizeSetNumbers(exercises: ExerciseRow[]): ExerciseRow[] {
   });
 }
 
+function scaleTimeString(timeStr: string | null, pct: number): string | null {
+  if (!timeStr) return null;
+  const clean = timeStr.trim();
+  if (!clean) return timeStr;
+
+  // Parse using the same conventions as the client: 1' (minutes) and 30'' (seconds).
+  let seconds = 0;
+  if (clean.includes("'") && !clean.includes("''")) {
+    const val = parseInt(clean.replace("'", ""));
+    seconds = isNaN(val) ? 0 : val * 60;
+  } else if (clean.includes("''")) {
+    const val = parseInt(clean.replace("''", ""));
+    seconds = isNaN(val) ? 0 : val;
+  } else {
+    const val = parseInt(clean);
+    seconds = isNaN(val) ? 0 : val;
+  }
+
+  if (seconds <= 0) return timeStr;
+  const scaled = Math.max(5, Math.round(seconds * pct));
+  // Keep minutes format only if it stays a clean minute and original looked like minutes.
+  if (clean.includes("'") && !clean.includes("''") && scaled % 60 === 0) {
+    return `${scaled / 60}'`;
+  }
+  return `${scaled}''`;
+}
+
 function applyEnergy(exercises: ExerciseRow[], pct: number): ExerciseRow[] {
   if (pct >= 1) return exercises;
 
-  // Per block: keep only first ceil(maxSet * pct) set_numbers
-  const maxSetPerBlock = new Map<number, number>();
-  for (const ex of exercises) {
-    maxSetPerBlock.set(ex.set_id, Math.max(maxSetPerBlock.get(ex.set_id) ?? 0, ex.set_number));
-  }
-
   return exercises
-    .filter(ex => {
-      const maxSet = maxSetPerBlock.get(ex.set_id) ?? 1;
-      return ex.set_number <= Math.max(1, Math.round(maxSet * pct));
-    })
     .map(ex => {
+      let next = ex;
       if (ex.reps && ex.reps !== "0") {
         const n = parseInt(ex.reps);
-        if (!isNaN(n) && n > 1) return { ...ex, reps: String(Math.max(1, Math.round(n * pct))) };
+        if (!isNaN(n) && n > 1) next = { ...next, reps: String(Math.max(1, Math.round(n * pct))) };
       }
-      return ex;
+      if (ex.tiempo_ej) {
+        const scaled = scaleTimeString(ex.tiempo_ej, pct);
+        if (scaled && scaled !== ex.tiempo_ej) next = { ...next, tiempo_ej: scaled };
+      }
+      return next;
     });
 }
 

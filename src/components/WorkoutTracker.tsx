@@ -130,7 +130,7 @@ export default function WorkoutTracker({ sessionId, logId, userId, exercises, in
     setPesoMap(prev => ({ ...prev, [currentEx.ex_id]: val }));
   };
 
-  const { playCountdownBeep, playWarningBeep, playFinalBeep } = useBeep();
+  const { playCountdownBeep, playWarningBeep, playFinalBeep, playStartBeep } = useBeep();
   const startTime = useRef<number>(Date.now());
   const isAdvancingRef = useRef(false);
   const pesoMapRef = useRef(pesoMap);
@@ -162,9 +162,17 @@ export default function WorkoutTracker({ sessionId, logId, userId, exercises, in
     if (isFinished) return;
     setTimeElapsed(0);
     setTimeLeft(targetTime);
-    setIsActive(false);
-    setCountdown(5);
-    setIsCountingDown(true);
+    if (hasTimer) {
+      // Timed exercises start immediately (no countdown UI), but still give an audible start cue.
+      setIsCountingDown(false);
+      setCountdown(0);
+      setIsActive(true);
+      playStartBeep();
+    } else {
+      setIsActive(false);
+      setCountdown(5);
+      setIsCountingDown(true);
+    }
   }, [currentIndex, isFinished, targetTime]);
 
   useEffect(() => {
@@ -235,9 +243,6 @@ export default function WorkoutTracker({ sessionId, logId, userId, exercises, in
 
   const handlePrevious = () => {
     if (currentIndex > 0) {
-      setIsActive(false);
-      setIsCountingDown(true);
-      setCountdown(5);
       setCurrentIndex(prev => prev - 1);
     }
   };
@@ -249,7 +254,7 @@ export default function WorkoutTracker({ sessionId, logId, userId, exercises, in
       currentIndex: currentIndexRef.current,
       savedAt: Date.now(),
     }));
-    router.replace(`/session/${sessionId}`);
+    router.replace(`/session/${sessionId}?view=summary`);
   };
 
   const formatTime = (secs: number) => {
@@ -313,7 +318,7 @@ export default function WorkoutTracker({ sessionId, logId, userId, exercises, in
       const totalDuration = Math.floor((Date.now() - startTime.current) / 1000);
       await finishWorkoutLog(logId, totalDuration, selectedFeeling.score, selectedFeeling.label);
       localStorage.removeItem(`workout_progress_${sessionId}`);
-      router.replace(`/session/${sessionId}`);
+      router.replace(`/session/${sessionId}?view=summary`);
     };
 
     return (

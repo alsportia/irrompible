@@ -44,6 +44,7 @@ interface SessionClientProps {
   sessionDescription: string;
   programId: number;
   exercisesRaw: ExerciseRow[];
+  initialView?: "energy" | "summary";
 }
 
 const ENERGY_LEVELS = [
@@ -55,23 +56,45 @@ const ENERGY_LEVELS = [
 type EnergyLevel = typeof ENERGY_LEVELS[number];
 
 // Mirror of the server-side applyEnergy in workflow/[id]/page.tsx
+function scaleTimeString(timeStr: string | null, pct: number): string | null {
+  if (!timeStr) return null;
+  const clean = timeStr.trim();
+  if (!clean) return timeStr;
+
+  let seconds = 0;
+  if (clean.includes("'") && !clean.includes("''")) {
+    const val = parseInt(clean.replace("'", ""));
+    seconds = isNaN(val) ? 0 : val * 60;
+  } else if (clean.includes("''")) {
+    const val = parseInt(clean.replace("''", ""));
+    seconds = isNaN(val) ? 0 : val;
+  } else {
+    const val = parseInt(clean);
+    seconds = isNaN(val) ? 0 : val;
+  }
+
+  if (seconds <= 0) return timeStr;
+  const scaled = Math.max(5, Math.round(seconds * pct));
+  if (clean.includes("'") && !clean.includes("''") && scaled % 60 === 0) {
+    return `${scaled / 60}'`;
+  }
+  return `${scaled}''`;
+}
+
 function applyEnergy(exercises: ExerciseRow[], pct: number): ExerciseRow[] {
   if (pct >= 1) return exercises;
-  const maxSetPerBlock = new Map<number, number>();
-  exercises.forEach(e => {
-    maxSetPerBlock.set(e.set_id, Math.max(maxSetPerBlock.get(e.set_id) ?? 0, e.set_number));
-  });
   return exercises
-    .filter(ex => {
-      const maxSet = maxSetPerBlock.get(ex.set_id) ?? 1;
-      return ex.set_number <= Math.max(1, Math.round(maxSet * pct));
-    })
     .map(ex => {
+      let next = ex;
       if (ex.reps && ex.reps !== "0") {
         const n = parseInt(ex.reps);
-        if (!isNaN(n) && n > 1) return { ...ex, reps: String(Math.max(1, Math.round(n * pct))) };
+        if (!isNaN(n) && n > 1) next = { ...next, reps: String(Math.max(1, Math.round(n * pct))) };
       }
-      return ex;
+      if (ex.tiempo_ej) {
+        const scaled = scaleTimeString(ex.tiempo_ej, pct);
+        if (scaled && scaled !== ex.tiempo_ej) next = { ...next, tiempo_ej: scaled };
+      }
+      return next;
     });
 }
 
@@ -119,12 +142,13 @@ export default function SessionClient({
   sessionDescription,
   programId,
   exercisesRaw,
+  initialView = "energy",
 }: SessionClientProps) {
   const router = useRouter();
   const { user } = useUser();
 
   // "energy" = picking level, "summary" = showing adapted session
-  const [view, setView] = useState<"energy" | "summary">("energy");
+  const [view, setView] = useState<"energy" | "summary">(initialView);
   const [selectedEnergy, setSelectedEnergy] = useState<EnergyLevel>(ENERGY_LEVELS[0]);
   const [detailEx, setDetailEx] = useState<ExerciseDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
@@ -251,7 +275,7 @@ export default function SessionClient({
                   <div style={{ flex: 1 }}>
                     <div style={{ fontFamily: "var(--font-outfit)", fontWeight: 700, fontSize: "1rem", color: isSelected ? "#fff" : "var(--text-primary)" }}>{level.label}</div>
                     <div style={{ fontSize: "0.75rem", color: isSelected ? "rgba(255,255,255,0.8)" : "var(--text-secondary)" }}>
-                      {level.pct < 1 ? Math.round(level.pct * 100) + "% de reps y sets" : "Entrenamiento completo"}
+                      {level.pct < 1 ? Math.round(level.pct * 100) + "% de reps/tiempo" : "Entrenamiento completo"}
                     </div>
                   </div>
                   <div style={{ width: "1.25rem", height: "1.25rem", borderRadius: "50%", border: "2px solid " + level.color, background: level.color, boxShadow: "0 0 0 2px #fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
