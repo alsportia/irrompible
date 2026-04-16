@@ -163,7 +163,7 @@ export default function AdminPrograms() {
           <div style={{ background: "var(--bg-primary)", borderRadius: "var(--radius-lg)", padding: "1.5rem", maxWidth: 400, width: "90%", display: "flex", flexDirection: "column", gap: "1rem" }}>
             <h3 style={{ margin: 0, color: "var(--text-primary)" }}>Eliminar programa</h3>
             <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.875rem" }}>
-              ¿Seguro que quieres eliminar <strong>"{deleteTarget.name}"</strong> y todas sus sesiones? Esta acción no se puede deshacer.
+              ¿Seguro que quieres eliminar <strong>&quot;{deleteTarget.name}&quot;</strong> y todas sus sesiones? Esta acción no se puede deshacer.
             </p>
             <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
               <button onClick={() => setDeleteTarget(null)} style={{ padding: "0.5rem 1rem", background: "var(--bg-secondary)", color: "var(--text-primary)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-md)", cursor: "pointer" }}>

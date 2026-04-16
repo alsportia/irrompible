@@ -60,16 +60,19 @@ export async function POST(req: NextRequest) {
         if (Array.isArray(ses.blocks)) {
           for (const block of ses.blocks) {
             const setResult = await DB.run(
-              'INSERT INTO sets (sessions_id, description, block_label, block_type, num_sets, block_order) VALUES (?,?,?,?,?,?)',
-              [sessionId, block.description || null, block.block_label || null, block.block_type || 'normal', block.num_sets || 1, block.block_order || 1]
+              'INSERT INTO sets (sessions_id, description, block_label, block_type, block_order) VALUES (?,?,?,?,?)',
+              [sessionId, block.description || null, block.block_label || null, block.block_type || 'normal', block.block_order || 1]
             );
             const setId = setResult.id;
             if (Array.isArray(block.exercises)) {
-              for (const ex of block.exercises) {
-                await DB.run(
-                  'INSERT INTO set_exercises (set_id, exercises_id, ex_order, reps, tiempo_ej) VALUES (?,?,?,?,?)',
-                  [setId, ex.ex_id, ex.ex_order || 1, ex.reps || null, ex.tiempo_ej || null]
-                );
+              const numSets = Math.max(1, Number(block.num_sets) || 1);
+              for (let setNumber = 1; setNumber <= numSets; setNumber++) {
+                for (const ex of block.exercises) {
+                  await DB.run(
+                    'INSERT INTO set_exercises (set_id, set_number, exercises_id, ex_order, reps, tiempo_ej) VALUES (?,?,?,?,?,?)',
+                    [setId, setNumber, ex.ex_id, ex.ex_order || 1, ex.reps || null, ex.tiempo_ej || null]
+                  );
+                }
               }
             }
           }

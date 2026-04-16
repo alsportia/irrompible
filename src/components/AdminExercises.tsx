@@ -59,7 +59,10 @@ export default function AdminExercises({ headers }: Props) {
     setLoading(false);
   }, [page, search, headers]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    load();
+  }, [load]);
 
   const openCreate = () => {
     setFName(""); setFVideoUrl(""); setFVideoUrlYt(""); setFDesc(""); setFMuscles(""); setFJoints(""); setError("");

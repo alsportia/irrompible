@@ -8,11 +8,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ valid: false }, { status: 401 });
   }
 
-  const user = await DB.get<{ users_id: number }>('SELECT users_id FROM users WHERE users_id = ?', [userId]);
+  const user = await DB.get<{ id: number; name: string; email: string; role: string; status: string }>(
+    'SELECT users_id as id, name, email, role, status FROM users WHERE users_id = ?',
+    [userId]
+  );
 
-  if (user) {
-    return NextResponse.json({ valid: true }, { status: 200 });
+  if (!user) {
+    return NextResponse.json({ valid: false }, { status: 401 });
   }
 
-  return NextResponse.json({ valid: false }, { status: 401 });
+  if (user.status !== 'active') {
+    return NextResponse.json({ valid: false }, { status: 401 });
+  }
+
+  return NextResponse.json({ valid: true, user }, { status: 200 });
 }

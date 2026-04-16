@@ -18,7 +18,6 @@ const UserContext = createContext<UserContextType>({ user: null, setUser: () => 
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<User | null>(null);
-  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem('ub_user');
@@ -37,17 +36,19 @@ export function UserProvider({ children }: { children: ReactNode }) {
               setUserState(null);
               localStorage.removeItem('ub_user');
             } else {
-              setUserState(parsed);
+              // Refresh user fields from server so role/status updates propagate.
+              const serverUser = data.user as User | undefined;
+              const nextUser = serverUser && serverUser.id === parsed.id ? serverUser : parsed;
+              setUserState(nextUser);
+              localStorage.setItem('ub_user', JSON.stringify(nextUser));
             }
           })
           .catch(() => {
             setUserState(parsed);
           })
-          .finally(() => setLoaded(true));
         return;
       } catch {}
     }
-    setLoaded(true);
   }, []);
 
   const setUser = (u: User | null) => {
@@ -56,7 +57,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
     else localStorage.removeItem('ub_user');
   };
 
-  if (!loaded) return <>{children}</>;
   return <UserContext.Provider value={{ user, setUser }}>{children}</UserContext.Provider>;
 }
 

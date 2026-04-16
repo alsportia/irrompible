@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { videoCache } from '@/lib/videoCache';
 import { Download, Check } from 'lucide-react';
 
@@ -14,16 +14,12 @@ export default function VideoPrefetcher({ videoUrls }: VideoPrefetcherProps) {
   const [currentVideo, setCurrentVideo] = useState(0);
   const [totalVideos, setTotalVideos] = useState(0);
 
-  useEffect(() => {
-    prefetchVideos();
-  }, [videoUrls]);
-
-  const isYouTubeUrl = (url: string | null): boolean => {
+  const isYouTubeUrl = useCallback((url: string | null): boolean => {
     if (!url) return false;
     return url.includes('youtube.com') || url.includes('youtu.be');
-  };
+  }, []);
 
-  const prefetchVideos = async () => {
+  const prefetchVideos = useCallback(async () => {
     // Filter out null, YouTube URLs (can't cache), and get unique URLs
     const validUrls = Array.from(new Set(
       videoUrls.filter(url => url && !isYouTubeUrl(url))
@@ -59,7 +55,12 @@ export default function VideoPrefetcher({ videoUrls }: VideoPrefetcherProps) {
     }
 
     setIsPrefetching(false);
-  };
+  }, [isYouTubeUrl, videoUrls]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void prefetchVideos();
+  }, [prefetchVideos]);
 
   if (!isPrefetching) return null;
 

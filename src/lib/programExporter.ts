@@ -94,8 +94,11 @@ export async function exportProgramToExcel(programId: number): Promise<Buffer> {
 
   const sets = sessionIds.length
     ? await DB.query<SetRow>(
-        `SELECT set_id, sessions_id, description, block_label, block_type, num_sets, block_order
-         FROM sets WHERE sessions_id IN (${sessionIds.map(() => '?').join(',')})
+        `SELECT st.set_id, st.sessions_id, st.description, st.block_label, st.block_type,
+                COALESCE((SELECT MAX(se.set_number) FROM set_exercises se WHERE se.set_id = st.set_id), 1) as num_sets,
+                st.block_order
+         FROM sets st
+         WHERE st.sessions_id IN (${sessionIds.map(() => '?').join(',')})
          ORDER BY sessions_id, block_order`,
         sessionIds
       )
@@ -105,7 +108,8 @@ export async function exportProgramToExcel(programId: number): Promise<Buffer> {
   const setExercises = setIds.length
     ? await DB.query<SetExRow>(
         `SELECT set_exercise_id, set_id, exercises_id as ex_id, ex_order, reps, tiempo_ej
-         FROM set_exercises WHERE set_id IN (${setIds.map(() => '?').join(',')})
+         FROM set_exercises
+         WHERE set_id IN (${setIds.map(() => '?').join(',')}) AND set_number = 1
          ORDER BY set_id, ex_order`,
         setIds
       )

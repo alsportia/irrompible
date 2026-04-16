@@ -12,11 +12,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   const { id } = await params;
-  const result = await DB.run('UPDATE users SET role = ? WHERE id = ?', [role, id]);
+  const result = await DB.run('UPDATE users SET role = ? WHERE users_id = ?', [role, id]);
   if (result.changes === 0) {
     return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
   }
 
-  const user = await DB.get('SELECT id, name, email, role FROM users WHERE id = ?', [id]);
+  const user = await DB.get('SELECT users_id as id, name, email, role FROM users WHERE users_id = ?', [id]);
   return NextResponse.json(user);
 }

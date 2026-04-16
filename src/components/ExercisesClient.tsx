@@ -145,7 +145,7 @@ export default function ExercisesClient({ exercises }: Props) {
 
           {filtered.length === 0 && (
             <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-              Sin resultados para "{query}"
+              Sin resultados para &quot;{query}&quot;
             </div>
           )}
         </div>

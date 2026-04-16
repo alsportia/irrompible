@@ -18,7 +18,7 @@ async function getSessions(programId?: string): Promise<Session[]> {
       SELECT s.sessions_id as id, s.session_code, s.name, s.description,
              COALESCE((
                SELECT SUM(block_sets)
-               FROM (SELECT MAX(se.set_number) as block_sets
+               FROM (SELECT COUNT(DISTINCT se.set_number) as block_sets
                      FROM sets st JOIN set_exercises se ON se.set_id = st.set_id
                      WHERE st.sessions_id = s.sessions_id GROUP BY st.set_id)
              ), 0) as exerciseCount
@@ -32,7 +32,7 @@ async function getSessions(programId?: string): Promise<Session[]> {
     SELECT s.sessions_id as id, s.session_code, s.name, s.description,
            COALESCE((
              SELECT SUM(block_sets)
-             FROM (SELECT MAX(se.set_number) as block_sets
+             FROM (SELECT COUNT(DISTINCT se.set_number) as block_sets
                    FROM sets st JOIN set_exercises se ON se.set_id = st.set_id
                    WHERE st.sessions_id = s.sessions_id GROUP BY st.set_id)
            ), 0) as exerciseCount

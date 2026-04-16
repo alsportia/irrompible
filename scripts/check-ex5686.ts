@@ -14,7 +14,8 @@ const wb = XLSX.readFile(path.join(RECURSOS, 'Ring Master.xlsx'));
 const sheets = wb.SheetNames.filter((n: string) => n.toLowerCase().startsWith('ses'));
 
 // Collect all unique (ex_id, name, url) combos
-const combos = new Map<string, { exId: number; name: string; url: string; sessions: string[] }>();
+type Combo = { exId: number; name: string; url: string; sessions: string[] };
+const combos = new Map<string, Combo>();
 
 for (const s of sheets) {
   const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(wb.Sheets[s], { defval: '' });
@@ -33,10 +34,10 @@ for (const s of sheets) {
 }
 
 // Group by ex_id and find those with multiple names or multiple URLs
-const byExId = new Map<number, typeof combos extends Map<string, infer V> ? V[] : never[]>();
+const byExId = new Map<number, Combo[]>();
 for (const v of combos.values()) {
-  if (!byExId.has(v.exId)) byExId.set(v.exId, [] as any);
-  byExId.get(v.exId)!.push(v as any);
+  if (!byExId.has(v.exId)) byExId.set(v.exId, []);
+  byExId.get(v.exId)!.push(v);
 }
 
 let conflicts = 0;

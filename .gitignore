@@ -43,6 +43,11 @@ next-env.d.ts
 # local database (will use Railway volume)
 /data/
 
+# sqlite sidecar files
+*.db-wal
+*.db-shm
+*.db-journal
+
 
 # Admin recovery — never commit
 ../ADMIN_RECOVERY.md

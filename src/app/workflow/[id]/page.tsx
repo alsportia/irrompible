@@ -19,6 +19,25 @@ export interface ExerciseRow {
   video_url_yt: string | null;
 }
 
+function normalizeSetNumbers(exercises: ExerciseRow[]): ExerciseRow[] {
+  // Some legacy/migrated data may have set_number starting at 2 or with gaps.
+  // Normalize per block (set_id) to 1..N so energy scaling and UI behave consistently.
+  const mapBySetId = new Map<number, Map<number, number>>();
+  for (const ex of exercises) {
+    if (!mapBySetId.has(ex.set_id)) mapBySetId.set(ex.set_id, new Map());
+    mapBySetId.get(ex.set_id)!.set(ex.set_number, 0);
+  }
+  for (const [setId, mapping] of mapBySetId) {
+    const sorted = Array.from(mapping.keys()).sort((a, b) => a - b);
+    sorted.forEach((oldNum, idx) => mapping.set(oldNum, idx + 1));
+    mapBySetId.set(setId, mapping);
+  }
+  return exercises.map(ex => {
+    const newNum = mapBySetId.get(ex.set_id)?.get(ex.set_number);
+    return newNum ? { ...ex, set_number: newNum } : ex;
+  });
+}
+
 function applyEnergy(exercises: ExerciseRow[], pct: number): ExerciseRow[] {
   if (pct >= 1) return exercises;
 
@@ -72,7 +91,8 @@ export default async function WorkflowPage({
     return null;
   }
 
-  const exercises = applyEnergy(rawExercises, energyPct);
+  const normalized = normalizeSetNumbers(rawExercises);
+  const exercises = applyEnergy(normalized, energyPct);
 
   if (exercises.length === 0) {
     redirect(`/session/${id}?error=empty`);

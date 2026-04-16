@@ -8,6 +8,7 @@ import CachedVideo from "./CachedVideo";
 import { useBeep } from "@/lib/useBeep";
 
 interface ExerciseRow {
+  set_id: number;
   block: string;
   block_type: string | null;
   set_number: number;
@@ -114,7 +115,6 @@ export default function WorkoutTracker({ sessionId, logId, userId, exercises, in
   const [isActive, setIsActive] = useState(false);
   const [countdown, setCountdown] = useState(5);
   const [isCountingDown, setIsCountingDown] = useState(true);
-  const [feelingStep, setFeelingStep] = useState(false);
   const [selectedFeeling, setSelectedFeeling] = useState<typeof FEELINGS[number] | null>(null);
   const [saving, setSaving] = useState(false);
   const [pesoMap, setPesoMap] = useState<Record<number, number>>({});
@@ -132,6 +132,23 @@ export default function WorkoutTracker({ sessionId, logId, userId, exercises, in
 
   const { playCountdownBeep, playWarningBeep, playFinalBeep } = useBeep();
   const startTime = useRef<number>(Date.now());
+  const isAdvancingRef = useRef(false);
+  const pesoMapRef = useRef(pesoMap);
+  useEffect(() => { pesoMapRef.current = pesoMap; }, [pesoMap]);
+
+  const blockOrder = (() => {
+    const seen = new Set<number>();
+    const order: number[] = [];
+    for (const ex of exercises) {
+      if (!seen.has(ex.set_id)) {
+        seen.add(ex.set_id);
+        order.push(ex.set_id);
+      }
+    }
+    return order;
+  })();
+  const totalBlocks = blockOrder.length;
+  const currentBlockIndex = currentEx ? (blockOrder.indexOf(currentEx.set_id) + 1) : 0;
 
   // Load last used weight for each exercise on first encounter
   useEffect(() => {
@@ -182,7 +199,8 @@ export default function WorkoutTracker({ sessionId, logId, userId, exercises, in
       if (hasTimer) {
         setTimeLeft(prev => {
           if (prev <= 5 && prev > 1) playWarningBeep();
-          if (prev <= 1) { playFinalBeep(); handleNext(); return 0; }
+          if (prev === 1) { playFinalBeep(); void handleNext(); return 0; }
+          if (prev <= 0) return 0;
           return prev - 1;
         });
       } else {
@@ -193,18 +211,25 @@ export default function WorkoutTracker({ sessionId, logId, userId, exercises, in
   }, [isActive, isFinished, isCountingDown, hasTimer, currentEx]);
 
   const handleNext = async () => {
+    if (isAdvancingRef.current) return;
     const ex = currentExRef.current;
     if (!ex) return;
+    isAdvancingRef.current = true;
     setIsActive(false);
-    const timeToSave = hasTimer ? targetTime : timeElapsedRef.current;
-    await saveWorkoutSet(logId, ex.ex_id, ex.set_number, null, pesoMap[ex.ex_id] ?? 0, timeToSave);
-    if (currentIndexRef.current + 1 >= exercises.length) {
-      const totalDuration = Math.floor((Date.now() - startTime.current) / 1000);
-      await finishWorkoutLog(logId, totalDuration, 0, '');
-      localStorage.removeItem(`workout_progress_${sessionId}`);
-      setCurrentIndex(currentIndexRef.current + 1);
-    } else {
-      setCurrentIndex(prev => prev + 1);
+    try {
+      const exTargetTime = parseTimeToSeconds(ex.tiempo_ej);
+      const exHasTimer = exTargetTime > 0;
+      const timeToSave = exHasTimer ? exTargetTime : timeElapsedRef.current;
+      await saveWorkoutSet(logId, ex.ex_id, ex.set_number, null, pesoMapRef.current[ex.ex_id] ?? 0, timeToSave);
+      if (currentIndexRef.current + 1 >= exercises.length) {
+        // Finish after the user selects a feeling. This avoids double-finishing and
+        // lets the UI show the feeling selection immediately.
+        setCurrentIndex(currentIndexRef.current + 1);
+      } else {
+        setCurrentIndex(prev => prev + 1);
+      }
+    } finally {
+      isAdvancingRef.current = false;
     }
   };
 
@@ -236,12 +261,11 @@ export default function WorkoutTracker({ sessionId, logId, userId, exercises, in
   const uniqueVideoUrls = Array.from(
     new Map(exercises.filter(e => e.video_url || e.video_url_yt).map(e => [e.video_url ?? e.video_url_yt, { url: e.video_url, urlYt: e.video_url_yt, name: e.name }])).values()
   );
-  const totalBlocks = new Set(exercises.map(e => e.block)).size;
 
   // ── Countdown ────────────────────────────────────────────────────────────
   if (isCountingDown && !isFinished) {
     const cdCircumference = 2 * Math.PI * 120;
-    const maxSetInBlock = Math.max(...exercises.filter(e => e.block === currentEx.block).map(e => e.set_number));
+    const maxSetInBlock = Math.max(...exercises.filter(e => e.set_id === currentEx.set_id).map(e => e.set_number));
     return (
       <div style={S.screen} className="animate-fade-in">
         <div style={S.header}>
@@ -254,7 +278,7 @@ export default function WorkoutTracker({ sessionId, logId, userId, exercises, in
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', gap: '2rem' }}>
           <div style={{ textAlign: 'center' }}>
             <div style={S.badge}>
-              <span style={S.blockBadge}>Bloque {currentEx.block} de {totalBlocks}</span>
+              <span style={S.blockBadge}>Bloque {currentEx.block || currentBlockIndex} de {totalBlocks}</span>
               <span style={S.setBadge}>Set {currentEx.set_number} de {maxSetInBlock}</span>
             </div>
             <h2 style={S.exName}>{currentEx.name}</h2>
@@ -283,12 +307,6 @@ export default function WorkoutTracker({ sessionId, logId, userId, exercises, in
 
   // ── Finished — feeling selection ─────────────────────────────────────────
   if (isFinished) {
-    if (!feelingStep) {
-      // Auto-show feeling step
-      setTimeout(() => setFeelingStep(true), 0);
-      return null;
-    }
-
     const handleSaveFeeling = async () => {
       if (!selectedFeeling) return;
       setSaving(true);
@@ -336,7 +354,7 @@ export default function WorkoutTracker({ sessionId, logId, userId, exercises, in
   }
 
   // ── Workout ──────────────────────────────────────────────────────────────
-  const maxSetInBlock = Math.max(...exercises.filter(e => e.block === currentEx.block).map(e => e.set_number));
+  const maxSetInBlock = Math.max(...exercises.filter(e => e.set_id === currentEx.set_id).map(e => e.set_number));
 
   return (
     <div style={S.screen} className="animate-fade-in">
@@ -365,7 +383,7 @@ export default function WorkoutTracker({ sessionId, logId, userId, exercises, in
         <div style={S.infoArea}>
           <div>
             <div style={S.badge}>
-              <span style={S.blockBadge}>Bloque {currentEx.block} de {totalBlocks}</span>
+              <span style={S.blockBadge}>Bloque {currentEx.block || currentBlockIndex} de {totalBlocks}</span>
               <span style={S.setBadge}>Set {currentEx.set_number} de {maxSetInBlock}</span>
             </div>
             <h2 style={S.exName}>{currentEx.name}</h2>

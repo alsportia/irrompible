@@ -1,4 +1,4 @@
-import bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcryptjs';
 import { DB } from './db';
 
 async function addColumnIfNotExists(table: string, column: string, definition: string): Promise<void> {
@@ -118,6 +118,8 @@ export async function runMigrations(): Promise<void> {
       created_at       TEXT DEFAULT (datetime('now'))
     )
   `);
+  // Backward compat: older DBs used `date` instead of `created_at`.
+  await addColumnIfNotExists('workout_logs', 'created_at', "TEXT DEFAULT (datetime('now'))");
 
   // 11. Workout sets
   await DB.run(`

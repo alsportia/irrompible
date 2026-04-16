@@ -33,6 +33,23 @@ export interface ExerciseRow {
   harder_name: string | null;
 }
 
+function normalizeSetNumbers(exercises: ExerciseRow[]): ExerciseRow[] {
+  const mapBySetId = new Map<number, Map<number, number>>();
+  for (const ex of exercises) {
+    if (!mapBySetId.has(ex.set_id)) mapBySetId.set(ex.set_id, new Map());
+    mapBySetId.get(ex.set_id)!.set(ex.set_number, 0);
+  }
+  for (const [setId, mapping] of mapBySetId) {
+    const sorted = Array.from(mapping.keys()).sort((a, b) => a - b);
+    sorted.forEach((oldNum, idx) => mapping.set(oldNum, idx + 1));
+    mapBySetId.set(setId, mapping);
+  }
+  return exercises.map(ex => {
+    const newNum = mapBySetId.get(ex.set_id)?.get(ex.set_number);
+    return newNum ? { ...ex, set_number: newNum } : ex;
+  });
+}
+
 export default async function SessionPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
@@ -62,7 +79,8 @@ export default async function SessionPage({ params }: { params: Promise<{ id: st
     [id]
   );
 
-  const videoUrls = exercisesRaw.map(ex => ex.video_url);
+  const exercisesNormalized = normalizeSetNumbers(exercisesRaw);
+  const videoUrls = exercisesNormalized.map(ex => ex.video_url);
 
   return (
     <>
@@ -71,7 +89,7 @@ export default async function SessionPage({ params }: { params: Promise<{ id: st
         sessionName={session.name}
         sessionDescription={session.description}
         programId={session.program_id}
-        exercisesRaw={exercisesRaw}
+        exercisesRaw={exercisesNormalized}
       />
       <VideoPrefetcher videoUrls={videoUrls} />
     </>

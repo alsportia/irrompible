@@ -27,7 +27,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         set_id: number; block_label: string | null; block_type: string | null;
         num_sets: number; description: string | null; block_order: number;
       }>(
-        'SELECT set_id, block_label, block_type, num_sets, description, block_order FROM sets WHERE sessions_id = ? ORDER BY block_order',
+        `SELECT st.set_id, st.block_label, st.block_type, st.description, st.block_order,
+                COALESCE((SELECT MAX(se.set_number) FROM set_exercises se WHERE se.set_id = st.set_id), 1) as num_sets
+         FROM sets st
+         WHERE st.sessions_id = ?
+         ORDER BY st.block_order`,
         [s.id]
       );
 
@@ -38,7 +42,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
           }>(
             `SELECT se.set_exercise_id, se.exercises_id as ex_id, e.name as ex_name, se.ex_order, se.reps, se.tiempo_ej
              FROM set_exercises se JOIN exercises e ON se.exercises_id = e.exercises_id
-             WHERE se.set_id = ? ORDER BY se.ex_order`,
+             WHERE se.set_id = ? AND se.set_number = 1
+             ORDER BY se.ex_order`,
             [b.set_id]
           );
           return { ...b, exercises };
@@ -101,16 +106,19 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         if (Array.isArray(ses.blocks)) {
           for (const block of ses.blocks) {
             const setResult = await DB.run(
-              'INSERT INTO sets (sessions_id, description, block_label, block_type, num_sets, block_order) VALUES (?,?,?,?,?,?)',
-              [sessionId, block.description || null, block.block_label || null, block.block_type || 'normal', block.num_sets || 1, block.block_order || 1]
+              'INSERT INTO sets (sessions_id, description, block_label, block_type, block_order) VALUES (?,?,?,?,?)',
+              [sessionId, block.description || null, block.block_label || null, block.block_type || 'normal', block.block_order || 1]
             );
             const setId = setResult.id;
             if (Array.isArray(block.exercises)) {
-              for (const ex of block.exercises) {
-                await DB.run(
-                  'INSERT INTO set_exercises (set_id, exercises_id, ex_order, reps, tiempo_ej) VALUES (?,?,?,?,?)',
-                  [setId, ex.ex_id, ex.ex_order || 1, ex.reps || null, ex.tiempo_ej || null]
-                );
+              const numSets = Math.max(1, Number(block.num_sets) || 1);
+              for (let setNumber = 1; setNumber <= numSets; setNumber++) {
+                for (const ex of block.exercises) {
+                  await DB.run(
+                    'INSERT INTO set_exercises (set_id, set_number, exercises_id, ex_order, reps, tiempo_ej) VALUES (?,?,?,?,?,?)',
+                    [setId, setNumber, ex.ex_id, ex.ex_order || 1, ex.reps || null, ex.tiempo_ej || null]
+                  );
+                }
               }
             }
           }

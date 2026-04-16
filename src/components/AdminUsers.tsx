@@ -120,7 +120,7 @@ export default function AdminUsers() {
     const targetUser = users.find(u => u.id === userId);
     if (!targetUser) return;
     const currentIds = targetUser.programs.map(p => p.id);
-    let newIds = checked ? [...currentIds, programId] : currentIds.filter(id => id !== programId);
+    const newIds = checked ? [...currentIds, programId] : currentIds.filter(id => id !== programId);
     if (!checked && currentIds.length <= 1) {
       if (!window.confirm('¿Seguro que quieres quitar el último programa de este usuario?')) return;
     }

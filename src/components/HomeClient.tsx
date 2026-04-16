@@ -194,7 +194,7 @@ function SessionCard({ session, programId, done, highlight, onUnmark }: {
               overflow: 'hidden',
               display: '-webkit-box',
               WebkitLineClamp: 1,
-              WebkitBoxOrient: 'vertical' as any,
+              WebkitBoxOrient: 'vertical',
               opacity: done ? 0.7 : 1,
             }}>
               {session.description}

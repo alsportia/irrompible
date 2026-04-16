@@ -11,6 +11,33 @@ interface Props {
   onCancel: () => void;
 }
 
+type ApiProgramExercise = {
+  ex_id: number;
+  ex_name?: string | null;
+  ex_order?: number | null;
+  reps?: string | null;
+  tiempo_ej?: string | null;
+};
+type ApiProgramBlock = {
+  block_label?: string | null;
+  block_type?: BlockType | string | null;
+  num_sets?: number | null;
+  description?: string | null;
+  block_order?: number | null;
+  exercises?: ApiProgramExercise[] | null;
+};
+type ApiProgramSession = {
+  numero_sesion: number;
+  name?: string | null;
+  blocks?: ApiProgramBlock[] | null;
+};
+type ApiProgramResponse = {
+  name?: string | null;
+  description?: string | null;
+  image_url?: string | null;
+  sessions?: ApiProgramSession[] | null;
+};
+
 const BLOCK_TYPES: { value: BlockType; label: string }[] = [
   { value: "normal", label: "Normal" },
   { value: "circuit", label: "Circuito" },
@@ -79,26 +106,29 @@ export default function ProgramWizard({ headers, programId, onSaved, onCancel }:
     const programPromise = fetch(`/api/admin/programs/${programId}`, { headers }).then(r => r.json());
 
     Promise.all([catalogPromise, programPromise]).then(([catalog, data]) => {
+      const programData = data as ApiProgramResponse;
       setExercises(catalog);
-      setName(data.name ?? "");
-      setDescription(data.description ?? "");
-      setImageUrl(data.image_url ?? "");
+      setName(programData.name ?? "");
+      setDescription(programData.description ?? "");
+      setImageUrl(programData.image_url ?? "");
 
-      const loadedSessions: WizardSession[] = (data.sessions ?? []).map((s: any) => ({
+      const loadedSessions: WizardSession[] = (programData.sessions ?? []).map((s) => ({
         tempId: newTempId(),
         numero_sesion: s.numero_sesion,
         nombre_sesion: s.name ?? "",
-        blocks: (s.blocks ?? []).map((b: any) => ({
+        blocks: (s.blocks ?? []).map((b) => ({
           tempId: newTempId(),
           block_label: b.block_label ?? "A",
-          block_type: b.block_type ?? "normal",
+          block_type: (typeof b.block_type === "string" && BLOCK_TYPES.some(bt => bt.value === b.block_type)
+            ? (b.block_type as BlockType)
+            : "normal"),
           num_sets: b.num_sets ?? 1,
           description: b.description ?? "",
           block_order: b.block_order ?? 1,
-          exercises: (b.exercises ?? []).map((e: any) => ({
+          exercises: (b.exercises ?? []).map((e) => ({
             tempId: newTempId(),
             ex_id: e.ex_id,
-            ex_name: e.ex_name ?? catalog.find((c: ExerciseRow) => c.id === e.ex_id)?.name ?? "",
+            ex_name: e.ex_name ?? (catalog.find((c: ExerciseRow) => c.id === e.ex_id)?.name ?? ""),
             ex_order: e.ex_order ?? 1,
             reps: e.reps ?? "",
             tiempo_ej: e.tiempo_ej ?? "",

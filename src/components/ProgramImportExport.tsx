@@ -131,7 +131,7 @@ export default function ProgramImportExport({ headers, onImported }: Props) {
           <div style={{ background: "var(--bg-primary)", borderRadius: "var(--radius-lg)", padding: "1.5rem", maxWidth: 480, width: "90%", display: "flex", flexDirection: "column", gap: "1rem" }}>
             <h3 style={{ margin: 0, color: "var(--text-primary)" }}>Conflicto de nombre</h3>
             <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.875rem" }}>
-              Ya existe un programa llamado <strong>"{conflict.existingName}"</strong>. ¿Qué quieres hacer?
+              Ya existe un programa llamado <strong>&quot;{conflict.existingName}&quot;</strong>. ¿Qué quieres hacer?
             </p>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
