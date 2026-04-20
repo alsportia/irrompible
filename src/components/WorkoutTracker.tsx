@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Check, X, Timer as TimerIcon, Play, Pause, ChevronLeft, StopCircle } from "lucide-react";
-import { finishWorkoutLog, saveWorkoutSet, getLastWeight } from "@/app/actions";
+import { finishWorkoutLog, saveWorkoutSet, getLastWeight, getProgramIdFromSession } from "@/app/actions";
 import CachedVideo from "./CachedVideo";
 import { useBeep } from "@/lib/useBeep";
 
@@ -247,14 +247,22 @@ export default function WorkoutTracker({ sessionId, logId, userId, exercises, in
     }
   };
 
-  const handleAbandon = () => {
+  const handleAbandon = async () => {
     setIsActive(false);
     localStorage.setItem(`workout_progress_${sessionId}`, JSON.stringify({
       logId,
       currentIndex: currentIndexRef.current,
       savedAt: Date.now(),
     }));
-    router.replace(`/session/${sessionId}?view=summary`);
+    
+    // Get the program ID for this session and redirect to the program page
+    const programId = await getProgramIdFromSession(parseInt(sessionId));
+    if (programId) {
+      router.replace(`/?programId=${programId}`);
+    } else {
+      // Fallback to session summary if program ID not found
+      router.replace(`/session/${sessionId}?view=summary`);
+    }
   };
 
   const formatTime = (secs: number) => {
@@ -318,7 +326,15 @@ export default function WorkoutTracker({ sessionId, logId, userId, exercises, in
       const totalDuration = Math.floor((Date.now() - startTime.current) / 1000);
       await finishWorkoutLog(logId, totalDuration, selectedFeeling.score, selectedFeeling.label);
       localStorage.removeItem(`workout_progress_${sessionId}`);
-      router.replace(`/session/${sessionId}?view=summary`);
+      
+      // Get the program ID for this session and redirect to the program page
+      const programId = await getProgramIdFromSession(parseInt(sessionId));
+      if (programId) {
+        router.replace(`/?programId=${programId}`);
+      } else {
+        // Fallback to session summary if program ID not found
+        router.replace(`/session/${sessionId}?view=summary`);
+      }
     };
 
     return (

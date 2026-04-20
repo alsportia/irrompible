@@ -86,3 +86,11 @@ export async function getExerciseById(exId: number) {
   `, [exId]);
   return ex ?? null;
 }
+
+export async function getProgramIdFromSession(sessionId: number): Promise<number | null> {
+  const row = await DB.get<{ programs_id: number }>(
+    "SELECT programs_id FROM sessions WHERE sessions_id = ?",
+    [sessionId]
+  );
+  return row?.programs_id ?? null;
+}
