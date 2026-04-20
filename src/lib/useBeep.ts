@@ -42,5 +42,9 @@ export function useBeep() {
     playBeep(1200, 300); // Tono alto y largo para el final
   }, [playBeep]);
 
-  return { playCountdownBeep, playWarningBeep, playFinalBeep };
+  const playStartBeep = useCallback(() => {
+    playBeep(800, 200); // Tono medio para el inicio
+  }, [playBeep]);
+
+  return { playCountdownBeep, playWarningBeep, playFinalBeep, playStartBeep };
 }

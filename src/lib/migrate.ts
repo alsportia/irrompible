@@ -119,7 +119,9 @@ export async function runMigrations(): Promise<void> {
     )
   `);
   // Backward compat: older DBs used `date` instead of `created_at`.
-  await addColumnIfNotExists('workout_logs', 'created_at', "TEXT DEFAULT (datetime('now'))");
+  await addColumnIfNotExists('workout_logs', 'created_at', 'TEXT');
+  // For existing rows without created_at, set it to now
+  await DB.run(`UPDATE workout_logs SET created_at = datetime('now') WHERE created_at IS NULL`);
 
   // 11. Workout sets
   await DB.run(`
