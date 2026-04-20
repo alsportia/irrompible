@@ -1,7 +1,6 @@
 # Guía de Despliegue en Vercel
 
 ## Opción 1: Vercel + Turso (Recomendada - GRATIS)
-
 ### 1. Preparar Turso (Base de datos SQLite en la nube)
 
 ```bash
