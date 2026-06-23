@@ -338,36 +338,38 @@ export default function WorkoutTracker({ sessionId, logId, userId, exercises, in
     };
 
     return (
-      <div style={{ ...S.screen, padding: '1.25rem' }} className="animate-fade-in">
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '1rem' }}>
-          <div style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
-            <div style={{ width: '5rem', height: '5rem', borderRadius: '50%', background: 'rgba(16,185,129,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
-              <Check size={40} color="var(--success)" />
+      <div style={{ ...S.screen, padding: '1.25rem', overflow: 'hidden' }} className="animate-fade-in">
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'auto', paddingBottom: '1rem' }}>
+          <div style={{ textAlign: 'center', marginBottom: '0.75rem', flexShrink: 0 }}>
+            <div style={{ width: '4rem', height: '4rem', borderRadius: '50%', background: 'rgba(16,185,129,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.75rem' }}>
+              <Check size={32} color="var(--success)" />
             </div>
-            <h1 style={{ fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '1.75rem', letterSpacing: '-0.02em', marginBottom: '0.5rem' }}>¡Entrenamiento Completado!</h1>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>¿Cómo ha ido el entrenamiento?</p>
+            <h1 style={{ fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '1.5rem', letterSpacing: '-0.02em', marginBottom: '0.4rem' }}>¡Entrenamiento Completado!</h1>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>¿Cómo ha ido el entrenamiento?</p>
           </div>
 
-          {FEELINGS.map(f => {
-            const isSelected = selectedFeeling?.label === f.label;
-            return (
-              <button key={f.label} onClick={() => setSelectedFeeling(f)}
-                style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.875rem 1.25rem', borderRadius: 'var(--radius-md)', border: `2px solid ${isSelected ? f.color : 'var(--border-subtle)'}`, background: isSelected ? `${f.color}18` : 'var(--bg-secondary)', cursor: 'pointer', width: '100%', textAlign: 'left' as const, transition: 'all 0.15s ease' }}>
-                <span style={{ fontSize: '1.5rem', lineHeight: 1 }}>{f.emoji}</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '1rem', color: isSelected ? f.color : 'var(--text-primary)' }}>{f.label}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{f.score} puntos</div>
-                </div>
-                <div style={{ width: '1.25rem', height: '1.25rem', borderRadius: '50%', border: `2px solid ${isSelected ? f.color : 'var(--border-subtle)'}`, background: isSelected ? f.color : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  {isSelected && <Check size={10} color="#fff" strokeWidth={3} />}
-                </div>
-              </button>
-            );
-          })}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', flexShrink: 0 }}>
+            {FEELINGS.map(f => {
+              const isSelected = selectedFeeling?.label === f.label;
+              return (
+                <button key={f.label} onClick={() => setSelectedFeeling(f)}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', border: `2px solid ${isSelected ? f.color : 'var(--border-subtle)'}`, background: isSelected ? `${f.color}18` : 'var(--bg-secondary)', cursor: 'pointer', width: '100%', textAlign: 'left' as const, transition: 'all 0.15s ease', flexShrink: 0 }}>
+                  <span style={{ fontSize: '1.35rem', lineHeight: 1 }}>{f.emoji}</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontFamily: 'var(--font-outfit)', fontWeight: 700, fontSize: '0.95rem', color: isSelected ? f.color : 'var(--text-primary)' }}>{f.label}</div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{f.score} puntos</div>
+                  </div>
+                  <div style={{ width: '1.15rem', height: '1.15rem', borderRadius: '50%', border: `2px solid ${isSelected ? f.color : 'var(--border-subtle)'}`, background: isSelected ? f.color : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    {isSelected && <Check size={9} color="#fff" strokeWidth={3} />}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <button onClick={handleSaveFeeling} disabled={!selectedFeeling || saving} className="btn-primary glow"
-          style={{ width: '100%', padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: selectedFeeling ? 1 : 0.5 }}>
+          style={{ width: '100%', padding: '0.875rem', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: selectedFeeling ? 1 : 0.5, flexShrink: 0, marginTop: '0.75rem' }}>
           {saving ? 'Guardando...' : 'Guardar y Volver'}
         </button>
       </div>
