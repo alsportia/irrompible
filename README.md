@@ -546,3 +546,7 @@ El archivo incluye BOM UTF-8 y la directiva `sep=,` para compatibilidad con Exce
 - **Progresión de ejercicios**: cada ejercicio puede tener `easier_exercises_id` y `harder_exercises_id` para navegar entre variantes.
 - **Peso por ejercicio**: el último peso usado se recupera automáticamente al llegar a cada ejercicio.
 - **Reanudar sesión**: el progreso se guarda en `localStorage` (logId + índice actual) para reanudar si se interrumpe.
+
+
+
+--- Cambio para forzar deploy
