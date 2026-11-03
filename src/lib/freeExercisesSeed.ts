@@ -48,14 +48,16 @@ export async function seedFreeExercises(): Promise<void> {
     const rawGif = typeof item.gif_url === 'string' ? item.gif_url : '';
     const gifFile = rawGif ? rawGif.split('/').pop() : '';
     const gifUrl = gifFile ? `${DATASET_BASE}/videos/${gifFile}` : null;
+    // La imagen estática tiene el mismo nombre base que el GIF, en la carpeta images/
+    const imageUrl = gifUrl ? gifUrl.replace('/videos/', '/images/').replace(/\.gif$/, '.jpg') : null;
     const muscleGroup = Array.isArray(item.secondary_muscles)
       ? item.secondary_muscles.join(', ')
       : (typeof item.muscle_group === 'string' ? item.muscle_group : null);
 
     await DB.run(
       `INSERT OR IGNORE INTO free_exercises
-        (external_id, name, body_part, equipment, target, muscle_group, measure_type, gif_url, instructions, is_global, users_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NULL)`,
+        (external_id, name, body_part, equipment, target, muscle_group, measure_type, gif_url, image_url, instructions, is_global, users_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NULL)`,
       [
         item.id != null ? String(item.id) : null,
         name,
@@ -65,6 +67,7 @@ export async function seedFreeExercises(): Promise<void> {
         muscleGroup,
         measureType,
         gifUrl,
+        imageUrl,
         instructionsToText(item.instructions),
       ]
     );

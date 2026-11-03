@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
   if (!uid) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
 
   const rows = await DB.query<FreeExercise>(
-    `SELECT free_exercises_id as id, name, measure_type, body_part, is_global
+    `SELECT free_exercises_id as id, name, measure_type, body_part, is_global, image_url
      FROM free_exercises
      WHERE is_global = 1 OR users_id = ?
      ORDER BY is_global DESC, name COLLATE NOCASE ASC`,
