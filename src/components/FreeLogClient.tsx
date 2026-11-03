@@ -31,19 +31,19 @@ function ExercisePicker({ exercises, value, onChange }: { exercises: FreeExercis
       </button>
 
       {open && (
-        <div style={{ position: 'absolute', zIndex: 30, top: 'calc(100% + 0.3rem)', left: 0, right: 0, maxHeight: '18rem', display: 'flex', flexDirection: 'column', background: '#0f0f0f', border: '1px solid #262626', borderRadius: '0.75rem', boxShadow: '0 12px 30px rgba(0,0,0,0.6)', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', zIndex: 30, top: 'calc(100% + 0.3rem)', left: 0, right: 0, maxHeight: '18rem', display: 'flex', flexDirection: 'column', background: CARD_BG, border: `1px solid ${BORDER}`, borderRadius: '0.9rem', boxShadow: '0 12px 30px rgba(0,0,0,0.12)', overflow: 'hidden' }}>
           <input autoFocus placeholder="Buscar ejercicio" value={query} onChange={e => setQuery(e.target.value)}
-            style={{ ...input, border: 'none', borderBottom: '1px solid #262626', borderRadius: 0 }} />
+            style={{ ...input, border: 'none', borderBottom: `1px solid ${BORDER}`, borderRadius: 0 }} />
           <div style={{ overflowY: 'auto' }}>
-            {filtered.length === 0 && <p style={{ padding: '0.75rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Sin resultados</p>}
+            {filtered.length === 0 && <p style={{ padding: '0.75rem', fontSize: '0.85rem', color: TEXT_MUTED }}>Sin resultados</p>}
             {filtered.slice(0, 200).map(e => (
               <button key={e.id} type="button" onClick={() => { onChange(String(e.id)); setOpen(false); setQuery(""); }}
-                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.5rem 0.75rem', background: String(e.id) === value ? '#1f1f1f' : 'transparent', border: 'none', color: '#fff', cursor: 'pointer', textAlign: 'left', fontSize: '0.9rem' }}>
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.5rem 0.75rem', background: String(e.id) === value ? ACCENT_SOFT : 'transparent', border: 'none', color: TEXT, cursor: 'pointer', textAlign: 'left', fontSize: '0.9rem' }}>
                 <ExerciseThumb src={e.image_url} size={36} />
                 <span style={{ flex: 1 }}>{e.name}{e.is_global ? "" : " (mío)"}</span>
               </button>
             ))}
-            {filtered.length > 200 && <p style={{ padding: '0.5rem 0.75rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Escribe más para acotar la lista</p>}
+            {filtered.length > 200 && <p style={{ padding: '0.5rem 0.75rem', fontSize: '0.75rem', color: TEXT_MUTED }}>Escribe más para acotar la lista</p>}
           </div>
         </div>
       )}
@@ -63,7 +63,7 @@ function ExerciseThumb({ src, size }: { src: string | null; size: number }) {
       height={size}
       loading="lazy"
       onError={(e) => { (e.currentTarget as HTMLImageElement).src = GENERIC_IMAGE; }}
-      style={{ width: size, height: size, objectFit: 'cover', borderRadius: '0.5rem', background: '#0f0f0f', flexShrink: 0 }}
+      style={{ width: size, height: size, objectFit: 'cover', borderRadius: '0.5rem', background: '#f5f5f5', flexShrink: 0 }}
     />
   );
 }
@@ -87,30 +87,50 @@ interface ProgressRow {
   total_reps: number | null;
 }
 
-// Estilo A: fondo negro plano y tarjetas de color sólido (sin transparencia)
-const PAGE_BG = '#000';
-const CARD_BG = '#141414';
-const ACCENT = '#c6ff3d';
+// Paleta clara: fondo gris, tarjetas blancas y naranja como acento (medida en la referencia)
+const PAGE_BG = '#f2f2f2';
+const CARD_BG = '#ffffff';
+const TEXT = '#2b2b2b';
+const TEXT_MUTED = '#8a8a8a';
+const BORDER = '#d9d9d9';
+const ACCENT = '#ffa94d';
+const ACCENT_STRONG = '#f59f2b';
+const ACCENT_SOFT = '#fff1e0';
+const ACCENT_GRADIENT = 'linear-gradient(90deg, #ffd23f, #ffa94d)';
 
 const card: React.CSSProperties = {
   background: CARD_BG,
-  border: '1px solid #222',
-  borderRadius: '1.1rem',
-  padding: '1.1rem',
+  border: 'none',
+  borderRadius: '1.5rem',
+  padding: '1.25rem',
+  boxShadow: '0 1px 2px rgba(0,0,0,0.04), 0 6px 18px rgba(0,0,0,0.05)',
+  color: TEXT,
 };
 
 const input: React.CSSProperties = {
   width: '100%',
-  padding: '0.7rem 0.8rem',
-  borderRadius: '0.7rem',
-  border: '1px solid #2a2a2a',
-  background: '#0b0b0b',
-  color: '#fff',
+  padding: '0.7rem 0.9rem',
+  borderRadius: '0.8rem',
+  border: `1px solid ${BORDER}`,
+  background: '#f5f5f5',
+  color: TEXT,
   fontSize: '0.95rem',
-  colorScheme: 'dark',
+  colorScheme: 'light',
 };
 
-const optionStyle: React.CSSProperties = { background: '#111', color: '#fff' };
+const optionStyle: React.CSSProperties = { background: '#fff', color: TEXT };
+
+const label: React.CSSProperties = { fontSize: '0.8rem', color: TEXT_MUTED, fontWeight: 500 };
+
+const pill: React.CSSProperties = {
+  borderRadius: '999px',
+  padding: '0.35rem 0.85rem',
+  fontSize: '0.8rem',
+  fontWeight: 600,
+  background: ACCENT_SOFT,
+  color: ACCENT_STRONG,
+  border: 'none',
+};
 
 const LAST_COUNT_OPTIONS = [3, 5, 10, 20];
 
@@ -164,31 +184,56 @@ function rowsInPeriod(rows: ProgressRow[], period: Period, offset: number): Prog
   return rows.filter(r => r.session_date >= start && r.session_date <= end);
 }
 
-// Gráfica de líneas en SVG del mejor 1RM por día, dentro del periodo elegido
+// Gráfica de línea suave con relleno, estilo de referencia: mejor 1RM por día dentro del periodo
 function ProgressChart({ rows, period, offset }: { rows: ProgressRow[]; period: Period; offset: number }) {
   const points = rowsInPeriod(rows, period, offset).filter(r => r.best_one_rm != null);
   if (points.length < 2) {
-    return <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Necesitas al menos dos días con peso y repeticiones en este periodo.</p>;
+    return <p style={{ fontSize: '0.875rem', color: TEXT_MUTED }}>Necesitas al menos dos días con peso y repeticiones en este periodo.</p>;
   }
-  const W = 320, H = 160, P = 28;
+  const W = 320, H = 170, P = 28;
   const values = points.map(p => Number(p.best_one_rm));
-  const min = Math.min(...values), max = Math.max(...values);
-  const span = max - min || 1;
+  const max = Math.max(...values);
+  // Eje con margen para que la curva no toque los bordes
+  const lo = Math.floor(Math.min(...values) - 2), hi = Math.ceil(max + 2);
+  const span = hi - lo || 1;
   const x = (i: number) => P + (i * (W - 2 * P)) / (points.length - 1);
-  const y = (v: number) => H - P - ((v - min) / span) * (H - 2 * P);
-  const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(Number(p.best_one_rm)).toFixed(1)}`).join(' ');
+  const y = (v: number) => H - P - ((v - lo) / span) * (H - 2 * P);
+  const pts = points.map((p, i) => [x(i), y(Number(p.best_one_rm))] as const);
+
+  // Curva suave (Catmull-Rom convertida a Bézier cúbica)
+  const f = (n: number) => n.toFixed(1);
+  let line = `M${f(pts[0][0])},${f(pts[0][1])}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] ?? pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] ?? p2;
+    const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+    const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+    line += ` C${f(c1[0])},${f(c1[1])} ${f(c2[0])},${f(c2[1])} ${f(p2[0])},${f(p2[1])}`;
+  }
+  const last = pts[pts.length - 1], first = pts[0];
+  const area = `${line} L${f(last[0])},${H - P} L${f(first[0])},${H - P} Z`;
+  const grid = [0, 1, 2, 3].map(k => lo + (span * k) / 3);
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto' }}>
-      <line x1={P} y1={H - P} x2={W - P} y2={H - P} stroke="var(--border-subtle)" />
-      <text x={4} y={P} fontSize="10" fill="var(--text-secondary)">{max.toFixed(1)}</text>
-      <text x={4} y={H - P} fontSize="10" fill="var(--text-secondary)">{min.toFixed(1)}</text>
-      <path d={path} fill="none" stroke="var(--accent-primary)" strokeWidth="2" />
-      {points.map((p, i) => (
-        <circle key={p.session_date} cx={x(i)} cy={y(Number(p.best_one_rm))} r="3" fill="var(--accent-primary)" />
+      <defs>
+        <linearGradient id="free-area" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#ffd23f" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="#ffd23f" stopOpacity="0.02" />
+        </linearGradient>
+      </defs>
+      {grid.map(v => (
+        <g key={v}>
+          <line x1={P} y1={y(v)} x2={W - P} y2={y(v)} stroke={BORDER} strokeWidth="1" />
+          <text x={P - 6} y={y(v) + 3} fontSize="9" textAnchor="end" fill={TEXT_MUTED}>{v.toFixed(0)}</text>
+        </g>
       ))}
-      <text x={P} y={H - 6} fontSize="10" fill="var(--text-secondary)">{points[0].session_date}</text>
-      <text x={W - P} y={H - 6} fontSize="10" textAnchor="end" fill="var(--text-secondary)">{points[points.length - 1].session_date}</text>
+      <path d={area} fill="url(#free-area)" />
+      <path d={line} fill="none" stroke={ACCENT} strokeWidth="2.5" strokeLinecap="round" />
+      {pts.map(([cx, cy], i) => (
+        <circle key={points[i].session_date} cx={cx} cy={cy} r="3.5" fill="#fff" stroke={ACCENT_STRONG} strokeWidth="2" />
+      ))}
+      <text x={P} y={H - 6} fontSize="9" fill={TEXT_MUTED}>{points[0].session_date.slice(5)}</text>
+      <text x={W - P} y={H - 6} fontSize="9" textAnchor="end" fill={TEXT_MUTED}>{points[points.length - 1].session_date.slice(5)}</text>
     </svg>
   );
 }
@@ -296,17 +341,22 @@ export default function FreeLogClient() {
     setRefresh(n => n + 1);
   };
 
+  // El fondo gris cubre toda la pantalla; el contenido va en una columna centrada
   return (
-    <main style={{ minHeight: '100dvh', background: PAGE_BG, color: '#fff', maxWidth: '28rem', margin: '0 auto', padding: '2rem 1.25rem 4rem', display: 'flex', flexDirection: 'column', gap: '1rem' }} className="animate-fade-in">
+    <div style={{ minHeight: '100dvh', background: PAGE_BG }}>
+    <main style={{ minHeight: '100dvh', color: TEXT, maxWidth: '28rem', margin: '0 auto', padding: '2rem 1.1rem 4rem', display: 'flex', flexDirection: 'column', gap: '1rem' }} className="animate-fade-in">
       <header style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-        <Link href="/programs" style={{ width: '2.5rem', height: '2.5rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#141414', border: '1px solid #222', color: '#bbb' }}>
+        <Link href="/programs" style={{ width: '2.5rem', height: '2.5rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: CARD_BG, color: TEXT_MUTED, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
           <ChevronLeft size={20} />
         </Link>
-        <h1 className="heading-display" style={{ fontSize: '1.75rem' }}>Registro libre</h1>
+        <div>
+          <p style={{ fontSize: '0.8rem', color: TEXT_MUTED, margin: 0 }}>Progresión libre</p>
+          <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: ACCENT_STRONG, margin: 0, lineHeight: 1.1 }}>Registro libre</h1>
+        </div>
       </header>
 
       <section style={card}>
-        <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Ejercicio</label>
+        <label style={{ fontSize: '0.8rem', color: TEXT_MUTED }}>Ejercicio</label>
         <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.35rem' }}>
           <ExercisePicker exercises={exercises} value={exerciseId} onChange={setExerciseId} />
           {exerciseId && !exercises.find(e => String(e.id) === exerciseId)?.is_global && (
@@ -323,7 +373,7 @@ export default function FreeLogClient() {
         {selectedExercise && (
           <img src={selectedExercise.image_url ?? GENERIC_IMAGE} alt={selectedExercise.name}
             onError={(e) => { (e.currentTarget as HTMLImageElement).src = GENERIC_IMAGE; }}
-            style={{ display: 'block', width: '100%', height: 'auto', maxHeight: '14rem', objectFit: 'contain', borderRadius: '0.8rem', marginTop: '0.75rem', background: '#0b0b0b' }} />
+            style={{ display: 'block', width: '100%', height: 'auto', maxHeight: '14rem', objectFit: 'contain', borderRadius: '0.8rem', marginTop: '0.75rem', background: '#f5f5f5' }} />
         )}
 
         {showNew && (
@@ -347,7 +397,7 @@ export default function FreeLogClient() {
           <input style={input} type="number" inputMode="numeric" placeholder="Tiempo empleado (segundos), opcional" value={duration} onChange={e => setDuration(e.target.value)} />
           <input style={input} placeholder="Notas, opcional" value={notes} onChange={e => setNotes(e.target.value)} />
           <button onClick={saveSet} disabled={saving || !exerciseId}
-            style={{ ...input, background: exerciseId ? 'var(--accent-primary)' : 'var(--glass-bg)', color: exerciseId ? '#000' : 'var(--text-secondary)', fontWeight: 600, cursor: exerciseId ? 'pointer' : 'not-allowed', border: 'none' }}>
+            style={{ ...input, background: exerciseId ? ACCENT_GRADIENT : '#ececec', color: exerciseId ? '#fff' : TEXT_MUTED, fontWeight: 700, cursor: exerciseId ? 'pointer' : 'not-allowed', border: 'none', borderRadius: '999px', padding: '0.85rem' }}>
             {saving ? "Guardando..." : exerciseId ? "Guardar serie" : "Elige un ejercicio para guardar"}
           </button>
         </div>
@@ -358,20 +408,20 @@ export default function FreeLogClient() {
       {exerciseId && (
         <section style={card}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Últimas series</p>
+            <p style={{ fontSize: '0.8rem', color: TEXT_MUTED }}>Últimas series</p>
             <select value={lastCount} onChange={e => setLastCount(Number(e.target.value))} style={{ ...input, width: 'auto', padding: '0.3rem 0.5rem', fontSize: '0.8rem' }}>
               {LAST_COUNT_OPTIONS.map(n => <option key={n} value={n} style={optionStyle}>{n}</option>)}
             </select>
           </div>
           {sets.length === 0 && <p style={{ fontSize: '0.875rem' }}>Todavía no hay series de este ejercicio.</p>}
           {sets.slice(0, lastCount).map(s => (
-            <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', borderBottom: '1px solid var(--border-subtle)', fontSize: '0.875rem' }}>
+            <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', borderBottom: `1px solid ${BORDER}`, fontSize: '0.875rem' }}>
               <span>{s.session_date}{s.session_time ? ` ${s.session_time}` : ""}</span>
               <span style={{ textAlign: 'right' }}>
                 {s.reps != null ? `${s.reps} reps` : ""}
                 {s.duration_seconds != null ? ` · ${s.duration_seconds}s` : ""}
                 {s.weight_kg > 0 ? ` · ${s.weight_kg} kg` : ""}
-                {s.one_rm != null ? <><br /><span style={{ color: 'var(--accent-primary)' }}>1RM ≈ {s.one_rm} kg</span></> : null}
+                {s.one_rm != null ? <><br /><span style={{ color: ACCENT_STRONG, fontWeight: 700 }}>1RM ≈ {s.one_rm} kg</span></> : null}
               </span>
             </div>
           ))}
@@ -380,7 +430,7 @@ export default function FreeLogClient() {
 
       {exerciseId && (
         <section style={card}>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+          <p style={{ fontSize: '0.8rem', color: TEXT_MUTED, marginBottom: '0.5rem' }}>
             Progreso de {exercises.find(e => String(e.id) === exerciseId)?.name}
           </p>
 
@@ -403,7 +453,7 @@ export default function FreeLogClient() {
           <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem' }}>
             {(["week", "month", "year"] as Period[]).map(p => (
               <button key={p} onClick={() => { setPeriod(p); setOffset(0); }}
-                style={{ ...input, width: 'auto', flex: 1, padding: '0.4rem 0', cursor: 'pointer', fontWeight: period === p ? 700 : 400, borderColor: period === p ? 'var(--accent-primary)' : 'var(--glass-border)' }}>
+                style={{ ...input, width: 'auto', flex: 1, padding: '0.4rem 0', cursor: 'pointer', fontWeight: period === p ? 700 : 400, background: period === p ? ACCENT_SOFT : '#fafafa', color: period === p ? ACCENT_STRONG : TEXT, borderColor: period === p ? ACCENT : BORDER }}>
                 {PERIOD_LABEL[p]}
               </button>
             ))}
@@ -411,7 +461,7 @@ export default function FreeLogClient() {
           {periodRows.length > 0 && (
             <table style={{ width: '100%', marginTop: '0.75rem', fontSize: '0.8rem', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ color: 'var(--text-secondary)', textAlign: 'left' }}>
+                <tr style={{ color: TEXT_MUTED, textAlign: 'left' }}>
                   <th style={{ padding: '0.3rem 0' }}>Fecha</th>
                   <th>1RM</th>
                   <th>Peso máx.</th>
@@ -421,7 +471,7 @@ export default function FreeLogClient() {
               </thead>
               <tbody>
                 {[...periodRows].sort((a, b) => b.session_date.localeCompare(a.session_date)).map(r => (
-                  <tr key={r.session_date} style={{ borderTop: '1px solid var(--border-subtle)' }}>
+                  <tr key={r.session_date} style={{ borderTop: `1px solid ${BORDER}` }}>
                     <td style={{ padding: '0.3rem 0' }}>{r.session_date}</td>
                     <td>{r.best_one_rm != null ? `${Number(r.best_one_rm).toFixed(1)} kg` : "—"}</td>
                     <td>{Number(r.max_weight) > 0 ? `${r.max_weight} kg` : "—"}</td>
@@ -436,5 +486,6 @@ export default function FreeLogClient() {
       )}
 
     </main>
+    </div>
   );
 }
