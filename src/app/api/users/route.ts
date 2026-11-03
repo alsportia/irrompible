@@ -1,4 +1,5 @@
 import { DB } from "@/lib/db";
+import { assignFreeProgram } from "@/lib/freeProgram";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
@@ -14,6 +15,7 @@ export async function POST(req: NextRequest) {
       "INSERT INTO users (name, email, role) VALUES (?, ?, 'user')",
       [name.trim(), email?.trim() ?? null]
     );
+    await assignFreeProgram(res.id);
     return NextResponse.json({ id: res.id, name: name.trim(), email: email?.trim() ?? null, role: 'user' });
   } catch {
     return NextResponse.json({ error: 'El usuario ya existe' }, { status: 409 });

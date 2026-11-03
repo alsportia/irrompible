@@ -244,6 +244,54 @@ export async function runMigrations(): Promise<void> {
     console.log(`[migrate] Set default password (name) for ${usersWithoutPassword.length} user(s)`);
   }
 
+  // ── 22. Registro libre: ejercicios y series propios de cada usuario ───────
+  await DB.run(`
+    CREATE TABLE IF NOT EXISTS free_exercises (
+      free_exercises_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      external_id       TEXT,
+      name              TEXT NOT NULL,
+      body_part         TEXT,
+      equipment         TEXT,
+      target            TEXT,
+      muscle_group      TEXT,
+      measure_type      TEXT NOT NULL DEFAULT 'reps' CHECK(measure_type IN ('reps','time')),
+      gif_url           TEXT,
+      instructions      TEXT,
+      is_global         INTEGER NOT NULL DEFAULT 0,
+      users_id          INTEGER REFERENCES users(users_id) ON DELETE CASCADE,
+      created_at        TEXT DEFAULT (datetime('now'))
+    )
+  `);
+  await DB.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_free_exercises_external ON free_exercises (external_id)`);
+
+  await DB.run(`
+    CREATE TABLE IF NOT EXISTS free_sets (
+      free_sets_id      INTEGER PRIMARY KEY AUTOINCREMENT,
+      users_id          INTEGER NOT NULL REFERENCES users(users_id) ON DELETE CASCADE,
+      free_exercises_id INTEGER NOT NULL REFERENCES free_exercises(free_exercises_id),
+      session_date      TEXT NOT NULL,
+      set_number        INTEGER NOT NULL DEFAULT 1,
+      weight_kg         REAL NOT NULL DEFAULT 0,
+      reps              INTEGER,
+      duration_seconds  INTEGER,
+      one_rm            REAL,
+      notes             TEXT,
+      created_at        TEXT DEFAULT (datetime('now'))
+    )
+  `);
+  await addColumnIfNotExists('free_sets', 'session_time', 'TEXT');
+  await DB.run(`CREATE INDEX IF NOT EXISTS idx_free_sets_user_date ON free_sets (users_id, session_date)`);
+
+  // ── 23. Programa "Registro libre": lo tienen todos los usuarios por defecto ──
+  await DB.run(`INSERT OR IGNORE INTO programs (name, description) VALUES ('Registro libre', 'Registra tus ejercicios y series sin plan')`);
+  await DB.run(`
+    INSERT OR IGNORE INTO user_programs (users_id, programs_id)
+    SELECT u.users_id, p.programs_id
+    FROM users u
+    CROSS JOIN programs p
+    WHERE p.name = 'Registro libre'
+  `);
+
   // ── 21. Ensure at least one admin user exists ─────────────────────────────
   const adminName = process.env.ADMIN_NAME ?? 'Admin';
   const adminEmail = process.env.ADMIN_EMAIL ?? 'admin@unbreakable.app';

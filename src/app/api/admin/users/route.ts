@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { requireAdmin } from '@/lib/adminAuth';
 import { DB } from '@/lib/db';
+import { assignFreeProgram } from '@/lib/freeProgram';
 
 export async function GET(req: NextRequest) {
   const auth = await requireAdmin(req);
@@ -33,6 +34,7 @@ export async function POST(req: NextRequest) {
     "INSERT INTO users (name, email, role, password_hash) VALUES (?, ?, 'user', ?)",
     [name.trim(), email.trim().toLowerCase(), hash]
   );
-  const user = await DB.get('SELECT users_id as id, name, email, role FROM users WHERE email = ?', [email.trim().toLowerCase()]);
+  const user = await DB.get<{ id: number }>('SELECT users_id as id, name, email, role FROM users WHERE email = ?', [email.trim().toLowerCase()]);
+  if (user) await assignFreeProgram(user.id);
   return NextResponse.json(user, { status: 201 });
 }

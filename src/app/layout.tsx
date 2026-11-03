@@ -4,9 +4,12 @@ import "./globals.css";
 import WakeLock from "@/components/WakeLock";
 import { UserProvider } from "@/lib/userContext";
 import { runMigrations } from "@/lib/migrate";
+import { seedFreeExercises } from "@/lib/freeExercisesSeed";
 
-// Run DB migrations on server startup (idempotent)
-runMigrations().catch((err) => console.error("Migration error:", err));
+// Run DB migrations on server startup (idempotent), then load the exercise dataset once
+runMigrations()
+  .then(() => seedFreeExercises())
+  .catch((err) => console.error("Migration/seed error:", err));
 
 const outfit = Outfit({
   subsets: ["latin"],
