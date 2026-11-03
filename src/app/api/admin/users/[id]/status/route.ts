@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/adminAuth';
 import { DB } from '@/lib/db';
+import { assignFreeProgram } from '@/lib/freeProgram';
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAdmin(req);
@@ -21,5 +22,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   await DB.run("UPDATE users SET status = 'active' WHERE users_id = ?", [id]);
+  await assignFreeProgram(Number(id));
   return NextResponse.json({ ok: true });
 }
