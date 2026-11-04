@@ -1,5 +1,6 @@
 "use client"
 
+import BottomBar from "./BottomBar";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, Eye, EyeOff, PlusCircle, Trash2 } from "lucide-react";
@@ -13,6 +14,7 @@ interface Item {
   id: number;
   name: string;
   name_es: string | null;
+  name_en: string | null;
   body_part: string | null;
   equipment: string | null;
   is_global: number;
@@ -33,12 +35,12 @@ export default function ExerciseEditor() {
 
   const load = async () => {
     if (!user) return;
-    const r = await fetch("/api/free/exercises?all=1", { headers });
+    const r = await fetch(`/api/free/exercises?all=1&lang=${lang}`, { headers });
     const d = await r.json();
     setItems(Array.isArray(d) ? d : []);
   };
 
-  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [user]);
+  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [user, lang]);
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -48,6 +50,17 @@ export default function ExerciseEditor() {
       return exerciseDisplayName(e, lang).toLowerCase().includes(q) || e.name.toLowerCase().includes(q);
     });
   }, [items, query, showHidden, lang]);
+
+  // Guarda la traducción de un nombre en un idioma. Vacío borra esa traducción.
+  const saveName = async (e: Item, which: "es" | "en", value: string) => {
+    const res = await fetch(`/api/free/exercises/${e.id}`, {
+      method: "PATCH", headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify({ text: value, lang: which }),
+    });
+    if (!res.ok) { const d = await res.json(); setError(d.error ?? "No se pudo guardar el nombre"); return; }
+    setError("");
+    load();
+  };
 
   const toggleHidden = async (e: Item) => {
     const res = await fetch(`/api/free/exercises/${e.id}`, {
@@ -105,6 +118,19 @@ export default function ExerciseEditor() {
                 <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {exerciseDisplayName(e, lang)}{e.is_global ? "" : " (mío)"}
                 </p>
+                {/* Nombres por idioma: se guardan al salir del campo, sin tocar el original del dataset */}
+                {e.is_global ? (
+                  <div style={{ display: 'grid', gap: '0.25rem', marginTop: '0.35rem' }}>
+                    {(["es", "en"] as const).map(which => (
+                      <label key={which} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.72rem', color: TEXT_MUTED }}>
+                        <span style={{ width: '1.6rem', fontWeight: 700 }}>{which.toUpperCase()}</span>
+                        <input defaultValue={(which === "es" ? e.name_es : e.name_en) ?? ""} placeholder={e.name}
+                          onBlur={ev => { const v = ev.target.value; const current = (which === "es" ? e.name_es : e.name_en) ?? ""; if (v !== current) saveName(e, which, v); }}
+                          style={{ ...input, padding: '0.3rem 0.5rem', fontSize: '0.8rem' }} />
+                      </label>
+                    ))}
+                  </div>
+                ) : null}
                 <p style={{ margin: 0, fontSize: '0.75rem', color: TEXT_MUTED }}>
                   {bodyPartLabel(e.body_part, lang)}{e.equipment ? ` · ${equipmentLabel(e.equipment, lang)}` : ""}
                 </p>
@@ -122,6 +148,7 @@ export default function ExerciseEditor() {
             </div>
           ))}
         </section>
+        <BottomBar />
       </main>
     </div>
   );

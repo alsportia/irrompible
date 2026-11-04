@@ -24,6 +24,24 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   const b = await req.json().catch(() => null);
+
+  // Traducción de un texto a un idioma: se guarda en i18n_texts. Vacío = borrar esa traducción.
+  if (typeof b?.text === "string" && typeof b?.lang === "string" && ["es", "en"].includes(b.lang)) {
+    const text = b.text.trim().slice(0, 200);
+    if (text) {
+      await DB.run(
+        `INSERT INTO i18n_texts (entity, entity_id, field, lang, text) VALUES ('exercise', ?, 'name', ?, ?)
+         ON CONFLICT(entity, entity_id, field, lang) DO UPDATE SET text = excluded.text`,
+        [exerciseId, b.lang, text]
+      );
+    } else {
+      await DB.run(
+        `DELETE FROM i18n_texts WHERE entity = 'exercise' AND entity_id = ? AND field = 'name' AND lang = ?`,
+        [exerciseId, b.lang]
+      );
+    }
+  }
+
   if (typeof b?.hidden === "boolean") {
     await DB.run(`UPDATE free_exercises SET hidden = ? WHERE free_exercises_id = ?`, [b.hidden ? 1 : 0, exerciseId]);
   }

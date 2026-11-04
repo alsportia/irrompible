@@ -20,13 +20,19 @@ function instructionsToText(raw: unknown): string | null {
   return null;
 }
 
-// Rellena name_es de los globales que aún no lo tienen (idempotente, se repite sin efecto)
+// Traducciones al castellano de los globales: el diccionario de reglas solo rellena lo que aún no tenga
+// traducción en i18n_texts (idempotente; el borrador se revisa desde el editor de ejercicios)
 export async function fillSpanishNames(): Promise<void> {
   const rows = await DB.query<{ free_exercises_id: number; name: string }>(
-    `SELECT free_exercises_id, name FROM free_exercises WHERE is_global = 1 AND name_es IS NULL`
+    `SELECT x.free_exercises_id, x.name FROM free_exercises x
+     WHERE x.is_global = 1
+       AND NOT EXISTS (SELECT 1 FROM i18n_texts t WHERE t.entity = 'exercise' AND t.entity_id = x.free_exercises_id AND t.field = 'name' AND t.lang = 'es')`
   );
   for (const r of rows) {
-    await DB.run(`UPDATE free_exercises SET name_es = ? WHERE free_exercises_id = ?`, [translateExerciseName(r.name), r.free_exercises_id]);
+    await DB.run(
+      `INSERT OR IGNORE INTO i18n_texts (entity, entity_id, field, lang, text) VALUES ('exercise', ?, 'name', 'es', ?)`,
+      [r.free_exercises_id, translateExerciseName(r.name)]
+    );
   }
 }
 

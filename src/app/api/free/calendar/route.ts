@@ -1,5 +1,6 @@
 import { DB } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
+import { langFromRequest, textsFor } from "@/lib/i18n/texts";
 
 export interface CalendarDay {
   session_date: string;
@@ -40,5 +41,8 @@ export async function GET(req: NextRequest) {
      ORDER BY fs.session_date ASC, x.name COLLATE NOCASE ASC`,
     [uid, month]
   );
-  return NextResponse.json(rows);
+  // El nombre llega ya en el idioma pedido, resuelto en la tabla de traducciones
+  const lang = langFromRequest(req);
+  const names = await textsFor("exercise", [...new Set(rows.map(r => r.exercise_id))], "name", lang);
+  return NextResponse.json(rows.map(r => ({ ...r, exercise_name: names.get(r.exercise_id) ?? r.exercise_name })));
 }

@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { CalendarDays, ChevronLeft, ChevronRight, Dumbbell, NotebookPen, Pencil, PlusCircle, Repeat, Settings, Timer, Trash2, X } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Dumbbell, NotebookPen, Pencil, PlusCircle, Repeat, Timer, Trash2, X } from "lucide-react";
 import { useUser } from "@/lib/userContext";
 import { useLang } from "@/lib/i18n/LangContext";
 import { exerciseDisplayName, bodyPartLabel, equipmentLabel } from "@/lib/i18n/exerciseLabels";
 import LoginSelector from "./LoginSelector";
+import BottomBar from "./free/BottomBar";
 
 interface FreeExercise {
   id: number;
@@ -284,7 +285,7 @@ function ProgressChart({ rows, period, offset }: { rows: ProgressRow[]; period: 
 
 export default function FreeLogClient() {
   const { user } = useUser();
-  const { lang, setLang } = useLang();
+  const { lang } = useLang();
   const [exercises, setExercises] = useState<FreeExercise[]>([]);
   const [sets, setSets] = useState<FreeSet[]>([]);
   const [exerciseId, setExerciseId] = useState<string>("");
@@ -309,11 +310,11 @@ export default function FreeLogClient() {
 
   const loadExercises = async () => {
     if (!user) return;
-    const ex = await fetch("/api/free/exercises", { headers }).then(r => r.json());
+    const ex = await fetch(`/api/free/exercises?lang=${lang}`, { headers }).then(r => r.json());
     setExercises(Array.isArray(ex) ? ex : []);
   };
 
-  useEffect(() => { loadExercises(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [user]);
+  useEffect(() => { loadExercises(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [user, lang]);
 
   // Series y progreso solo del ejercicio elegido; se recargan al guardar una serie
   useEffect(() => { setOffset(0); }, [exerciseId]);
@@ -424,30 +425,6 @@ export default function FreeLogClient() {
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontSize: '0.8rem', color: TEXT_MUTED, margin: 0 }}>{user.name}</p>
           <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: ACCENT_STRONG, margin: 0, lineHeight: 1.1 }}>Entrenamiento libre</h1>
-        </div>
-        <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
-          <button onClick={() => setLang(lang === "es" ? "en" : "es")} aria-label="Cambiar idioma de los ejercicios" title="Idioma de los ejercicios"
-            style={{ height: '2.5rem', minWidth: '2.5rem', padding: '0 0.6rem', borderRadius: '999px', background: CARD_BG, color: TEXT, border: 'none', boxShadow: '0 1px 3px rgba(0,0,0,0.08)', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer' }}>
-            {lang === "es" ? "ES" : "EN"}
-          </button>
-          <Link href="/libre/editar" aria-label="Editar ejercicios" title="Editar ejercicios"
-            style={{ width: '2.5rem', height: '2.5rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: CARD_BG, color: TEXT, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-            <Settings size={20} />
-          </Link>
-          <Link href="/libre/ejercicios" aria-label="Mis ejercicios" title="Mis ejercicios"
-            style={{ width: '2.5rem', height: '2.5rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: CARD_BG, color: TEXT, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <rect x="3" y="12" width="4" height="8" rx="0.5" fill={ACCENT} stroke="none" />
-              <rect x="10" y="8" width="4" height="12" rx="0.5" fill={ACCENT} stroke="none" />
-              <rect x="17" y="4" width="4" height="16" rx="0.5" fill={ACCENT} stroke="none" />
-              <path d="M3 10 L9 6 L14 9 L21 3" />
-              <path d="M16 3 L21 3 L21 8" />
-            </svg>
-          </Link>
-          <Link href="/libre/calendario" aria-label="Calendario" title="Calendario"
-            style={{ width: '2.5rem', height: '2.5rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: CARD_BG, color: TEXT, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-            <CalendarDays size={20} />
-          </Link>
         </div>
       </header>
 
@@ -612,6 +589,7 @@ export default function FreeLogClient() {
         </section>
       )}
 
+      <BottomBar />
     </main>
     </div>
   );

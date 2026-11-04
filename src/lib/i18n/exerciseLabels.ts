@@ -29,13 +29,9 @@ export const EQUIPMENT_LABELS: Record<string, string> = {
   "medicine ball": "Balón medicinal",
 };
 
-// Nombre a mostrar de un ejercicio: el castellano si existe y el idioma es "es"; si no, el original.
-// Los ejercicios propios no tienen traducción y siempre muestran el nombre que escribió el usuario.
-export function exerciseDisplayName(
-  ex: { name: string; name_es?: string | null; is_global?: number },
-  lang: Lang = "es"
-): string {
-  if (lang === "es" && ex.is_global && ex.name_es) return ex.name_es;
+// El nombre ya llega traducido desde la API (tabla i18n_texts, en el idioma pedido).
+// El cliente no traduce: solo muestra lo que recibe.
+export function exerciseDisplayName(ex: { name: string }, _lang?: Lang): string {
   return ex.name;
 }
 
