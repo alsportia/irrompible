@@ -3,7 +3,7 @@
 import BottomBar from "./BottomBar";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, Eye, EyeOff, PlusCircle, Trash2 } from "lucide-react";
+import { ChevronLeft, Eye, EyeOff, Pencil, PlusCircle, Trash2 } from "lucide-react";
 import { useUser } from "@/lib/userContext";
 import { useLang } from "@/lib/i18n/LangContext";
 import { exerciseDisplayName, bodyPartLabel, equipmentLabel } from "@/lib/i18n/exerciseLabels";
@@ -13,8 +13,6 @@ import { PAGE_BG, CARD_BG, TEXT, TEXT_MUTED, ACCENT_STRONG, BORDER, card, input 
 interface Item {
   id: number;
   name: string;
-  name_es: string | null;
-  name_en: string | null;
   body_part: string | null;
   equipment: string | null;
   is_global: number;
@@ -28,8 +26,13 @@ export default function ExerciseEditor() {
   const { lang } = useLang();
   const [items, setItems] = useState<Item[]>([]);
   const [query, setQuery] = useState("");
+  const [bodyFilter, setBodyFilter] = useState("");
+  const [equipFilter, setEquipFilter] = useState("");
   const [showHidden, setShowHidden] = useState(true);
   const [error, setError] = useState("");
+  // Fila con el nombre en edición (id) y el texto que se está escribiendo
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [draft, setDraft] = useState("");
 
   const headers = user ? { "x-user-id": String(user.id) } : undefined;
 
@@ -42,20 +45,38 @@ export default function ExerciseEditor() {
 
   useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [user, lang]);
 
+  // Sin filtro ni búsqueda no se muestra nada: así la lista no aparece entera de golpe
+  const hasCriteria = !!query.trim() || !!bodyFilter || !!equipFilter;
+
   const visible = useMemo(() => {
+    if (!hasCriteria) return [];
     const q = query.trim().toLowerCase();
     return items.filter(e => {
       if (!showHidden && e.hidden) return false;
+      if (bodyFilter && e.body_part !== bodyFilter) return false;
+      if (equipFilter && e.equipment !== equipFilter) return false;
       if (!q) return true;
       return exerciseDisplayName(e, lang).toLowerCase().includes(q) || e.name.toLowerCase().includes(q);
     });
-  }, [items, query, showHidden, lang]);
+  }, [items, query, bodyFilter, equipFilter, showHidden, lang, hasCriteria]);
 
-  // Guarda la traducción de un nombre en un idioma. Vacío borra esa traducción.
-  const saveName = async (e: Item, which: "es" | "en", value: string) => {
+  // Valores que existen de verdad, para no ofrecer filtros vacíos
+  const bodyOptions = useMemo(() => [...new Set(items.map(e => e.body_part).filter((v): v is string => !!v))].sort(), [items]);
+  const equipOptions = useMemo(() => [...new Set(items.map(e => e.equipment).filter((v): v is string => !!v))].sort(), [items]);
+
+  const startEdit = (e: Item) => {
+    setEditingId(e.id);
+    setDraft(exerciseDisplayName(e, lang));
+  };
+
+  // Guarda solo el nombre del idioma activo. Dejar vacío borra esa traducción (vuelve al inglés).
+  const commitEdit = async (e: Item) => {
+    const current = exerciseDisplayName(e, lang);
+    setEditingId(null);
+    if (draft.trim() === current) return;
     const res = await fetch(`/api/free/exercises/${e.id}`, {
       method: "PATCH", headers: { ...headers, "Content-Type": "application/json" },
-      body: JSON.stringify({ text: value, lang: which }),
+      body: JSON.stringify({ text: draft, lang }),
     });
     if (!res.ok) { const d = await res.json(); setError(d.error ?? "No se pudo guardar el nombre"); return; }
     setError("");
@@ -101,6 +122,18 @@ export default function ExerciseEditor() {
 
         <section style={card}>
           <input placeholder="Buscar ejercicio" value={query} onChange={e => setQuery(e.target.value)} style={input} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem', marginTop: '0.6rem' }}>
+            <select value={bodyFilter} onChange={e => setBodyFilter(e.target.value)} aria-label="Filtrar por zona del cuerpo"
+              style={{ ...input, padding: '0.45rem 0.5rem', fontSize: '0.8rem' }}>
+              <option value="">Todas las zonas</option>
+              {bodyOptions.map(v => <option key={v} value={v}>{bodyPartLabel(v, lang)}</option>)}
+            </select>
+            <select value={equipFilter} onChange={e => setEquipFilter(e.target.value)} aria-label="Filtrar por equipo"
+              style={{ ...input, padding: '0.45rem 0.5rem', fontSize: '0.8rem' }}>
+              <option value="">Todo el equipo</option>
+              {equipOptions.map(v => <option key={v} value={v}>{equipmentLabel(v, lang)}</option>)}
+            </select>
+          </div>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem', fontSize: '0.85rem', color: TEXT_MUTED }}>
             <input type="checkbox" checked={showHidden} onChange={e => setShowHidden(e.target.checked)} />
             Mostrar ocultos
@@ -109,32 +142,35 @@ export default function ExerciseEditor() {
         </section>
 
         <section style={{ ...card, padding: '0.5rem 1rem' }}>
-          {visible.length === 0 && <p style={{ padding: '0.75rem 0', fontSize: '0.9rem' }}>Sin resultados.</p>}
+          {!hasCriteria && <p style={{ padding: '0.75rem 0', fontSize: '0.9rem', color: TEXT_MUTED }}>Busca un ejercicio o elige una zona o equipo para verlos.</p>}
+          {hasCriteria && visible.length === 0 && <p style={{ padding: '0.75rem 0', fontSize: '0.9rem' }}>Sin resultados.</p>}
           {visible.map(e => (
             <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.6rem 0', borderBottom: `1px solid ${BORDER}`, opacity: e.hidden ? 0.5 : 1 }}>
               <img src={e.image_url ?? "/exercise-placeholder.svg"} alt="" loading="lazy"
                 style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: '0.5rem', background: '#f5f5f5', flexShrink: 0 }} />
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {exerciseDisplayName(e, lang)}{e.is_global ? "" : " (mío)"}
-                </p>
-                {/* Nombres por idioma: se guardan al salir del campo, sin tocar el original del dataset */}
-                {e.is_global ? (
-                  <div style={{ display: 'grid', gap: '0.25rem', marginTop: '0.35rem' }}>
-                    {(["es", "en"] as const).map(which => (
-                      <label key={which} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.72rem', color: TEXT_MUTED }}>
-                        <span style={{ width: '1.6rem', fontWeight: 700 }}>{which.toUpperCase()}</span>
-                        <input defaultValue={(which === "es" ? e.name_es : e.name_en) ?? ""} placeholder={e.name}
-                          onBlur={ev => { const v = ev.target.value; const current = (which === "es" ? e.name_es : e.name_en) ?? ""; if (v !== current) saveName(e, which, v); }}
-                          style={{ ...input, padding: '0.3rem 0.5rem', fontSize: '0.8rem' }} />
-                      </label>
-                    ))}
-                  </div>
-                ) : null}
+                {editingId === e.id ? (
+                  // Edición: solo el nombre del idioma activo. Enter o salir del campo guarda; Escape cancela.
+                  <input autoFocus value={draft} onChange={ev => setDraft(ev.target.value)}
+                    onBlur={() => commitEdit(e)}
+                    onKeyDown={ev => { if (ev.key === "Enter") (ev.target as HTMLInputElement).blur(); if (ev.key === "Escape") setEditingId(null); }}
+                    placeholder={e.name}
+                    style={{ ...input, padding: '0.3rem 0.5rem', fontSize: '0.85rem' }} />
+                ) : (
+                  <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {exerciseDisplayName(e, lang)}{e.is_global ? "" : " (mío)"}
+                  </p>
+                )}
                 <p style={{ margin: 0, fontSize: '0.75rem', color: TEXT_MUTED }}>
                   {bodyPartLabel(e.body_part, lang)}{e.equipment ? ` · ${equipmentLabel(e.equipment, lang)}` : ""}
                 </p>
               </div>
+              {editingId !== e.id && e.is_global ? (
+                <button onClick={() => startEdit(e)} aria-label="Editar nombre" title="Editar nombre"
+                  style={{ background: 'none', border: 'none', color: TEXT_MUTED, cursor: 'pointer', padding: '0.3rem', display: 'flex' }}>
+                  <Pencil size={16} />
+                </button>
+              ) : null}
               <button onClick={() => toggleHidden(e)} aria-label={e.hidden ? "Mostrar" : "Ocultar"} title={e.hidden ? "Mostrar en la lista" : "Ocultar de la lista"}
                 style={{ background: 'none', border: 'none', color: TEXT_MUTED, cursor: 'pointer', padding: '0.3rem', display: 'flex' }}>
                 {e.hidden ? <Eye size={18} /> : <EyeOff size={18} />}
