@@ -45,11 +45,8 @@ export default function ExerciseEditor() {
 
   useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [user, lang]);
 
-  // Sin filtro ni búsqueda no se muestra nada: así la lista no aparece entera de golpe
-  const hasCriteria = !!query.trim() || !!bodyFilter || !!equipFilter;
-
+  // Sin búsqueda ni filtros se listan todos; cada criterio solo acota la lista
   const visible = useMemo(() => {
-    if (!hasCriteria) return [];
     const q = query.trim().toLowerCase();
     return items.filter(e => {
       if (!showHidden && e.hidden) return false;
@@ -58,7 +55,7 @@ export default function ExerciseEditor() {
       if (!q) return true;
       return exerciseDisplayName(e, lang).toLowerCase().includes(q) || e.name.toLowerCase().includes(q);
     });
-  }, [items, query, bodyFilter, equipFilter, showHidden, lang, hasCriteria]);
+  }, [items, query, bodyFilter, equipFilter, showHidden, lang]);
 
   // Valores que existen de verdad, para no ofrecer filtros vacíos
   const bodyOptions = useMemo(() => [...new Set(items.map(e => e.body_part).filter((v): v is string => !!v))].sort(), [items]);
@@ -142,8 +139,7 @@ export default function ExerciseEditor() {
         </section>
 
         <section style={{ ...card, padding: '0.5rem 1rem' }}>
-          {!hasCriteria && <p style={{ padding: '0.75rem 0', fontSize: '0.9rem', color: TEXT_MUTED }}>Busca un ejercicio o elige una zona o equipo para verlos.</p>}
-          {hasCriteria && visible.length === 0 && <p style={{ padding: '0.75rem 0', fontSize: '0.9rem' }}>Sin resultados.</p>}
+          {visible.length === 0 && <p style={{ padding: '0.75rem 0', fontSize: '0.9rem' }}>Sin resultados.</p>}
           {visible.map(e => (
             <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.6rem 0', borderBottom: `1px solid ${BORDER}`, opacity: e.hidden ? 0.5 : 1 }}>
               <img src={e.image_url ?? "/exercise-placeholder.svg"} alt="" loading="lazy"
