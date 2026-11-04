@@ -123,7 +123,7 @@ export default function ProgramSelector() {
             programs.map(program => (
               <div key={program.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <button
-                  onClick={() => router.push(program.name === 'Registro libre' ? '/libre' : `/?programId=${program.id}`)}
+                  onClick={() => router.push(program.slug === 'free-log' ? '/libre' : `/?programId=${program.id}`)}
                   className="btn-primary glow"
                   style={{ flex: 1, padding: '0.875rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                 >

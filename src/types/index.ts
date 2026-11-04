@@ -3,6 +3,7 @@ import type { User } from "@/lib/userContext";
 export interface Program {
   id: number;
   name: string;
+  slug?: string | null;
   description?: string | null;
   image_url?: string | null;
 }
