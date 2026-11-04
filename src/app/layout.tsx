@@ -3,12 +3,15 @@ import { Geist, Geist_Mono, Outfit } from "next/font/google";
 import "./globals.css";
 import WakeLock from "@/components/WakeLock";
 import { UserProvider } from "@/lib/userContext";
+import { LangProvider } from "@/lib/i18n/LangContext";
 import { runMigrations } from "@/lib/migrate";
-import { seedFreeExercises } from "@/lib/freeExercisesSeed";
+import { seedFreeExercises, fillSpanishNames } from "@/lib/freeExercisesSeed";
 
 // Run DB migrations on server startup (idempotent), then load the exercise dataset once
+// and fill the Spanish names of global exercises that do not have them yet
 runMigrations()
   .then(() => seedFreeExercises())
+  .then(() => fillSpanishNames())
   .catch((err) => console.error("Migration/seed error:", err));
 
 const outfit = Outfit({
@@ -54,7 +57,7 @@ export default function RootLayout({
     <html lang="es">
       <body className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable}`}>
         <WakeLock />
-        <UserProvider>{children}</UserProvider>
+        <UserProvider><LangProvider>{children}</LangProvider></UserProvider>
       </body>
     </html>
   );

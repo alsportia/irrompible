@@ -1,5 +1,8 @@
 "use client"
 
+import BottomBar from "./BottomBar";
+import { useLang } from "@/lib/i18n/LangContext";
+import { exerciseDisplayName } from "@/lib/i18n/exerciseLabels";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
@@ -25,14 +28,15 @@ const GENERIC_IMAGE = "/exercise-placeholder.svg";
 // Una tarjeta por ejercicio entrenado: último registro y 1RM de ese día
 export default function ExercisesOverview() {
   const { user } = useUser();
+  const { lang } = useLang();
   const [items, setItems] = useState<Summary[] | null>(null);
 
   useEffect(() => {
     if (!user) return;
-    fetch("/api/free/summary", { headers: { "x-user-id": String(user.id) } })
+    fetch(`/api/free/summary?lang=${lang}`, { headers: { "x-user-id": String(user.id) } })
       .then(r => r.json())
       .then(d => setItems(Array.isArray(d) ? d : []));
-  }, [user]);
+  }, [user, lang]);
 
   if (!user) return <LoginSelector />;
 
@@ -62,7 +66,7 @@ export default function ExercisesOverview() {
               onError={(e) => { (e.currentTarget as HTMLImageElement).src = GENERIC_IMAGE; }}
               style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: '0.7rem', background: '#f5f5f5', flexShrink: 0 }} />
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontWeight: 700, fontSize: '0.95rem', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</p>
+              <p style={{ fontWeight: 700, fontSize: '0.95rem', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{exerciseDisplayName(s, lang)}</p>
               <p style={{ fontSize: '0.78rem', color: TEXT_MUTED, margin: '0.2rem 0 0' }}>
                 Último: {s.last_date}{s.last_time ? ` ${s.last_time}` : ""}
               </p>
@@ -81,6 +85,7 @@ export default function ExercisesOverview() {
             </div>
           </Link>
         ))}
+        <BottomBar />
       </main>
     </div>
   );

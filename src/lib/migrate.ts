@@ -283,6 +283,35 @@ export async function runMigrations(): Promise<void> {
   // Imagen del ejercicio. Los globales la reciben del dataset; los propios quedan a NULL y usan un icono genérico.
   // Se deja como columna propia para poder personalizarla más adelante.
   await addColumnIfNotExists('free_exercises', 'image_url', 'TEXT');
+  // Nombre en castellano (solo globales, lo rellena el diccionario), ocultar en la lista,
+  // y la imagen propia subida por el usuario (data URL redimensionada, guardada en la base)
+  await addColumnIfNotExists('free_exercises', 'name_es', 'TEXT');
+  // Tabla de traducciones genérica: una fila por texto, entidad, campo e idioma.
+  // Sirve para cualquier texto de la app, no solo para ejercicios.
+  await DB.run(`
+    CREATE TABLE IF NOT EXISTS i18n_texts (
+      entity     TEXT NOT NULL,
+      entity_id  INTEGER NOT NULL,
+      field      TEXT NOT NULL,
+      lang       TEXT NOT NULL,
+      text       TEXT NOT NULL,
+      PRIMARY KEY (entity, entity_id, field, lang)
+    )
+  `);
+  // El nombre original (inglés) de cada ejercicio pasa a la tabla como idioma 'en' (idempotente)
+  await DB.run(`
+    INSERT OR IGNORE INTO i18n_texts (entity, entity_id, field, lang, text)
+    SELECT 'exercise', free_exercises_id, 'name', 'en', name
+    FROM free_exercises
+  `);
+  // Se pasa el castellano que ya estaba en name_es a la tabla (idempotente)
+  await DB.run(`
+    INSERT OR IGNORE INTO i18n_texts (entity, entity_id, field, lang, text)
+    SELECT 'exercise', free_exercises_id, 'name', 'es', name_es
+    FROM free_exercises WHERE name_es IS NOT NULL
+  `);
+  await addColumnIfNotExists('free_exercises', 'hidden', 'INTEGER NOT NULL DEFAULT 0');
+  await addColumnIfNotExists('free_exercises', 'image_data', 'TEXT');
   await DB.run(`UPDATE free_exercises SET image_url = REPLACE(REPLACE(gif_url, '/videos/', '/images/'), '.gif', '.jpg') WHERE is_global = 1 AND image_url IS NULL AND gif_url IS NOT NULL`);
   await DB.run(`CREATE INDEX IF NOT EXISTS idx_free_sets_user_date ON free_sets (users_id, session_date)`);
 

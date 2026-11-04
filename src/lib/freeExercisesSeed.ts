@@ -1,4 +1,5 @@
 import { DB } from './db';
+import { translateExerciseName } from './i18n/exerciseNames';
 
 // Dataset público de ejercicios. Se descarga una sola vez: si ya hay ejercicios globales, no hace nada.
 const DATASET_BASE = 'https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main';
@@ -17,6 +18,22 @@ function instructionsToText(raw: unknown): string | null {
     return typeof text === 'string' ? text : null;
   }
   return null;
+}
+
+// Traducciones al castellano de los globales: el diccionario de reglas solo rellena lo que aún no tenga
+// traducción en i18n_texts (idempotente; el borrador se revisa desde el editor de ejercicios)
+export async function fillSpanishNames(): Promise<void> {
+  const rows = await DB.query<{ free_exercises_id: number; name: string }>(
+    `SELECT x.free_exercises_id, x.name FROM free_exercises x
+     WHERE x.is_global = 1
+       AND NOT EXISTS (SELECT 1 FROM i18n_texts t WHERE t.entity = 'exercise' AND t.entity_id = x.free_exercises_id AND t.field = 'name' AND t.lang = 'es')`
+  );
+  for (const r of rows) {
+    await DB.run(
+      `INSERT OR IGNORE INTO i18n_texts (entity, entity_id, field, lang, text) VALUES ('exercise', ?, 'name', 'es', ?)`,
+      [r.free_exercises_id, translateExerciseName(r.name)]
+    );
+  }
 }
 
 export async function seedFreeExercises(): Promise<void> {

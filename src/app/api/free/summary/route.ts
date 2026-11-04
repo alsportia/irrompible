@@ -1,5 +1,6 @@
 import { DB } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
+import { langFromRequest, textsFor } from "@/lib/i18n/texts";
 
 export interface FreeExerciseSummary {
   id: number;
@@ -40,5 +41,8 @@ export async function GET(req: NextRequest) {
      ORDER BY last.session_date DESC, last.session_time DESC`,
     [uid, uid, uid]
   );
-  return NextResponse.json(rows);
+  // El nombre llega ya en el idioma pedido, resuelto en la tabla de traducciones
+  const lang = langFromRequest(req);
+  const names = await textsFor("exercise", rows.map(r => r.id), "name", lang);
+  return NextResponse.json(rows.map(r => ({ ...r, name: names.get(r.id) ?? r.name })));
 }

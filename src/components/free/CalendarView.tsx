@@ -1,5 +1,8 @@
 "use client"
 
+import BottomBar from "./BottomBar";
+import { useLang } from "@/lib/i18n/LangContext";
+import { exerciseDisplayName } from "@/lib/i18n/exerciseLabels";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -35,6 +38,7 @@ function monthKey(year: number, month: number): string {
 
 export default function CalendarView() {
   const { user } = useUser();
+  const { lang } = useLang();
   const today = new Date();
   // Mes mostrado (año y mes 0-11) y si está abierto el selector rápido de mes y año
   const [viewYear, setViewYear] = useState(today.getFullYear());
@@ -76,10 +80,10 @@ export default function CalendarView() {
 
   useEffect(() => {
     if (!user) return;
-    fetch(`/api/free/calendar?month=${month}`, { headers: { "x-user-id": String(user.id) } })
+    fetch(`/api/free/calendar?month=${month}&lang=${lang}`, { headers: { "x-user-id": String(user.id) } })
       .then(r => r.json())
       .then(d => setDays(Array.isArray(d) ? d : []));
-  }, [user, month]);
+  }, [user, month, lang]);
 
   // Ejercicios entrenados en el mes visible, sin repetir, para el desplegable de filtro
   const monthExercises = useMemo(() => {
@@ -256,6 +260,7 @@ export default function CalendarView() {
             })}
           </section>
         )}
+        <BottomBar />
       </main>
     </div>
   );

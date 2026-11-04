@@ -1,5 +1,8 @@
 "use client"
 
+import BottomBar from "./BottomBar";
+import { useLang } from "@/lib/i18n/LangContext";
+import { exerciseDisplayName } from "@/lib/i18n/exerciseLabels";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -13,6 +16,7 @@ import {
 // Gráfica de un ejercicio con navegación de periodos (misma lógica que en Registro libre)
 export default function ExerciseDetail({ exerciseId }: { exerciseId: number }) {
   const { user } = useUser();
+  const { lang } = useLang();
   const [name, setName] = useState<string>("");
   const [progress, setProgress] = useState<ProgressRow[]>([]);
   const [period, setPeriod] = useState<Period>("week");
@@ -24,13 +28,13 @@ export default function ExerciseDetail({ exerciseId }: { exerciseId: number }) {
     fetch(`/api/free/progress?exerciseId=${exerciseId}`, { headers: h })
       .then(r => r.json())
       .then(d => setProgress(Array.isArray(d) ? d : []));
-    fetch("/api/free/exercises", { headers: h })
+    fetch(`/api/free/exercises?lang=${lang}`, { headers: h })
       .then(r => r.json())
       .then((list: { id: number; name: string }[]) => {
         const found = Array.isArray(list) ? list.find(e => e.id === exerciseId) : undefined;
-        setName(found?.name ?? "");
+        setName(found ? exerciseDisplayName(found, lang) : "");
       });
-  }, [user, exerciseId]);
+  }, [user, exerciseId, lang]);
 
   if (!user) return <LoginSelector />;
 
@@ -98,6 +102,7 @@ export default function ExerciseDetail({ exerciseId }: { exerciseId: number }) {
             </table>
           )}
         </section>
+        <BottomBar />
       </main>
     </div>
   );
