@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { CalendarDays, ChevronLeft, ChevronRight, Dumbbell, NotebookPen, Pencil, PlusCircle, Repeat, Timer, Trash2, X } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Dumbbell, NotebookPen, Pencil, PlusCircle, Repeat, Settings, Timer, Trash2, X } from "lucide-react";
 import { useUser } from "@/lib/userContext";
 import { useLang } from "@/lib/i18n/LangContext";
 import { exerciseDisplayName, bodyPartLabel, equipmentLabel } from "@/lib/i18n/exerciseLabels";
@@ -23,11 +23,21 @@ function ExercisePicker({ exercises, value, onChange }: { exercises: FreeExercis
   const { lang } = useLang();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [bodyFilter, setBodyFilter] = useState("");
+  const [equipFilter, setEquipFilter] = useState("");
   const selected = exercises.find(e => String(e.id) === value);
+
+  // Valores que existen de verdad en la lista, para no ofrecer filtros vacíos
+  const bodyOptions = [...new Set(exercises.map(e => e.body_part).filter((v): v is string => !!v))].sort();
+  const equipOptions = [...new Set(exercises.map(e => e.equipment).filter((v): v is string => !!v))].sort();
+
   // El buscador busca en el nombre que se ve, y en el original también para no perder resultados
   const filtered = exercises.filter(e => {
     const q = query.trim().toLowerCase();
-    return exerciseDisplayName(e, lang).toLowerCase().includes(q) || e.name.toLowerCase().includes(q);
+    const textOk = !q || exerciseDisplayName(e, lang).toLowerCase().includes(q) || e.name.toLowerCase().includes(q);
+    const bodyOk = !bodyFilter || e.body_part === bodyFilter;
+    const equipOk = !equipFilter || e.equipment === equipFilter;
+    return textOk && bodyOk && equipOk;
   });
 
   return (
@@ -44,6 +54,19 @@ function ExercisePicker({ exercises, value, onChange }: { exercises: FreeExercis
         <div style={{ position: 'absolute', zIndex: 30, top: 'calc(100% + 0.3rem)', left: 0, right: 0, maxHeight: '18rem', display: 'flex', flexDirection: 'column', background: CARD_BG, border: `1px solid ${BORDER}`, borderRadius: '0.9rem', boxShadow: '0 12px 30px rgba(0,0,0,0.12)', overflow: 'hidden' }}>
           <input autoFocus placeholder="Buscar ejercicio" value={query} onChange={e => setQuery(e.target.value)}
             style={{ ...input, border: 'none', borderBottom: `1px solid ${BORDER}`, borderRadius: 0 }} />
+          {/* Filtros por zona del cuerpo y por equipo; combinables con el buscador */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem', padding: '0.5rem', borderBottom: `1px solid ${BORDER}` }}>
+            <select value={bodyFilter} onChange={e => setBodyFilter(e.target.value)} aria-label="Filtrar por zona del cuerpo"
+              style={{ ...input, padding: '0.4rem 0.5rem', fontSize: '0.8rem' }}>
+              <option value="">Todas las zonas</option>
+              {bodyOptions.map(v => <option key={v} value={v}>{bodyPartLabel(v, lang)}</option>)}
+            </select>
+            <select value={equipFilter} onChange={e => setEquipFilter(e.target.value)} aria-label="Filtrar por equipo"
+              style={{ ...input, padding: '0.4rem 0.5rem', fontSize: '0.8rem' }}>
+              <option value="">Todo el equipo</option>
+              {equipOptions.map(v => <option key={v} value={v}>{equipmentLabel(v, lang)}</option>)}
+            </select>
+          </div>
           <div style={{ overflowY: 'auto' }}>
             {filtered.length === 0 && <p style={{ padding: '0.75rem', fontSize: '0.85rem', color: TEXT_MUTED }}>Sin resultados</p>}
             {filtered.slice(0, 200).map(e => (
@@ -407,6 +430,10 @@ export default function FreeLogClient() {
             style={{ height: '2.5rem', minWidth: '2.5rem', padding: '0 0.6rem', borderRadius: '999px', background: CARD_BG, color: TEXT, border: 'none', boxShadow: '0 1px 3px rgba(0,0,0,0.08)', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer' }}>
             {lang === "es" ? "ES" : "EN"}
           </button>
+          <Link href="/libre/editar" aria-label="Editar ejercicios" title="Editar ejercicios"
+            style={{ width: '2.5rem', height: '2.5rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: CARD_BG, color: TEXT, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+            <Settings size={20} />
+          </Link>
           <Link href="/libre/ejercicios" aria-label="Mis ejercicios" title="Mis ejercicios"
             style={{ width: '2.5rem', height: '2.5rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: CARD_BG, color: TEXT, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
