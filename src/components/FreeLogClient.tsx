@@ -442,13 +442,18 @@ export default function FreeLogClient() {
         )}
 
         <div style={{ display: 'grid', gap: '0.6rem', marginTop: '0.75rem' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '0.6rem' }}>
-            <Field icon={<CalendarDays size={16} />} label="Fecha">
-              <input style={{ ...input, minWidth: 0, width: '100%', padding: '0.7rem 0.5rem 0.7rem 2.2rem', fontSize: '0.9rem' }} type="date" value={date} onChange={e => setDate(e.target.value)} aria-label="Fecha" />
-            </Field>
-            <Field icon={<Timer size={16} />} label="Hora">
-              <input style={{ ...input, minWidth: 0, width: '100%', padding: '0.7rem 0.5rem 0.7rem 2.2rem', fontSize: '0.9rem' }} type="time" value={time} onChange={e => setTime(e.target.value)} aria-label="Hora" />
-            </Field>
+          {/* Dos columnas iguales; cada celda recorta lo que sobre para que fecha y hora nunca se solapen */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem', width: '100%', minWidth: 0 }}>
+            <div style={{ minWidth: 0, overflow: 'hidden' }}>
+              <Field icon={<CalendarDays size={16} />} label="Fecha">
+                <input style={{ ...input, width: '100%', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box', padding: '0.7rem 0.4rem 0.7rem 2.1rem', fontSize: '0.85rem', WebkitAppearance: 'none', appearance: 'none' }} type="date" value={date} onChange={e => setDate(e.target.value)} aria-label="Fecha" />
+              </Field>
+            </div>
+            <div style={{ minWidth: 0, overflow: 'hidden' }}>
+              <Field icon={<Timer size={16} />} label="Hora">
+                <input style={{ ...input, width: '100%', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box', padding: '0.7rem 0.4rem 0.7rem 2.1rem', fontSize: '0.85rem', WebkitAppearance: 'none', appearance: 'none' }} type="time" value={time} onChange={e => setTime(e.target.value)} aria-label="Hora" />
+              </Field>
+            </div>
           </div>
           <Field icon={<Repeat size={16} />} label="Repeticiones">
             <input style={{ ...input, paddingLeft: '2.4rem' }} type="number" inputMode="numeric" placeholder="Repeticiones" value={reps} onChange={e => setReps(e.target.value)} />

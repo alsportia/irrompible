@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useUser } from "@/lib/userContext";
 import LoginSelector from "../LoginSelector";
-import { PAGE_BG, CARD_BG, TEXT, TEXT_MUTED, ACCENT, ACCENT_SOFT, ACCENT_STRONG, BORDER, card } from "./shared";
+import { PAGE_BG, CARD_BG, TEXT, TEXT_MUTED, ACCENT, ACCENT_SOFT, ACCENT_STRONG, BORDER, card, input } from "./shared";
 
 interface FreeSetRow {
   id: number;
@@ -54,8 +54,11 @@ export default function CalendarView() {
     setSelected(null);
     setOpenExercise(null);
     setSetsByExercise({});
+    setExerciseFilter(null);
   };
   const [days, setDays] = useState<CalendarDay[]>([]);
+  // Ejercicio por el que filtrar el calendario (null = todos)
+  const [exerciseFilter, setExerciseFilter] = useState<number | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   // Ejercicio desplegado en el detalle del día y sus series, cargadas bajo demanda
   const [openExercise, setOpenExercise] = useState<number | null>(null);
@@ -78,16 +81,25 @@ export default function CalendarView() {
       .then(d => setDays(Array.isArray(d) ? d : []));
   }, [user, month]);
 
-  // Ejercicios agrupados por día, para marcar el calendario y mostrar el detalle
+  // Ejercicios entrenados en el mes visible, sin repetir, para el desplegable de filtro
+  const monthExercises = useMemo(() => {
+    const seen = new Map<number, string>();
+    for (const r of days) if (!seen.has(r.exercise_id)) seen.set(r.exercise_id, r.exercise_name);
+    return [...seen.entries()].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [days]);
+
+  // Ejercicios agrupados por día, para marcar el calendario y mostrar el detalle.
+  // Si hay un ejercicio elegido en el filtro, solo cuentan sus días.
   const byDay = useMemo(() => {
     const map = new Map<string, CalendarDay[]>();
     for (const r of days) {
+      if (exerciseFilter != null && r.exercise_id !== exerciseFilter) continue;
       const list = map.get(r.session_date) ?? [];
       list.push(r);
       map.set(r.session_date, list);
     }
     return map;
-  }, [days]);
+  }, [days, exerciseFilter]);
 
   // Al abrir un ejercicio se piden sus series de ese día (una sola vez por ejercicio y día)
   const toggleExercise = (exerciseId: number) => {
@@ -157,6 +169,13 @@ export default function CalendarView() {
                   <ChevronRight size={14} />
                 </button>
               </div>
+              {/* Filtro: solo los días en que se entrenó el ejercicio elegido en el mes visible */}
+              <select value={exerciseFilter ?? ""} onChange={e => { setExerciseFilter(e.target.value ? Number(e.target.value) : null); setSelected(null); setOpenExercise(null); }}
+                aria-label="Filtrar por ejercicio"
+                style={{ ...input, marginBottom: '0.6rem', fontSize: '0.85rem', padding: '0.5rem 0.7rem', textAlign: 'center', textAlignLast: 'center' }}>
+                <option value="">Todos los ejercicios</option>
+                {monthExercises.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+              </select>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.4rem' }}>
                 {MONTHS.map((label, mi) => {
                   const future = pickerYear > today.getFullYear() || (pickerYear === today.getFullYear() && mi > today.getMonth());
