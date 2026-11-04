@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, PlusCircle, Trash2, X } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Dumbbell, NotebookPen, Pencil, PlusCircle, Repeat, Timer, Trash2, X } from "lucide-react";
 import { useUser } from "@/lib/userContext";
 import LoginSelector from "./LoginSelector";
 
@@ -51,6 +51,16 @@ function ExercisePicker({ exercises, value, onChange }: { exercises: FreeExercis
   );
 }
 
+// Campo con icono a la izquierda; el icono va dentro del input (relativo al contenedor)
+function Field({ icon, label, children }: { icon: React.ReactNode; label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ position: 'relative' }} title={label}>
+      <span aria-hidden style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: TEXT_MUTED, display: 'flex', pointerEvents: 'none' }}>{icon}</span>
+      {children}
+    </div>
+  );
+}
+
 // Imagen genérica para ejercicios propios (sin imagen). Se puede sustituir por una personalizada más adelante.
 const GENERIC_IMAGE = "/exercise-placeholder.svg";
 
@@ -77,6 +87,7 @@ interface FreeSet {
   duration_seconds: number | null;
   weight_kg: number;
   one_rm: number | null;
+  notes: string | null;
 }
 
 interface ProgressRow {
@@ -258,6 +269,7 @@ export default function FreeLogClient() {
   const [lastCount, setLastCount] = useState(3);
   const [period, setPeriod] = useState<Period>("week");
   const [offset, setOffset] = useState(0); // 0 = periodo actual, -1 = anterior, etc.
+  const [editingId, setEditingId] = useState<number | null>(null); // serie que se está corrigiendo
 
   const headers = user ? { "x-user-id": String(user.id) } : undefined;
 
@@ -317,27 +329,53 @@ export default function FreeLogClient() {
     setExerciseId(String(data.id));
   };
 
+  // Guarda una serie nueva, o actualiza la que se está editando
   const saveSet = async () => {
     if (!exerciseId) { setError("Elige un ejercicio"); return; }
     setSaving(true);
     setError("");
-    const res = await fetch("/api/free/sets", {
-      method: "POST",
-      headers: { ...headers, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        exerciseId,
-        sessionDate: date,
-        sessionTime: time,
-        reps,
-        durationSeconds: duration,
-        weightKg: weight,
-        notes,
-      }),
+    const body = JSON.stringify({
+      exerciseId,
+      sessionDate: date,
+      sessionTime: time,
+      reps,
+      durationSeconds: duration,
+      weightKg: weight,
+      notes,
     });
+    const res = editingId
+      ? await fetch(`/api/free/sets/${editingId}`, { method: "PUT", headers: { ...headers, "Content-Type": "application/json" }, body })
+      : await fetch("/api/free/sets", { method: "POST", headers: { ...headers, "Content-Type": "application/json" }, body });
     setSaving(false);
     if (!res.ok) { const d = await res.json(); setError(d.error ?? "Error al guardar"); return; }
-    // Se limpian los valores de la serie; la fecha y hora se mantienen para registrar varias seguidas
+    // Al crear se limpian los valores; la fecha y hora se mantienen para registrar varias seguidas
+    setEditingId(null);
     setReps(""); setWeight(""); setDuration(""); setNotes("");
+    setRefresh(n => n + 1);
+  };
+
+  // Rellena el formulario con una serie existente para corregirla
+  const startEdit = (s: FreeSet) => {
+    setEditingId(s.id);
+    setDate(s.session_date);
+    setTime(s.session_time ?? "");
+    setReps(s.reps != null ? String(s.reps) : "");
+    setWeight(s.weight_kg > 0 ? String(s.weight_kg) : "");
+    setDuration(s.duration_seconds != null ? String(s.duration_seconds) : "");
+    setNotes(s.notes ?? "");
+    setError("");
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setReps(""); setWeight(""); setDuration(""); setNotes("");
+  };
+
+  const deleteSet = async (id: number) => {
+    if (!window.confirm("¿Borrar esta serie? No se puede deshacer.")) return;
+    const res = await fetch(`/api/free/sets/${id}`, { method: "DELETE", headers });
+    if (!res.ok) { const d = await res.json(); setError(d.error ?? "Error al borrar"); return; }
+    if (editingId === id) cancelEdit();
     setRefresh(n => n + 1);
   };
 
@@ -389,17 +427,35 @@ export default function FreeLogClient() {
 
         <div style={{ display: 'grid', gap: '0.6rem', marginTop: '0.75rem' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '0.6rem' }}>
-            <input style={{ ...input, minWidth: 0, width: '100%', padding: '0.7rem 0.5rem', fontSize: '0.9rem' }} type="date" value={date} onChange={e => setDate(e.target.value)} aria-label="Fecha" />
-            <input style={{ ...input, minWidth: 0, width: '100%', padding: '0.7rem 0.5rem', fontSize: '0.9rem' }} type="time" value={time} onChange={e => setTime(e.target.value)} aria-label="Hora" />
+            <Field icon={<CalendarDays size={16} />} label="Fecha">
+              <input style={{ ...input, minWidth: 0, width: '100%', padding: '0.7rem 0.5rem 0.7rem 2.2rem', fontSize: '0.9rem' }} type="date" value={date} onChange={e => setDate(e.target.value)} aria-label="Fecha" />
+            </Field>
+            <Field icon={<Timer size={16} />} label="Hora">
+              <input style={{ ...input, minWidth: 0, width: '100%', padding: '0.7rem 0.5rem 0.7rem 2.2rem', fontSize: '0.9rem' }} type="time" value={time} onChange={e => setTime(e.target.value)} aria-label="Hora" />
+            </Field>
           </div>
-          <input style={input} type="number" inputMode="numeric" placeholder="Repeticiones" value={reps} onChange={e => setReps(e.target.value)} />
-          <input style={input} type="number" inputMode="decimal" placeholder="Peso (kg), opcional" value={weight} onChange={e => setWeight(e.target.value)} />
-          <input style={input} type="number" inputMode="numeric" placeholder="Tiempo empleado (segundos), opcional" value={duration} onChange={e => setDuration(e.target.value)} />
-          <input style={input} placeholder="Notas, opcional" value={notes} onChange={e => setNotes(e.target.value)} />
+          <Field icon={<Repeat size={16} />} label="Repeticiones">
+            <input style={{ ...input, paddingLeft: '2.4rem' }} type="number" inputMode="numeric" placeholder="Repeticiones" value={reps} onChange={e => setReps(e.target.value)} />
+          </Field>
+          <Field icon={<Dumbbell size={16} />} label="Peso en kg">
+            <input style={{ ...input, paddingLeft: '2.4rem' }} type="number" inputMode="decimal" placeholder="Peso (kg), opcional" value={weight} onChange={e => setWeight(e.target.value)} />
+          </Field>
+          <Field icon={<Timer size={16} />} label="Tiempo en segundos">
+            <input style={{ ...input, paddingLeft: '2.4rem' }} type="number" inputMode="numeric" placeholder="Tiempo empleado (segundos), opcional" value={duration} onChange={e => setDuration(e.target.value)} />
+          </Field>
+          <Field icon={<NotebookPen size={16} />} label="Notas">
+            <input style={{ ...input, paddingLeft: '2.4rem' }} placeholder="Notas, opcional" value={notes} onChange={e => setNotes(e.target.value)} />
+          </Field>
           <button onClick={saveSet} disabled={saving || !exerciseId}
             style={{ ...input, background: exerciseId ? ACCENT_GRADIENT : '#ececec', color: exerciseId ? '#fff' : TEXT_MUTED, fontWeight: 700, cursor: exerciseId ? 'pointer' : 'not-allowed', border: 'none', borderRadius: '999px', padding: '0.85rem' }}>
-            {saving ? "Guardando..." : exerciseId ? "Guardar serie" : "Elige un ejercicio para guardar"}
+            {saving ? "Guardando..." : editingId ? "Guardar cambios" : exerciseId ? "Guardar serie" : "Elige un ejercicio para guardar"}
           </button>
+          {editingId && (
+            <button onClick={cancelEdit}
+              style={{ ...input, background: '#fff', color: TEXT, fontWeight: 600, cursor: 'pointer', borderRadius: '999px', padding: '0.7rem' }}>
+              Cancelar edición
+            </button>
+          )}
         </div>
       </section>
 
@@ -415,14 +471,22 @@ export default function FreeLogClient() {
           </div>
           {sets.length === 0 && <p style={{ fontSize: '0.875rem' }}>Todavía no hay series de este ejercicio.</p>}
           {sets.slice(0, lastCount).map(s => (
-            <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', borderBottom: `1px solid ${BORDER}`, fontSize: '0.875rem' }}>
-              <span>{s.session_date}{s.session_time ? ` ${s.session_time}` : ""}</span>
+            <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0', borderBottom: `1px solid ${BORDER}`, fontSize: '0.875rem', background: editingId === s.id ? ACCENT_SOFT : 'transparent' }}>
+              <span style={{ flex: 1 }}>{s.session_date}{s.session_time ? ` ${s.session_time}` : ""}</span>
               <span style={{ textAlign: 'right' }}>
                 {s.reps != null ? `${s.reps} reps` : ""}
                 {s.duration_seconds != null ? ` · ${s.duration_seconds}s` : ""}
                 {s.weight_kg > 0 ? ` · ${s.weight_kg} kg` : ""}
                 {s.one_rm != null ? <><br /><span style={{ color: ACCENT_STRONG, fontWeight: 700 }}>1RM ≈ {s.one_rm} kg</span></> : null}
               </span>
+              <button onClick={() => startEdit(s)} aria-label="Editar serie" title="Editar"
+                style={{ background: 'none', border: 'none', color: TEXT_MUTED, cursor: 'pointer', padding: '0.25rem', display: 'flex' }}>
+                <Pencil size={15} />
+              </button>
+              <button onClick={() => deleteSet(s.id)} aria-label="Borrar serie" title="Borrar"
+                style={{ background: 'none', border: 'none', color: '#e05555', cursor: 'pointer', padding: '0.25rem', display: 'flex' }}>
+                <Trash2 size={15} />
+              </button>
             </div>
           ))}
         </section>
