@@ -26,23 +26,40 @@ interface CalendarDay {
 
 const WEEKDAYS = ["L", "M", "X", "J", "V", "S", "D"];
 
-// Mes en formato YYYY-MM a partir de un desplazamiento respecto al mes actual
-function monthKey(offset: number): string {
-  const d = new Date();
-  const m = new Date(d.getFullYear(), d.getMonth() + offset, 1);
-  return `${m.getFullYear()}-${String(m.getMonth() + 1).padStart(2, '0')}`;
+const MONTHS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+
+// Mes en formato YYYY-MM a partir de año y mes (0-11)
+function monthKey(year: number, month: number): string {
+  return `${year}-${String(month + 1).padStart(2, '0')}`;
 }
 
 export default function CalendarView() {
   const { user } = useUser();
-  const [offset, setOffset] = useState(0);
+  const today = new Date();
+  // Mes mostrado (año y mes 0-11) y si está abierto el selector rápido de mes y año
+  const [viewYear, setViewYear] = useState(today.getFullYear());
+  const [viewMonth, setViewMonth] = useState(today.getMonth());
+  const [picker, setPicker] = useState(false);
+  const [pickerYear, setPickerYear] = useState(today.getFullYear());
+
+  // No se puede avanzar más allá del mes actual
+  const isCurrentOrFuture = viewYear > today.getFullYear() || (viewYear === today.getFullYear() && viewMonth >= today.getMonth());
+
+  const stepMonth = (delta: number) => {
+    const d = new Date(viewYear, viewMonth + delta, 1);
+    setViewYear(d.getFullYear());
+    setViewMonth(d.getMonth());
+    setSelected(null);
+    setOpenExercise(null);
+    setSetsByExercise({});
+  };
   const [days, setDays] = useState<CalendarDay[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   // Ejercicio desplegado en el detalle del día y sus series, cargadas bajo demanda
   const [openExercise, setOpenExercise] = useState<number | null>(null);
   const [setsByExercise, setSetsByExercise] = useState<Record<number, FreeSetRow[]>>({});
 
-  const month = monthKey(offset);
+  const month = monthKey(viewYear, viewMonth);
 
   useEffect(() => {
     if (!user) return;
@@ -75,9 +92,9 @@ export default function CalendarView() {
   if (!user) return <LoginSelector />;
 
   // Celdas del mes: se empieza en lunes y se rellenan con vacíos al principio
-  const [y, m] = month.split("-").map(Number);
-  const first = new Date(y, m - 1, 1);
-  const daysInMonth = new Date(y, m, 0).getDate();
+  const y = viewYear, m = viewMonth + 1;
+  const first = new Date(y, viewMonth, 1);
+  const daysInMonth = new Date(y, viewMonth + 1, 0).getDate();
   const leading = (first.getDay() + 6) % 7;
   const cells: (string | null)[] = [
     ...Array(leading).fill(null),
@@ -102,18 +119,48 @@ export default function CalendarView() {
 
         <section style={card}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-            <button onClick={() => { setOffset(o => o - 1); setSelected(null); }} aria-label="Mes anterior"
+            <button onClick={() => { stepMonth(-1); }} aria-label="Mes anterior"
               style={{ background: '#f5f5f5', border: `1px solid ${BORDER}`, borderRadius: '0.6rem', padding: '0.3rem 0.5rem', cursor: 'pointer', color: TEXT }}>
               <ChevronLeft size={16} />
             </button>
-            <span style={{ fontSize: '0.95rem', fontWeight: 700, textTransform: 'capitalize' }}>
-              {new Date(y, m - 1, 1).toLocaleDateString("es-ES", { month: "long", year: "numeric" })}
-            </span>
-            <button onClick={() => { setOffset(o => Math.min(o + 1, 0)); setSelected(null); }} disabled={offset >= 0} aria-label="Mes siguiente"
-              style={{ background: '#f5f5f5', border: `1px solid ${BORDER}`, borderRadius: '0.6rem', padding: '0.3rem 0.5rem', cursor: offset >= 0 ? 'not-allowed' : 'pointer', opacity: offset >= 0 ? 0.4 : 1, color: TEXT }}>
+            {/* Pulsar el mes abre el selector rápido de mes y año */}
+            <button onClick={() => { setPickerYear(viewYear); setPicker(p => !p); }} aria-expanded={picker}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.95rem', fontWeight: 700, textTransform: 'capitalize', color: TEXT, padding: '0.3rem 0.5rem' }}>
+              {new Date(y, viewMonth, 1).toLocaleDateString("es-ES", { month: "long", year: "numeric" })} ▾
+            </button>
+            <button onClick={() => { stepMonth(1); }} disabled={isCurrentOrFuture} aria-label="Mes siguiente"
+              style={{ background: '#f5f5f5', border: `1px solid ${BORDER}`, borderRadius: '0.6rem', padding: '0.3rem 0.5rem', cursor: isCurrentOrFuture ? 'not-allowed' : 'pointer', opacity: isCurrentOrFuture ? 0.4 : 1, color: TEXT }}>
               <ChevronRight size={16} />
             </button>
           </div>
+
+          {picker && (
+            <div style={{ marginBottom: '0.75rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                <button onClick={() => setPickerYear(v => v - 1)} aria-label="Año anterior"
+                  style={{ background: '#f5f5f5', border: `1px solid ${BORDER}`, borderRadius: '0.6rem', padding: '0.25rem 0.5rem', cursor: 'pointer', color: TEXT }}>
+                  <ChevronLeft size={14} />
+                </button>
+                <span style={{ fontWeight: 800, fontSize: '1rem' }}>{pickerYear}</span>
+                <button onClick={() => setPickerYear(v => Math.min(v + 1, today.getFullYear()))} disabled={pickerYear >= today.getFullYear()} aria-label="Año siguiente"
+                  style={{ background: '#f5f5f5', border: `1px solid ${BORDER}`, borderRadius: '0.6rem', padding: '0.25rem 0.5rem', cursor: pickerYear >= today.getFullYear() ? 'not-allowed' : 'pointer', opacity: pickerYear >= today.getFullYear() ? 0.4 : 1, color: TEXT }}>
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.4rem' }}>
+                {MONTHS.map((label, mi) => {
+                  const future = pickerYear > today.getFullYear() || (pickerYear === today.getFullYear() && mi > today.getMonth());
+                  const active = pickerYear === viewYear && mi === viewMonth;
+                  return (
+                    <button key={label} disabled={future} onClick={() => { setViewYear(pickerYear); setViewMonth(mi); setSelected(null); setPicker(false); }}
+                      style={{ padding: '0.5rem 0', borderRadius: '0.6rem', border: `1px solid ${active ? ACCENT : BORDER}`, background: active ? ACCENT_SOFT : '#fafafa', color: active ? ACCENT_STRONG : TEXT, fontWeight: active ? 800 : 500, fontSize: '0.85rem', cursor: future ? 'not-allowed' : 'pointer', opacity: future ? 0.35 : 1 }}>
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.25rem', textAlign: 'center', fontSize: '0.7rem', color: TEXT_MUTED, marginBottom: '0.25rem' }}>
             {WEEKDAYS.map(d => <span key={d}>{d}</span>)}

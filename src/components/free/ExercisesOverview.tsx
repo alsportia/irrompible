@@ -45,7 +45,7 @@ export default function ExercisesOverview() {
           </Link>
           <div>
             <p style={{ fontSize: '0.8rem', color: TEXT_MUTED, margin: 0 }}>{user.name}</p>
-            <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: ACCENT_STRONG, margin: 0, lineHeight: 1.1 }}>Mis ejercicios</h1>
+            <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: ACCENT_STRONG, margin: 0, lineHeight: 1.1 }}>Mis progresiones</h1>
           </div>
         </header>
 
