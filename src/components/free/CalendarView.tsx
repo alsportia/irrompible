@@ -41,6 +41,8 @@ export default function CalendarView() {
   const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [picker, setPicker] = useState(false);
   const [pickerYear, setPickerYear] = useState(today.getFullYear());
+  // Meses con entrenamiento del año del selector (YYYY-MM), para resaltarlos
+  const [monthsWithData, setMonthsWithData] = useState<string[]>([]);
 
   // No se puede avanzar más allá del mes actual
   const isCurrentOrFuture = viewYear > today.getFullYear() || (viewYear === today.getFullYear() && viewMonth >= today.getMonth());
@@ -60,6 +62,14 @@ export default function CalendarView() {
   const [setsByExercise, setSetsByExercise] = useState<Record<number, FreeSetRow[]>>({});
 
   const month = monthKey(viewYear, viewMonth);
+
+  // Meses con datos del año que se está mirando en el selector
+  useEffect(() => {
+    if (!user || !picker) return;
+    fetch(`/api/free/calendar?year=${pickerYear}`, { headers: { "x-user-id": String(user.id) } })
+      .then(r => r.json())
+      .then(d => setMonthsWithData(Array.isArray(d) ? d : []));
+  }, [user, picker, pickerYear]);
 
   useEffect(() => {
     if (!user) return;
@@ -151,10 +161,12 @@ export default function CalendarView() {
                 {MONTHS.map((label, mi) => {
                   const future = pickerYear > today.getFullYear() || (pickerYear === today.getFullYear() && mi > today.getMonth());
                   const active = pickerYear === viewYear && mi === viewMonth;
+                  const hasData = monthsWithData.includes(monthKey(pickerYear, mi));
                   return (
                     <button key={label} disabled={future} onClick={() => { setViewYear(pickerYear); setViewMonth(mi); setSelected(null); setPicker(false); }}
-                      style={{ padding: '0.5rem 0', borderRadius: '0.6rem', border: `1px solid ${active ? ACCENT : BORDER}`, background: active ? ACCENT_SOFT : '#fafafa', color: active ? ACCENT_STRONG : TEXT, fontWeight: active ? 800 : 500, fontSize: '0.85rem', cursor: future ? 'not-allowed' : 'pointer', opacity: future ? 0.35 : 1 }}>
+                      style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0.5rem 0', borderRadius: '0.6rem', border: `1px solid ${active ? ACCENT : hasData ? ACCENT : BORDER}`, background: active ? ACCENT_SOFT : hasData ? '#fff7ec' : '#fafafa', color: active || hasData ? ACCENT_STRONG : TEXT, fontWeight: active || hasData ? 800 : 500, fontSize: '0.85rem', cursor: future ? 'not-allowed' : 'pointer', opacity: future || !hasData && !active ? 0.45 : 1 }}>
                       {label}
+                      {hasData && <span aria-label="con entrenamientos" style={{ position: 'absolute', bottom: '0.2rem', left: '50%', transform: 'translateX(-50%)', width: '0.3rem', height: '0.3rem', borderRadius: '50%', background: ACCENT }} />}
                     </button>
                   );
                 })}
