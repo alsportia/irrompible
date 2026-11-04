@@ -283,6 +283,11 @@ export async function runMigrations(): Promise<void> {
   // Imagen del ejercicio. Los globales la reciben del dataset; los propios quedan a NULL y usan un icono genérico.
   // Se deja como columna propia para poder personalizarla más adelante.
   await addColumnIfNotExists('free_exercises', 'image_url', 'TEXT');
+  // Nombre en castellano (solo globales, lo rellena el diccionario), ocultar en la lista,
+  // y la imagen propia subida por el usuario (data URL redimensionada, guardada en la base)
+  await addColumnIfNotExists('free_exercises', 'name_es', 'TEXT');
+  await addColumnIfNotExists('free_exercises', 'hidden', 'INTEGER NOT NULL DEFAULT 0');
+  await addColumnIfNotExists('free_exercises', 'image_data', 'TEXT');
   await DB.run(`UPDATE free_exercises SET image_url = REPLACE(REPLACE(gif_url, '/videos/', '/images/'), '.gif', '.jpg') WHERE is_global = 1 AND image_url IS NULL AND gif_url IS NOT NULL`);
   await DB.run(`CREATE INDEX IF NOT EXISTS idx_free_sets_user_date ON free_sets (users_id, session_date)`);
 

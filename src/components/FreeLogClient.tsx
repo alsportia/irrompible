@@ -4,21 +4,31 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CalendarDays, ChevronLeft, ChevronRight, Dumbbell, NotebookPen, Pencil, PlusCircle, Repeat, Timer, Trash2, X } from "lucide-react";
 import { useUser } from "@/lib/userContext";
+import { useLang } from "@/lib/i18n/LangContext";
+import { exerciseDisplayName, bodyPartLabel, equipmentLabel } from "@/lib/i18n/exerciseLabels";
 import LoginSelector from "./LoginSelector";
 
 interface FreeExercise {
   id: number;
   name: string;
+  name_es: string | null;
+  body_part: string | null;
+  equipment: string | null;
   is_global: number;
   image_url: string | null;
 }
 
 // Selector con miniatura, buscador y lista desplegable
 function ExercisePicker({ exercises, value, onChange }: { exercises: FreeExercise[]; value: string; onChange: (id: string) => void }) {
+  const { lang } = useLang();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const selected = exercises.find(e => String(e.id) === value);
-  const filtered = exercises.filter(e => e.name.toLowerCase().includes(query.trim().toLowerCase()));
+  // El buscador busca en el nombre que se ve, y en el original también para no perder resultados
+  const filtered = exercises.filter(e => {
+    const q = query.trim().toLowerCase();
+    return exerciseDisplayName(e, lang).toLowerCase().includes(q) || e.name.toLowerCase().includes(q);
+  });
 
   return (
     <div style={{ position: 'relative', flex: 1 }}>
@@ -26,7 +36,7 @@ function ExercisePicker({ exercises, value, onChange }: { exercises: FreeExercis
         style={{ ...input, display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer', textAlign: 'left' }}>
         {selected ? <ExerciseThumb src={selected.image_url} size={32} /> : null}
         <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {selected ? `${selected.name}${selected.is_global ? "" : " (mío)"}` : "— Elige un ejercicio —"}
+          {selected ? `${exerciseDisplayName(selected, lang)}${selected.is_global ? "" : " (mío)"}` : "— Elige un ejercicio —"}
         </span>
       </button>
 
@@ -40,7 +50,7 @@ function ExercisePicker({ exercises, value, onChange }: { exercises: FreeExercis
               <button key={e.id} type="button" onClick={() => { onChange(String(e.id)); setOpen(false); setQuery(""); }}
                 style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.5rem 0.75rem', background: String(e.id) === value ? ACCENT_SOFT : 'transparent', border: 'none', color: TEXT, cursor: 'pointer', textAlign: 'left', fontSize: '0.9rem' }}>
                 <ExerciseThumb src={e.image_url} size={36} />
-                <span style={{ flex: 1 }}>{e.name}{e.is_global ? "" : " (mío)"}</span>
+                <span style={{ flex: 1 }}>{exerciseDisplayName(e, lang)}{e.is_global ? "" : " (mío)"}</span>
               </button>
             ))}
             {filtered.length > 200 && <p style={{ padding: '0.5rem 0.75rem', fontSize: '0.75rem', color: TEXT_MUTED }}>Escribe más para acotar la lista</p>}
@@ -251,6 +261,7 @@ function ProgressChart({ rows, period, offset }: { rows: ProgressRow[]; period: 
 
 export default function FreeLogClient() {
   const { user } = useUser();
+  const { lang, setLang } = useLang();
   const [exercises, setExercises] = useState<FreeExercise[]>([]);
   const [sets, setSets] = useState<FreeSet[]>([]);
   const [exerciseId, setExerciseId] = useState<string>("");
@@ -392,6 +403,10 @@ export default function FreeLogClient() {
           <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: ACCENT_STRONG, margin: 0, lineHeight: 1.1 }}>Entrenamiento libre</h1>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+          <button onClick={() => setLang(lang === "es" ? "en" : "es")} aria-label="Cambiar idioma de los ejercicios" title="Idioma de los ejercicios"
+            style={{ height: '2.5rem', minWidth: '2.5rem', padding: '0 0.6rem', borderRadius: '999px', background: CARD_BG, color: TEXT, border: 'none', boxShadow: '0 1px 3px rgba(0,0,0,0.08)', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer' }}>
+            {lang === "es" ? "ES" : "EN"}
+          </button>
           <Link href="/libre/ejercicios" aria-label="Mis ejercicios" title="Mis ejercicios"
             style={{ width: '2.5rem', height: '2.5rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: CARD_BG, color: TEXT, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -425,7 +440,7 @@ export default function FreeLogClient() {
           </button>
         </div>
         {selectedExercise && (
-          <img src={selectedExercise.image_url ?? GENERIC_IMAGE} alt={selectedExercise.name}
+          <img src={selectedExercise.image_url ?? GENERIC_IMAGE} alt={exerciseDisplayName(selectedExercise, lang)}
             onError={(e) => { (e.currentTarget as HTMLImageElement).src = GENERIC_IMAGE; }}
             style={{ display: 'block', width: '100%', height: 'auto', maxHeight: '14rem', objectFit: 'contain', borderRadius: '0.8rem', marginTop: '0.75rem', background: '#f5f5f5' }} />
         )}
@@ -516,7 +531,7 @@ export default function FreeLogClient() {
       {exerciseId && (
         <section style={card}>
           <p style={{ fontSize: '0.8rem', color: TEXT_MUTED, marginBottom: '0.5rem' }}>
-            Progreso de {exercises.find(e => String(e.id) === exerciseId)?.name}
+            Progreso de {(() => { const ex = exercises.find(e => String(e.id) === exerciseId); return ex ? exerciseDisplayName(ex, lang) : ""; })()}
           </p>
 
           {/* Barra de navegación del periodo */}

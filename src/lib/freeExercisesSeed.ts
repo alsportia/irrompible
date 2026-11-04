@@ -1,4 +1,5 @@
 import { DB } from './db';
+import { translateExerciseName } from './i18n/exerciseNames';
 
 // Dataset público de ejercicios. Se descarga una sola vez: si ya hay ejercicios globales, no hace nada.
 const DATASET_BASE = 'https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main';
@@ -17,6 +18,16 @@ function instructionsToText(raw: unknown): string | null {
     return typeof text === 'string' ? text : null;
   }
   return null;
+}
+
+// Rellena name_es de los globales que aún no lo tienen (idempotente, se repite sin efecto)
+export async function fillSpanishNames(): Promise<void> {
+  const rows = await DB.query<{ free_exercises_id: number; name: string }>(
+    `SELECT free_exercises_id, name FROM free_exercises WHERE is_global = 1 AND name_es IS NULL`
+  );
+  for (const r of rows) {
+    await DB.run(`UPDATE free_exercises SET name_es = ? WHERE free_exercises_id = ?`, [translateExerciseName(r.name), r.free_exercises_id]);
+  }
 }
 
 export async function seedFreeExercises(): Promise<void> {
