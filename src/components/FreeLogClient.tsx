@@ -387,9 +387,25 @@ export default function FreeLogClient() {
         <Link href="/programs" style={{ width: '2.5rem', height: '2.5rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: CARD_BG, color: TEXT_MUTED, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
           <ChevronLeft size={20} />
         </Link>
-        <div>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontSize: '0.8rem', color: TEXT_MUTED, margin: 0 }}>{user.name}</p>
           <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: ACCENT_STRONG, margin: 0, lineHeight: 1.1 }}>Entrenamiento libre</h1>
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+          <Link href="/libre/ejercicios" aria-label="Mis ejercicios" title="Mis ejercicios"
+            style={{ width: '2.5rem', height: '2.5rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: CARD_BG, color: TEXT, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <rect x="3" y="12" width="4" height="8" rx="0.5" fill={ACCENT} stroke="none" />
+              <rect x="10" y="8" width="4" height="12" rx="0.5" fill={ACCENT} stroke="none" />
+              <rect x="17" y="4" width="4" height="16" rx="0.5" fill={ACCENT} stroke="none" />
+              <path d="M3 10 L9 6 L14 9 L21 3" />
+              <path d="M16 3 L21 3 L21 8" />
+            </svg>
+          </Link>
+          <Link href="/libre/calendario" aria-label="Calendario" title="Calendario"
+            style={{ width: '2.5rem', height: '2.5rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: CARD_BG, color: TEXT, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+            <CalendarDays size={20} />
+          </Link>
         </div>
       </header>
 

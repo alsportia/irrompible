@@ -22,15 +22,18 @@ export async function GET(req: NextRequest) {
   if (!uid) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
 
   const exerciseId = parseInt(req.nextUrl.searchParams.get("exerciseId") ?? "");
+  // Opcional: solo las series de un día concreto (YYYY-MM-DD)
+  const dateParam = req.nextUrl.searchParams.get("date");
+  const date = dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : null;
   const rows = await DB.query<FreeSet>(
     `SELECT fs.free_sets_id as id, fs.free_exercises_id, ex.name as exercise_name,
             fs.session_date, fs.session_time, fs.set_number, fs.weight_kg, fs.reps,
             fs.duration_seconds, fs.one_rm, fs.notes
      FROM free_sets fs
      JOIN free_exercises ex ON ex.free_exercises_id = fs.free_exercises_id
-     WHERE fs.users_id = ? AND (? IS NULL OR fs.free_exercises_id = ?)
+     WHERE fs.users_id = ? AND (? IS NULL OR fs.free_exercises_id = ?) AND (? IS NULL OR fs.session_date = ?)
      ORDER BY fs.session_date DESC, fs.session_time DESC, fs.free_sets_id DESC`,
-    [uid, exerciseId || null, exerciseId || null]
+    [uid, exerciseId || null, exerciseId || null, date, date]
   );
   return NextResponse.json(rows);
 }
