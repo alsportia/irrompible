@@ -350,8 +350,8 @@ export default function FreeLogClient() {
           <ChevronLeft size={20} />
         </Link>
         <div>
-          <p style={{ fontSize: '0.8rem', color: TEXT_MUTED, margin: 0 }}>Progresión libre</p>
-          <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: ACCENT_STRONG, margin: 0, lineHeight: 1.1 }}>Registro libre</h1>
+          <p style={{ fontSize: '0.8rem', color: TEXT_MUTED, margin: 0 }}>{user.name}</p>
+          <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: ACCENT_STRONG, margin: 0, lineHeight: 1.1 }}>Entrenamiento libre</h1>
         </div>
       </header>
 
@@ -388,9 +388,9 @@ export default function FreeLogClient() {
         )}
 
         <div style={{ display: 'grid', gap: '0.6rem', marginTop: '0.75rem' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
-            <input style={input} type="date" value={date} onChange={e => setDate(e.target.value)} aria-label="Fecha" />
-            <input style={input} type="time" value={time} onChange={e => setTime(e.target.value)} aria-label="Hora" />
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '0.6rem' }}>
+            <input style={{ ...input, minWidth: 0, width: '100%', padding: '0.7rem 0.5rem', fontSize: '0.9rem' }} type="date" value={date} onChange={e => setDate(e.target.value)} aria-label="Fecha" />
+            <input style={{ ...input, minWidth: 0, width: '100%', padding: '0.7rem 0.5rem', fontSize: '0.9rem' }} type="time" value={time} onChange={e => setTime(e.target.value)} aria-label="Hora" />
           </div>
           <input style={input} type="number" inputMode="numeric" placeholder="Repeticiones" value={reps} onChange={e => setReps(e.target.value)} />
           <input style={input} type="number" inputMode="decimal" placeholder="Peso (kg), opcional" value={weight} onChange={e => setWeight(e.target.value)} />
@@ -453,7 +453,7 @@ export default function FreeLogClient() {
           <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem' }}>
             {(["week", "month", "year"] as Period[]).map(p => (
               <button key={p} onClick={() => { setPeriod(p); setOffset(0); }}
-                style={{ ...input, width: 'auto', flex: 1, padding: '0.4rem 0', cursor: 'pointer', fontWeight: period === p ? 700 : 400, background: period === p ? ACCENT_SOFT : '#fafafa', color: period === p ? ACCENT_STRONG : TEXT, borderColor: period === p ? ACCENT : BORDER }}>
+                style={{ ...input, width: 'auto', flex: 1, padding: '0.4rem 0', textAlign: 'center', cursor: 'pointer', fontWeight: period === p ? 700 : 400, background: period === p ? ACCENT_SOFT : '#fafafa', color: period === p ? ACCENT_STRONG : TEXT, borderColor: period === p ? ACCENT : BORDER }}>
                 {PERIOD_LABEL[p]}
               </button>
             ))}

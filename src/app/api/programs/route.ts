@@ -8,8 +8,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
   }
 
-  const programs = await DB.query<{ id: number; name: string; description: string | null; image_url: string | null }>(
-    `SELECT p.programs_id as id, p.name, p.description, p.image_url FROM programs p INNER JOIN user_programs upr ON p.programs_id = upr.programs_id WHERE upr.users_id = ?`,
+  const programs = await DB.query<{ id: number; name: string; slug: string | null; description: string | null; image_url: string | null }>(
+    `SELECT p.programs_id as id, p.name, p.slug, p.description, p.image_url FROM programs p INNER JOIN user_programs upr ON p.programs_id = upr.programs_id WHERE upr.users_id = ?`,
     [userId]
   );
 

@@ -286,14 +286,25 @@ export async function runMigrations(): Promise<void> {
   await DB.run(`UPDATE free_exercises SET image_url = REPLACE(REPLACE(gif_url, '/videos/', '/images/'), '.gif', '.jpg') WHERE is_global = 1 AND image_url IS NULL AND gif_url IS NOT NULL`);
   await DB.run(`CREATE INDEX IF NOT EXISTS idx_free_sets_user_date ON free_sets (users_id, session_date)`);
 
-  // ── 23. Programa "Registro libre": lo tienen todos los usuarios por defecto ──
-  await DB.run(`INSERT OR IGNORE INTO programs (name, description) VALUES ('Registro libre', 'Registra tus ejercicios y series sin plan')`);
+  // ── 23. Programa de registro libre: lo tienen todos los usuarios por defecto ──
+  // Se identifica por `slug` (no por nombre) para poder cambiar el nombre visible sin romper enlaces.
+  // Si el programa ya existía en producción con el nombre antiguo, se renombra aquí, sin duplicarlo.
+  await addColumnIfNotExists('programs', 'slug', 'TEXT');
+  await DB.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_programs_slug ON programs (slug)`);
+  await DB.run(`
+    UPDATE programs SET slug = 'free-log', name = 'Entrenamiento libre'
+    WHERE slug IS NULL AND name = 'Registro libre'
+  `);
+  await DB.run(`
+    INSERT OR IGNORE INTO programs (name, description, slug)
+    VALUES ('Entrenamiento libre', 'Registra tus ejercicios y series sin plan', 'free-log')
+  `);
   await DB.run(`
     INSERT OR IGNORE INTO user_programs (users_id, programs_id)
     SELECT u.users_id, p.programs_id
     FROM users u
     CROSS JOIN programs p
-    WHERE p.name = 'Registro libre'
+    WHERE p.slug = 'free-log'
   `);
 
   // ── 21. Ensure at least one admin user exists ─────────────────────────────
