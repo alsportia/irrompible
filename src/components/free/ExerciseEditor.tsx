@@ -181,16 +181,16 @@ export default function ExerciseEditor() {
                   </div>
                 )}
               </div>
+              <button onClick={() => toggleInfo(e.id)} aria-label="Ver descripción" aria-expanded={infoIds.includes(e.id)} title="Descripción"
+                style={{ background: 'none', border: 'none', color: infoIds.includes(e.id) ? ACCENT_STRONG : TEXT_MUTED, cursor: 'pointer', padding: '0.3rem', display: 'flex' }}>
+                <Info size={16} />
+              </button>
               {editingId !== e.id && e.is_global ? (
                 <button onClick={() => startEdit(e)} aria-label="Editar nombre" title="Editar nombre"
                   style={{ background: 'none', border: 'none', color: TEXT_MUTED, cursor: 'pointer', padding: '0.3rem', display: 'flex' }}>
                   <Pencil size={16} />
                 </button>
               ) : null}
-              <button onClick={() => toggleInfo(e.id)} aria-label="Ver descripción" aria-expanded={infoIds.includes(e.id)} title="Descripción"
-                style={{ background: 'none', border: 'none', color: infoIds.includes(e.id) ? ACCENT_STRONG : TEXT_MUTED, cursor: 'pointer', padding: '0.3rem', display: 'flex' }}>
-                <Info size={16} />
-              </button>
               <button onClick={() => toggleHidden(e)} aria-label={e.hidden ? "Mostrar" : "Ocultar"} title={e.hidden ? "Mostrar en la lista" : "Ocultar de la lista"}
                 style={{ background: 'none', border: 'none', color: TEXT_MUTED, cursor: 'pointer', padding: '0.3rem', display: 'flex' }}>
                 {e.hidden ? <Eye size={18} /> : <EyeOff size={18} />}
