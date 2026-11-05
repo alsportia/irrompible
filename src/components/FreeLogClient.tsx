@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { CalendarDays, ChevronLeft, ChevronRight, Dumbbell, NotebookPen, Pencil, PlusCircle, Repeat, Timer, Trash2, X } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Dumbbell, Info, NotebookPen, Pencil, PlusCircle, Repeat, Timer, Trash2, X } from "lucide-react";
 import { useUser } from "@/lib/userContext";
 import { useLang } from "@/lib/i18n/LangContext";
 import { exerciseDisplayName, bodyPartLabel, equipmentLabel } from "@/lib/i18n/exerciseLabels";
@@ -339,7 +339,9 @@ export default function FreeLogClient() {
   const [offset, setOffset] = useState(0); // 0 = periodo actual, -1 = anterior, etc.
   const [editingId, setEditingId] = useState<number | null>(null); // serie que se está corrigiendo
   // Detalle del ejercicio elegido: GIF animado y atribución (desde /api/free/exercises/[id]/detail)
-  const [detail, setDetail] = useState<{ gif_url: string | null; attribution: string | null } | null>(null);
+  const [detail, setDetail] = useState<{ gif_url: string | null; attribution: string | null; instructions: string | null } | null>(null);
+  // Descripción del ejercicio elegido, plegada por defecto (botón ⓘ)
+  const [showInfo, setShowInfo] = useState(false);
 
   const headers = user ? { "x-user-id": String(user.id) } : undefined;
 
@@ -475,6 +477,12 @@ export default function FreeLogClient() {
         <label style={{ fontSize: '0.8rem', color: TEXT_MUTED }}>Ejercicio</label>
         <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.35rem' }}>
           <ExercisePicker exercises={exercises} value={exerciseId} onChange={setExerciseId} />
+          {exerciseId && (
+            <button onClick={() => setShowInfo(v => !v)} aria-label="Ver descripción del ejercicio" aria-expanded={showInfo} title="Descripción"
+              style={{ ...input, width: '2.75rem', flex: '0 0 2.75rem', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: showInfo ? ACCENT_STRONG : TEXT }}>
+              <Info size={18} />
+            </button>
+          )}
           {exerciseId && !exercises.find(e => String(e.id) === exerciseId)?.is_global && (
             <button onClick={deleteExercise} title="Borrar este ejercicio"
               style={{ ...input, width: '2.75rem', flex: '0 0 2.75rem', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#f87171' }}>
@@ -492,6 +500,14 @@ export default function FreeLogClient() {
             <img src={detail?.gif_url ?? selectedExercise.image_url ?? GENERIC_IMAGE} alt={exerciseDisplayName(selectedExercise, lang)}
               onError={(e) => { (e.currentTarget as HTMLImageElement).src = selectedExercise.image_url ?? GENERIC_IMAGE; }}
               style={{ display: 'block', width: '100%', height: 'auto', maxHeight: '14rem', objectFit: 'contain', borderRadius: '0.8rem', marginTop: '0.75rem', background: '#f5f5f5' }} />
+            {showInfo && (
+              <div style={{ marginTop: '0.6rem', padding: '0.7rem 0.8rem', borderRadius: '0.8rem', background: '#fafafa', border: `1px solid ${BORDER}` }}>
+                <p style={{ fontSize: '0.8rem', color: TEXT_MUTED, margin: '0 0 0.3rem', fontWeight: 600 }}>Descripción</p>
+                <p style={{ fontSize: '0.86rem', lineHeight: 1.5, margin: 0, whiteSpace: 'pre-line', color: TEXT }}>
+                  {detail?.instructions ?? "Sin descripción."}
+                </p>
+              </div>
+            )}
             {detail?.attribution && (
               <p style={{ fontSize: '0.7rem', color: TEXT_MUTED, margin: '0.35rem 0 0', textAlign: 'center' }}>{detail.attribution}</p>
             )}
