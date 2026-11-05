@@ -153,7 +153,8 @@ export default function ExerciseEditor() {
         <section style={{ ...card, padding: '0.5rem 1rem' }}>
           {visible.length === 0 && <p style={{ padding: '0.75rem 0', fontSize: '0.9rem' }}>Sin resultados.</p>}
           {visible.map(e => (
-            <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.6rem 0', borderBottom: `1px solid ${BORDER}`, opacity: e.hidden ? 0.5 : 1 }}>
+            <div key={e.id} style={{ borderBottom: `1px solid ${BORDER}`, opacity: e.hidden ? 0.5 : 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.6rem 0' }}>
               <img src={e.image_url ?? "/exercise-placeholder.svg"} alt="" loading="lazy"
                 style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: '0.5rem', background: '#f5f5f5', flexShrink: 0 }} />
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -172,14 +173,6 @@ export default function ExerciseEditor() {
                 <p style={{ margin: 0, fontSize: '0.75rem', color: TEXT_MUTED }}>
                   {bodyPartLabel(e.body_part, lang)}{e.equipment ? ` · ${equipmentLabel(e.equipment, lang)}` : ""}
                 </p>
-                {/* Descripción del ejercicio, plegada por defecto; se pide al abrirla */}
-                {infoIds.includes(e.id) && (
-                  <div style={{ marginTop: '0.5rem', padding: '0.6rem 0.7rem', borderRadius: '0.7rem', background: '#fafafa', border: `1px solid ${BORDER}`, fontSize: '0.8rem', lineHeight: 1.45, color: TEXT, whiteSpace: 'pre-line' }}>
-                    {descriptions[e.id] === undefined && <span style={{ color: TEXT_MUTED }}>Cargando...</span>}
-                    {descriptions[e.id] === null && <span style={{ color: TEXT_MUTED }}>Sin descripción.</span>}
-                    {descriptions[e.id] ? descriptions[e.id] : null}
-                  </div>
-                )}
               </div>
               <button onClick={() => toggleInfo(e.id)} aria-label="Ver descripción" aria-expanded={infoIds.includes(e.id)} title="Descripción"
                 style={{ background: 'none', border: 'none', color: infoIds.includes(e.id) ? ACCENT_STRONG : TEXT_MUTED, cursor: 'pointer', padding: '0.3rem', display: 'flex' }}>
@@ -201,6 +194,17 @@ export default function ExerciseEditor() {
                   <Trash2 size={18} />
                 </button>
               )}
+            </div>
+            {/* Descripción a ancho completo, debajo de toda la fila (miniatura, texto e iconos) */}
+            {infoIds.includes(e.id) && (
+              <div style={{ padding: '0 0 0.8rem' }}>
+                <div style={{ padding: '0.7rem 0.85rem', borderRadius: '0.7rem', background: '#fafafa', border: `1px solid ${BORDER}`, fontSize: '0.85rem', lineHeight: 1.5, color: TEXT, whiteSpace: 'pre-line' }}>
+                  {descriptions[e.id] === undefined && <span style={{ color: TEXT_MUTED }}>Cargando...</span>}
+                  {descriptions[e.id] === null && <span style={{ color: TEXT_MUTED }}>Sin descripción.</span>}
+                  {descriptions[e.id] ? descriptions[e.id] : null}
+                </div>
+              </div>
+            )}
             </div>
           ))}
         </section>
