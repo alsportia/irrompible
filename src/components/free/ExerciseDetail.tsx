@@ -116,8 +116,8 @@ export default function ExerciseDetail({ exerciseId }: { exerciseId: number }) {
             </table>
           )}
         </section>
-        <BottomBar />
       </main>
+      <BottomBar />
     </div>
   );
 }

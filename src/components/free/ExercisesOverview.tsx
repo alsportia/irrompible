@@ -85,8 +85,8 @@ export default function ExercisesOverview() {
             </div>
           </Link>
         ))}
-        <BottomBar />
       </main>
+      <BottomBar />
     </div>
   );
 }

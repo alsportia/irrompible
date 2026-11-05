@@ -22,10 +22,24 @@ interface FreeExercise {
 // Selector con miniatura, buscador y lista desplegable
 function ExercisePicker({ exercises, value, onChange }: { exercises: FreeExercise[]; value: string; onChange: (id: string) => void }) {
   const { lang } = useLang();
+  const { user } = useUser();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  // Fila desplegada y descripciones ya pedidas (undefined = no pedida, null = sin texto)
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [descriptions, setDescriptions] = useState<Record<number, string | null>>({});
   const [bodyFilter, setBodyFilter] = useState("");
   const [equipFilter, setEquipFilter] = useState("");
+
+  // La descripción se pide solo al abrir la fila, y se recuerda para no repetir la petición
+  const toggleExpand = (id: number) => {
+    if (expandedId === id) { setExpandedId(null); return; }
+    setExpandedId(id);
+    if (!user || id in descriptions) return;
+    fetch(`/api/free/exercises/${id}/detail?lang=${lang}`, { headers: { "x-user-id": String(user.id) } })
+      .then(r => r.json())
+      .then(d => setDescriptions(prev => ({ ...prev, [id]: d?.instructions ?? null })));
+  };
   const selected = exercises.find(e => String(e.id) === value);
 
   // Valores que existen de verdad en la lista, para no ofrecer filtros vacíos
@@ -70,13 +84,32 @@ function ExercisePicker({ exercises, value, onChange }: { exercises: FreeExercis
           </div>
           <div style={{ overflowY: 'auto' }}>
             {filtered.length === 0 && <p style={{ padding: '0.75rem', fontSize: '0.85rem', color: TEXT_MUTED }}>Sin resultados</p>}
-            {filtered.slice(0, 200).map(e => (
-              <button key={e.id} type="button" onClick={() => { onChange(String(e.id)); setOpen(false); setQuery(""); }}
-                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.5rem 0.75rem', background: String(e.id) === value ? ACCENT_SOFT : 'transparent', border: 'none', color: TEXT, cursor: 'pointer', textAlign: 'left', fontSize: '0.9rem' }}>
-                <ExerciseThumb src={e.image_url} size={36} />
-                <span style={{ flex: 1 }}>{exerciseDisplayName(e, lang)}{e.is_global ? "" : " (mío)"}</span>
-              </button>
-            ))}
+            {filtered.slice(0, 200).map(e => {
+              const expanded = expandedId === e.id;
+              const desc = descriptions[e.id];
+              return (
+                <div key={e.id} style={{ borderBottom: `1px solid ${BORDER}`, background: String(e.id) === value ? ACCENT_SOFT : 'transparent' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.5rem 0.75rem' }}>
+                    {/* Pulsar la imagen despliega la descripción; pulsar el nombre elige el ejercicio */}
+                    <button type="button" onClick={() => toggleExpand(e.id)} aria-label="Ver descripción" aria-expanded={expanded}
+                      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', flexShrink: 0 }}>
+                      <ExerciseThumb src={e.image_url} size={36} />
+                    </button>
+                    <button type="button" onClick={() => { onChange(String(e.id)); setOpen(false); setQuery(""); }}
+                      style={{ flex: 1, background: 'none', border: 'none', padding: 0, color: TEXT, cursor: 'pointer', textAlign: 'left', fontSize: '0.9rem' }}>
+                      {exerciseDisplayName(e, lang)}{e.is_global ? "" : " (mío)"}
+                    </button>
+                  </div>
+                  {expanded && (
+                    <div style={{ padding: '0 0.75rem 0.75rem 3.35rem', fontSize: '0.82rem', lineHeight: 1.45, color: TEXT }}>
+                      {desc === undefined && <span style={{ color: TEXT_MUTED }}>Cargando...</span>}
+                      {desc === null && <span style={{ color: TEXT_MUTED }}>Sin descripción.</span>}
+                      {desc ? <p style={{ margin: 0, whiteSpace: 'pre-line' }}>{desc}</p> : null}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
             {filtered.length > 200 && <p style={{ padding: '0.5rem 0.75rem', fontSize: '0.75rem', color: TEXT_MUTED }}>Escribe más para acotar la lista</p>}
           </div>
         </div>
@@ -605,8 +638,8 @@ export default function FreeLogClient() {
         </section>
       )}
 
-      <BottomBar />
     </main>
+      <BottomBar />
     </div>
   );
 }

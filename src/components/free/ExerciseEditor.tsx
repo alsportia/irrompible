@@ -180,8 +180,8 @@ export default function ExerciseEditor() {
             </div>
           ))}
         </section>
-        <BottomBar />
       </main>
+      <BottomBar />
     </div>
   );
 }

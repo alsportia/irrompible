@@ -28,7 +28,7 @@ export default function BottomBar() {
     { href: "/libre", label: "Registro", icon: <Home size={22} /> },
     { href: "/libre/ejercicios", label: "Progresiones", icon: <ProgressIcon color="currentColor" /> },
     { href: "/libre/calendario", label: "Calendario", icon: <CalendarDays size={22} /> },
-    { href: "/libre/editar", label: "Editar", icon: <Settings size={22} /> },
+    { href: "/libre/editar", label: "Ejercicios", icon: <Settings size={22} /> },
   ];
 
   const active = (href: string) => pathname === href || (href !== "/libre" && pathname.startsWith(href));
