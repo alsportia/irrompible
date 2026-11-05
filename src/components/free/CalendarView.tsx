@@ -260,8 +260,8 @@ export default function CalendarView() {
             })}
           </section>
         )}
-        <BottomBar />
       </main>
+      <BottomBar />
     </div>
   );
 }

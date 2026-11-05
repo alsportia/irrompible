@@ -36,6 +36,38 @@ export async function fillSpanishNames(): Promise<void> {
   }
 }
 
+// Instrucciones en castellano e inglés de los globales, tomadas del dataset (texto MIT).
+// Solo se insertan si no existen, así no se pisan las que se editen después.
+// Solo descarga el dataset si hay globales sin instrucciones; después no vuelve a hacerlo
+export async function fillInstructions(): Promise<void> {
+  const missing = await DB.get<{ n: number }>(
+    `SELECT COUNT(*) AS n FROM free_exercises x
+     WHERE x.is_global = 1 AND x.external_id IS NOT NULL
+       AND NOT EXISTS (SELECT 1 FROM i18n_texts t WHERE t.entity = 'exercise' AND t.entity_id = x.free_exercises_id AND t.field = 'instructions' AND t.lang = 'es')`
+  );
+  if (!missing || Number(missing.n) === 0) return;
+
+  const res = await fetch(DATASET_URL);
+  if (!res.ok) throw new Error(`Dataset HTTP ${res.status}`);
+  const dataset = (await res.json()) as DatasetItem[];
+  for (const item of dataset) {
+    const row = await DB.get<{ free_exercises_id: number }>(
+      `SELECT free_exercises_id FROM free_exercises WHERE external_id = ? AND is_global = 1`,
+      [String(item.id)]
+    );
+    if (!row) continue;
+    const ins = (item.instructions ?? {}) as Record<string, unknown>;
+    for (const lang of ["es", "en"] as const) {
+      const text = instructionsToText(ins[lang]);
+      if (!text) continue;
+      await DB.run(
+        `INSERT OR IGNORE INTO i18n_texts (entity, entity_id, field, lang, text) VALUES ('exercise', ?, 'instructions', ?, ?)`,
+        [row.free_exercises_id, lang, text]
+      );
+    }
+  }
+}
+
 export async function seedFreeExercises(): Promise<void> {
   const existing = await DB.get<{ count: number }>(
     `SELECT COUNT(*) as count FROM free_exercises WHERE is_global = 1`

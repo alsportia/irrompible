@@ -3,7 +3,7 @@
 import BottomBar from "./BottomBar";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, Eye, EyeOff, Pencil, PlusCircle, Trash2 } from "lucide-react";
+import { ChevronLeft, Eye, EyeOff, Info, Pencil, PlusCircle, Trash2 } from "lucide-react";
 import { useUser } from "@/lib/userContext";
 import { useLang } from "@/lib/i18n/LangContext";
 import { exerciseDisplayName, bodyPartLabel, equipmentLabel } from "@/lib/i18n/exerciseLabels";
@@ -33,6 +33,18 @@ export default function ExerciseEditor() {
   // Fila con el nombre en edición (id) y el texto que se está escribiendo
   const [editingId, setEditingId] = useState<number | null>(null);
   const [draft, setDraft] = useState("");
+  // Descripciones abiertas (ids) y las ya pedidas (undefined = no pedida, null = sin texto)
+  const [infoIds, setInfoIds] = useState<number[]>([]);
+  const [descriptions, setDescriptions] = useState<Record<number, string | null>>({});
+
+  // La descripción se pide al abrirla y se recuerda; cerrar no borra lo ya pedido
+  const toggleInfo = (id: number) => {
+    setInfoIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+    if (id in descriptions || !user) return;
+    fetch(`/api/free/exercises/${id}/detail?lang=${lang}`, { headers: { "x-user-id": String(user.id) } })
+      .then(r => r.json())
+      .then(d => setDescriptions(prev => ({ ...prev, [id]: d?.instructions ?? null })));
+  };
 
   const headers = user ? { "x-user-id": String(user.id) } : undefined;
 
@@ -141,7 +153,8 @@ export default function ExerciseEditor() {
         <section style={{ ...card, padding: '0.5rem 1rem' }}>
           {visible.length === 0 && <p style={{ padding: '0.75rem 0', fontSize: '0.9rem' }}>Sin resultados.</p>}
           {visible.map(e => (
-            <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.6rem 0', borderBottom: `1px solid ${BORDER}`, opacity: e.hidden ? 0.5 : 1 }}>
+            <div key={e.id} style={{ borderBottom: `1px solid ${BORDER}`, opacity: e.hidden ? 0.5 : 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.6rem 0' }}>
               <img src={e.image_url ?? "/exercise-placeholder.svg"} alt="" loading="lazy"
                 style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: '0.5rem', background: '#f5f5f5', flexShrink: 0 }} />
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -161,6 +174,10 @@ export default function ExerciseEditor() {
                   {bodyPartLabel(e.body_part, lang)}{e.equipment ? ` · ${equipmentLabel(e.equipment, lang)}` : ""}
                 </p>
               </div>
+              <button onClick={() => toggleInfo(e.id)} aria-label="Ver descripción" aria-expanded={infoIds.includes(e.id)} title="Descripción"
+                style={{ background: 'none', border: 'none', color: infoIds.includes(e.id) ? ACCENT_STRONG : TEXT_MUTED, cursor: 'pointer', padding: '0.3rem', display: 'flex' }}>
+                <Info size={16} />
+              </button>
               {editingId !== e.id && e.is_global ? (
                 <button onClick={() => startEdit(e)} aria-label="Editar nombre" title="Editar nombre"
                   style={{ background: 'none', border: 'none', color: TEXT_MUTED, cursor: 'pointer', padding: '0.3rem', display: 'flex' }}>
@@ -178,10 +195,21 @@ export default function ExerciseEditor() {
                 </button>
               )}
             </div>
+            {/* Descripción a ancho completo, debajo de toda la fila (miniatura, texto e iconos) */}
+            {infoIds.includes(e.id) && (
+              <div style={{ padding: '0 0 0.8rem' }}>
+                <div style={{ padding: '0.7rem 0.85rem', borderRadius: '0.7rem', background: '#fafafa', border: `1px solid ${BORDER}`, fontSize: '0.85rem', lineHeight: 1.5, color: TEXT, whiteSpace: 'pre-line' }}>
+                  {descriptions[e.id] === undefined && <span style={{ color: TEXT_MUTED }}>Cargando...</span>}
+                  {descriptions[e.id] === null && <span style={{ color: TEXT_MUTED }}>Sin descripción.</span>}
+                  {descriptions[e.id] ? descriptions[e.id] : null}
+                </div>
+              </div>
+            )}
+            </div>
           ))}
         </section>
-        <BottomBar />
       </main>
+      <BottomBar />
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { CalendarDays, ChevronLeft, ChevronRight, Dumbbell, NotebookPen, Pencil, PlusCircle, Repeat, Timer, Trash2, X } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Dumbbell, Info, NotebookPen, Pencil, PlusCircle, Repeat, Timer, Trash2, X } from "lucide-react";
 import { useUser } from "@/lib/userContext";
 import { useLang } from "@/lib/i18n/LangContext";
 import { exerciseDisplayName, bodyPartLabel, equipmentLabel } from "@/lib/i18n/exerciseLabels";
@@ -22,10 +22,24 @@ interface FreeExercise {
 // Selector con miniatura, buscador y lista desplegable
 function ExercisePicker({ exercises, value, onChange }: { exercises: FreeExercise[]; value: string; onChange: (id: string) => void }) {
   const { lang } = useLang();
+  const { user } = useUser();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  // Fila desplegada y descripciones ya pedidas (undefined = no pedida, null = sin texto)
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [descriptions, setDescriptions] = useState<Record<number, string | null>>({});
   const [bodyFilter, setBodyFilter] = useState("");
   const [equipFilter, setEquipFilter] = useState("");
+
+  // La descripción se pide solo al abrir la fila, y se recuerda para no repetir la petición
+  const toggleExpand = (id: number) => {
+    if (expandedId === id) { setExpandedId(null); return; }
+    setExpandedId(id);
+    if (!user || id in descriptions) return;
+    fetch(`/api/free/exercises/${id}/detail?lang=${lang}`, { headers: { "x-user-id": String(user.id) } })
+      .then(r => r.json())
+      .then(d => setDescriptions(prev => ({ ...prev, [id]: d?.instructions ?? null })));
+  };
   const selected = exercises.find(e => String(e.id) === value);
 
   // Valores que existen de verdad en la lista, para no ofrecer filtros vacíos
@@ -70,13 +84,32 @@ function ExercisePicker({ exercises, value, onChange }: { exercises: FreeExercis
           </div>
           <div style={{ overflowY: 'auto' }}>
             {filtered.length === 0 && <p style={{ padding: '0.75rem', fontSize: '0.85rem', color: TEXT_MUTED }}>Sin resultados</p>}
-            {filtered.slice(0, 200).map(e => (
-              <button key={e.id} type="button" onClick={() => { onChange(String(e.id)); setOpen(false); setQuery(""); }}
-                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.5rem 0.75rem', background: String(e.id) === value ? ACCENT_SOFT : 'transparent', border: 'none', color: TEXT, cursor: 'pointer', textAlign: 'left', fontSize: '0.9rem' }}>
-                <ExerciseThumb src={e.image_url} size={36} />
-                <span style={{ flex: 1 }}>{exerciseDisplayName(e, lang)}{e.is_global ? "" : " (mío)"}</span>
-              </button>
-            ))}
+            {filtered.slice(0, 200).map(e => {
+              const expanded = expandedId === e.id;
+              const desc = descriptions[e.id];
+              return (
+                <div key={e.id} style={{ borderBottom: `1px solid ${BORDER}`, background: String(e.id) === value ? ACCENT_SOFT : 'transparent' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.5rem 0.75rem' }}>
+                    {/* Pulsar la imagen despliega la descripción; pulsar el nombre elige el ejercicio */}
+                    <button type="button" onClick={() => toggleExpand(e.id)} aria-label="Ver descripción" aria-expanded={expanded}
+                      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', flexShrink: 0 }}>
+                      <ExerciseThumb src={e.image_url} size={36} />
+                    </button>
+                    <button type="button" onClick={() => { onChange(String(e.id)); setOpen(false); setQuery(""); }}
+                      style={{ flex: 1, background: 'none', border: 'none', padding: 0, color: TEXT, cursor: 'pointer', textAlign: 'left', fontSize: '0.9rem' }}>
+                      {exerciseDisplayName(e, lang)}{e.is_global ? "" : " (mío)"}
+                    </button>
+                  </div>
+                  {expanded && (
+                    <div style={{ padding: '0 0.75rem 0.75rem 3.35rem', fontSize: '0.82rem', lineHeight: 1.45, color: TEXT }}>
+                      {desc === undefined && <span style={{ color: TEXT_MUTED }}>Cargando...</span>}
+                      {desc === null && <span style={{ color: TEXT_MUTED }}>Sin descripción.</span>}
+                      {desc ? <p style={{ margin: 0, whiteSpace: 'pre-line' }}>{desc}</p> : null}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
             {filtered.length > 200 && <p style={{ padding: '0.5rem 0.75rem', fontSize: '0.75rem', color: TEXT_MUTED }}>Escribe más para acotar la lista</p>}
           </div>
         </div>
@@ -305,6 +338,10 @@ export default function FreeLogClient() {
   const [period, setPeriod] = useState<Period>("week");
   const [offset, setOffset] = useState(0); // 0 = periodo actual, -1 = anterior, etc.
   const [editingId, setEditingId] = useState<number | null>(null); // serie que se está corrigiendo
+  // Detalle del ejercicio elegido: GIF animado y atribución (desde /api/free/exercises/[id]/detail)
+  const [detail, setDetail] = useState<{ gif_url: string | null; attribution: string | null; instructions: string | null } | null>(null);
+  // Descripción del ejercicio elegido, plegada por defecto (botón ⓘ)
+  const [showInfo, setShowInfo] = useState(false);
 
   const headers = user ? { "x-user-id": String(user.id) } : undefined;
 
@@ -318,6 +355,14 @@ export default function FreeLogClient() {
 
   // Series y progreso solo del ejercicio elegido; se recargan al guardar una serie
   useEffect(() => { setOffset(0); }, [exerciseId]);
+
+  // Detalle (GIF y atribución) del ejercicio elegido
+  useEffect(() => {
+    if (!user || !exerciseId) { setDetail(null); return; }
+    fetch(`/api/free/exercises/${exerciseId}/detail?lang=${lang}`, { headers: { "x-user-id": String(user.id) } })
+      .then(r => r.json())
+      .then(d => setDetail(d?.error ? null : d));
+  }, [user, exerciseId, lang]);
 
   useEffect(() => {
     if (!user || !exerciseId) { setSets([]); setProgress([]); return; }
@@ -432,6 +477,12 @@ export default function FreeLogClient() {
         <label style={{ fontSize: '0.8rem', color: TEXT_MUTED }}>Ejercicio</label>
         <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.35rem' }}>
           <ExercisePicker exercises={exercises} value={exerciseId} onChange={setExerciseId} />
+          {exerciseId && (
+            <button onClick={() => setShowInfo(v => !v)} aria-label="Ver descripción del ejercicio" aria-expanded={showInfo} title="Descripción"
+              style={{ ...input, width: '2.75rem', flex: '0 0 2.75rem', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: showInfo ? ACCENT_STRONG : TEXT }}>
+              <Info size={18} />
+            </button>
+          )}
           {exerciseId && !exercises.find(e => String(e.id) === exerciseId)?.is_global && (
             <button onClick={deleteExercise} title="Borrar este ejercicio"
               style={{ ...input, width: '2.75rem', flex: '0 0 2.75rem', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#f87171' }}>
@@ -444,9 +495,23 @@ export default function FreeLogClient() {
           </button>
         </div>
         {selectedExercise && (
-          <img src={selectedExercise.image_url ?? GENERIC_IMAGE} alt={exerciseDisplayName(selectedExercise, lang)}
-            onError={(e) => { (e.currentTarget as HTMLImageElement).src = GENERIC_IMAGE; }}
-            style={{ display: 'block', width: '100%', height: 'auto', maxHeight: '14rem', objectFit: 'contain', borderRadius: '0.8rem', marginTop: '0.75rem', background: '#f5f5f5' }} />
+          <>
+            {/* GIF animado del dataset (la lista usa la imagen fija); propios usan su imagen */}
+            <img src={detail?.gif_url ?? selectedExercise.image_url ?? GENERIC_IMAGE} alt={exerciseDisplayName(selectedExercise, lang)}
+              onError={(e) => { (e.currentTarget as HTMLImageElement).src = selectedExercise.image_url ?? GENERIC_IMAGE; }}
+              style={{ display: 'block', width: '100%', height: 'auto', maxHeight: '14rem', objectFit: 'contain', borderRadius: '0.8rem', marginTop: '0.75rem', background: '#f5f5f5' }} />
+            {showInfo && (
+              <div style={{ marginTop: '0.6rem', padding: '0.7rem 0.8rem', borderRadius: '0.8rem', background: '#fafafa', border: `1px solid ${BORDER}` }}>
+                <p style={{ fontSize: '0.8rem', color: TEXT_MUTED, margin: '0 0 0.3rem', fontWeight: 600 }}>Descripción</p>
+                <p style={{ fontSize: '0.86rem', lineHeight: 1.5, margin: 0, whiteSpace: 'pre-line', color: TEXT }}>
+                  {detail?.instructions ?? "Sin descripción."}
+                </p>
+              </div>
+            )}
+            {detail?.attribution && (
+              <p style={{ fontSize: '0.7rem', color: TEXT_MUTED, margin: '0.35rem 0 0', textAlign: 'center' }}>{detail.attribution}</p>
+            )}
+          </>
         )}
 
         {showNew && (
@@ -589,8 +654,8 @@ export default function FreeLogClient() {
         </section>
       )}
 
-      <BottomBar />
     </main>
+      <BottomBar />
     </div>
   );
 }

@@ -125,8 +125,8 @@ export default function ExerciseCreate() {
           style={{ ...input, background: 'linear-gradient(90deg, #ffd23f, #ffa94d)', color: '#fff', fontWeight: 700, border: 'none', borderRadius: '999px', padding: '0.85rem', cursor: saving ? 'wait' : 'pointer' }}>
           {saving ? "Guardando..." : "Crear ejercicio"}
         </button>
-        <BottomBar />
       </main>
+      <BottomBar />
     </div>
   );
 }
