@@ -305,6 +305,8 @@ export default function FreeLogClient() {
   const [period, setPeriod] = useState<Period>("week");
   const [offset, setOffset] = useState(0); // 0 = periodo actual, -1 = anterior, etc.
   const [editingId, setEditingId] = useState<number | null>(null); // serie que se está corrigiendo
+  // Detalle del ejercicio elegido: GIF animado y atribución (desde /api/free/exercises/[id]/detail)
+  const [detail, setDetail] = useState<{ gif_url: string | null; attribution: string | null } | null>(null);
 
   const headers = user ? { "x-user-id": String(user.id) } : undefined;
 
@@ -318,6 +320,14 @@ export default function FreeLogClient() {
 
   // Series y progreso solo del ejercicio elegido; se recargan al guardar una serie
   useEffect(() => { setOffset(0); }, [exerciseId]);
+
+  // Detalle (GIF y atribución) del ejercicio elegido
+  useEffect(() => {
+    if (!user || !exerciseId) { setDetail(null); return; }
+    fetch(`/api/free/exercises/${exerciseId}/detail?lang=${lang}`, { headers: { "x-user-id": String(user.id) } })
+      .then(r => r.json())
+      .then(d => setDetail(d?.error ? null : d));
+  }, [user, exerciseId, lang]);
 
   useEffect(() => {
     if (!user || !exerciseId) { setSets([]); setProgress([]); return; }
@@ -444,9 +454,15 @@ export default function FreeLogClient() {
           </button>
         </div>
         {selectedExercise && (
-          <img src={selectedExercise.image_url ?? GENERIC_IMAGE} alt={exerciseDisplayName(selectedExercise, lang)}
-            onError={(e) => { (e.currentTarget as HTMLImageElement).src = GENERIC_IMAGE; }}
-            style={{ display: 'block', width: '100%', height: 'auto', maxHeight: '14rem', objectFit: 'contain', borderRadius: '0.8rem', marginTop: '0.75rem', background: '#f5f5f5' }} />
+          <>
+            {/* GIF animado del dataset (la lista usa la imagen fija); propios usan su imagen */}
+            <img src={detail?.gif_url ?? selectedExercise.image_url ?? GENERIC_IMAGE} alt={exerciseDisplayName(selectedExercise, lang)}
+              onError={(e) => { (e.currentTarget as HTMLImageElement).src = selectedExercise.image_url ?? GENERIC_IMAGE; }}
+              style={{ display: 'block', width: '100%', height: 'auto', maxHeight: '14rem', objectFit: 'contain', borderRadius: '0.8rem', marginTop: '0.75rem', background: '#f5f5f5' }} />
+            {detail?.attribution && (
+              <p style={{ fontSize: '0.7rem', color: TEXT_MUTED, margin: '0.35rem 0 0', textAlign: 'center' }}>{detail.attribution}</p>
+            )}
+          </>
         )}
 
         {showNew && (

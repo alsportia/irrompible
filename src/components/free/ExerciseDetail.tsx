@@ -18,6 +18,7 @@ export default function ExerciseDetail({ exerciseId }: { exerciseId: number }) {
   const { user } = useUser();
   const { lang } = useLang();
   const [name, setName] = useState<string>("");
+  const [info, setInfo] = useState<{ instructions: string | null; attribution: string | null } | null>(null);
   const [progress, setProgress] = useState<ProgressRow[]>([]);
   const [period, setPeriod] = useState<Period>("week");
   const [offset, setOffset] = useState(0);
@@ -33,6 +34,11 @@ export default function ExerciseDetail({ exerciseId }: { exerciseId: number }) {
       .then((list: { id: number; name: string }[]) => {
         const found = Array.isArray(list) ? list.find(e => e.id === exerciseId) : undefined;
         setName(found ? exerciseDisplayName(found, lang) : "");
+      });
+    fetch(`/api/free/exercises/${exerciseId}/detail?lang=${lang}`, { headers: h })
+      .then(r => r.json())
+      .then(d => {
+        setInfo(d?.error ? null : { instructions: d.instructions, attribution: d.attribution });
       });
   }, [user, exerciseId, lang]);
 
@@ -52,6 +58,14 @@ export default function ExerciseDetail({ exerciseId }: { exerciseId: number }) {
             <h1 style={{ fontSize: '1.4rem', fontWeight: 800, color: ACCENT_STRONG, margin: 0, lineHeight: 1.15 }}>{name || "Ejercicio"}</h1>
           </div>
         </header>
+
+        {info?.instructions && (
+          <section style={card}>
+            <p style={{ fontSize: '0.8rem', color: TEXT_MUTED, marginBottom: '0.4rem' }}>Instrucciones</p>
+            <p style={{ fontSize: '0.9rem', lineHeight: 1.5, margin: 0, whiteSpace: 'pre-line' }}>{info.instructions}</p>
+            {info.attribution && <p style={{ fontSize: '0.7rem', color: TEXT_MUTED, margin: '0.75rem 0 0' }}>{info.attribution}</p>}
+          </section>
+        )}
 
         <section style={card}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.5rem' }}>
